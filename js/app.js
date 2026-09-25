@@ -1,9 +1,5 @@
         // ===== LAYAR LOADING & PLAY GAME (sebelum Daftar/Masuk) =====
         let loadingAnimDone = false, authChecked = false, loadingHidden = false;
-        // true HANYA saat pemain benar-benar menekan "Main Sekarang" lalu mengisi form Daftar/Masuk.
-        // Dipakai startSession() untuk membedakan alur manual vs sesi lama yang dipulihkan otomatis di
-        // latar belakang - JANGAN diganti kembali ke cek classList splash-overlay (lihat catatan di startSession).
-        let manualAuthEntry = false;
         function hideLoadingOverlay() {
             if (loadingHidden) return;
             loadingHidden = true;
@@ -73,7 +69,6 @@
                     uncoverScreen();
                 });
             } else {
-                manualAuthEntry = true;
                 document.getElementById('splash-overlay').classList.add('hidden');
                 document.getElementById('auth-overlay').classList.remove('hidden');
             }
@@ -90,7 +85,7 @@
             { icon: 'fa-user-shield', title: '2. Rekrut Supir & Kernet', desc: 'Buka tab SDM Driver untuk merekrut supir dan kernet. Truk butuh keduanya sebelum bisa dikirim ke SPBU, jadi rekrut secukupnya sesuai jumlah armada.' },
             { icon: 'fa-gas-pump', title: '3. Kirim BBM / LPG ke SPBU', desc: 'Buka tab POM BBM atau LPG, pilih truk + supir + kernet, lalu tanda tangani Surat Jalan. Pendapatan cair otomatis setelah truk tiba dan selesai bongkar muatan.' },
             { icon: 'fa-bell', title: '4. Pantau Pesanan SPBU', desc: 'Kalau stok BBM di suatu SPBU menipis, SPBU otomatis memesan ke perusahaanmu. Cek tab Pesanan SPBU secara rutin dan kirim sebelum batas waktu habis, atau SPBU beralih ke pesaing.' },
-            { icon: 'fa-right-left', title: '5. Bursa P2P', desc: 'Punya truk nganggur? Jual ke pemain lain lewat tab Bursa P2P, atau beli truk bekas dari pemain lain dengan harga lebih murah daripada beli baru di Dealer.' },
+            { icon: 'fa-right-left', title: '5. Bursa P2P', desc: 'Punya truk nganggur? Buka tab Armada, lalu klik tombol "Jual ke Bursa P2P" di kartu truk yang tidak bertugas untuk langsung pasang iklan (harga wajar otomatis terisi, tinggal sesuaikan). Bisa juga lewat tab Bursa P2P langsung, atau beli truk bekas dari pemain lain dengan harga lebih murah daripada beli baru di Dealer.' },
             { icon: 'fa-trophy', title: '6. Naik Peringkat & Cek Laporan', desc: 'Tab Peringkat membandingkan kas, armada, dan kilang/depo milikmu dengan pemain lain. Tab Laporan menampilkan pemasukan, pengeluaran, dan kewajiban PPh Badan perusahaanmu.' },
             { icon: 'fa-circle-check', title: 'Selamat Berbisnis!', desc: 'Itu dia dasar-dasarnya. Kamu bisa buka tutorial ini lagi kapan saja lewat tombol Tutorial di bagian atas layar. Selamat membangun kerajaan logistik energimu!' }
         ];
@@ -118,7 +113,7 @@
 
         let companyCash = 650000000;
         // ===== EKONOMI (sesuaikan di sini) =====
-        const ECO = { bblPerKl: 6.2898, jualKl: 7600000, jualTon: 10400000, hppTon: 9500000, bonusPesanan: 0.06, gajiSupir: [4500000, 30000], gajiKernet: [3500000, 20000], gajiMekanik: [4000000, 25000], biayaKirimKl: 350000, biayaKirimTon: 500000 };
+        const ECO = { bblPerKl: 6.2898, jualKl: 7600000, jualTon: 10400000, hppTon: 9500000, bonusPesanan: 0.06, gajiSupir: [4500000, 30000], gajiKernet: [3500000, 20000], gajiMekanik: [4000000, 25000], gajiNahkoda: [6000000, 45000], gajiABK: [3800000, 22000], biayaKirimKl: 350000, biayaKirimTon: 500000 };
         let totalIncome = 0;
         let totalExpense = 0;
 
@@ -242,6 +237,7 @@
           ['Sulawesi Utara','SU',[['Manado',1.4748,124.8421,6],['Bitung',1.4404,125.1917,4],['Tomohon',1.33,124.8333,3],['Kotamobagu',0.7333,124.3167,3]]],
           ['Sulawesi Tengah','ST',[['Palu',-0.8917,119.8707,5],['Poso',-1.395,120.752,3],['Luwuk',-0.95,122.787,3],['Donggala',-0.681,119.742,3]]],
           ['Sulawesi Barat','SB',[['Mamuju',-2.674,118.888,4],['Majene',-3.54,118.97,3],['Polewali Mandar',-3.432,119.343,3]]],
+['Sulawesi Selatan','SS',[['Makassar',-5.1477,119.4327,7],['Gowa',-5.2159,119.4497,4],['Maros',-4.9887,119.5713,3],['Parepare',-4.0135,119.6255,3]]],
           ['Kalimantan','KL',[['Balikpapan (Kaltim)',-1.2379,116.8529,6],['Samarinda (Kaltim)',-0.5022,117.1536,5],['Bontang (Kaltim)',0.1333,117.5,3],['Banjarmasin (Kalsel)',-3.3186,114.5944,5],['Banjarbaru (Kalsel)',-3.442,114.83,3],['Pontianak (Kalbar)',-0.0263,109.3425,5],['Singkawang (Kalbar)',0.906,108.987,3],['Palangka Raya (Kalteng)',-2.2161,113.9135,4],['Sampit (Kalteng)',-2.533,112.95,3],['Tarakan (Kaltara)',3.3,117.6333,3]]]
         ];
         const JALAN = ['Jl. Jend. Sudirman','Jl. A. Yani','Jl. Diponegoro','Jl. Gatot Subroto','Jl. Raya Utara','Jl. Pahlawan','Jl. Imam Bonjol','Jl. Veteran','Jl. Merdeka','Jl. Pemuda','Jl. Hasanuddin','Jl. Ahmad Dahlan','Jl. Lingkar Kota','Jl. Trans Regional'];
@@ -258,8 +254,46 @@
         })();
 
         // Depo/TBBM regional (dibeli pemain, jadi titik berangkat truk terdekat)
-        refineryData.push(...[['TBBM Plumpang Jakarta',-6.1216,106.8967,25e9],['TBBM Tanjung Emas Semarang',-6.949,110.426,18e9],['TBBM Padalarang Bandung',-6.84,107.48,15e9],['TBBM Manggis Bali',-8.5,115.52,18e9],['TBBM Bitung Sulut',1.45,125.19,16e9],['TBBM Donggala Sulteng',-0.66,119.74,15e9],['Depo Mamuju Sulbar',-2.67,118.89,12e9],['TBBM Balikpapan Kaltim',-1.27,116.8,22e9],['TBBM Banjarmasin Kalsel',-3.29,114.57,15e9],['TBBM Pontianak Kalbar',-0.04,109.32,15e9],['Depo Palangka Raya Kalteng',-2.25,113.9,12e9],['Depo Tarakan Kaltara',3.31,117.62,14e9]]
+        refineryData.push(...[['TBBM Plumpang Jakarta',-6.1216,106.8967,25e9],['TBBM Tanjung Emas Semarang',-6.949,110.426,18e9],['TBBM Padalarang Bandung',-6.84,107.48,15e9],['TBBM Manggis Bali',-8.5,115.52,18e9],['TBBM Bitung Sulut',1.45,125.19,16e9],['TBBM Donggala Sulteng',-0.66,119.74,15e9],['Depo Mamuju Sulbar',-2.67,118.89,12e9],['TBBM Balikpapan Kaltim',-1.27,116.8,22e9],['TBBM Banjarmasin Kalsel',-3.29,114.57,15e9],['TBBM Pontianak Kalbar',-0.04,109.32,15e9],['Depo Palangka Raya Kalteng',-2.25,113.9,12e9],['Depo Tarakan Kaltara',3.31,117.62,14e9],['TBBM Makassar Sulsel',-5.14,119.43,20e9]]
             .map((d, i) => ({ id: 'KILANG-' + String(4 + i).padStart(2, '0'), nama: d[0], tipe: 'Depo Cabang BBM', lat: d[1], lon: d[2], is_unlocked: false, stok_current: 0, stok_max: 100000, unit: 'KL', harga_beli: d[3] * 2, mekanikId: null })));
+
+        // ===== KAPASITAS DEPO PER JENIS PRODUK (Pusat & Cabang) =====
+        // Setiap Kilang/Depo kini punya tangki terpisah per jenis BBM & LPG, masing-masing bisa di-upgrade sendiri.
+        const PRODUCT_META = {
+            pertalite:      { label: 'Pertalite',      unit: 'KL',  icon: 'fa-gas-pump',       color: '#22c55e', step: 3000, baseCost: 900e6,  buyPrice: 10500000 },
+            pertamax:       { label: 'Pertamax',       unit: 'KL',  icon: 'fa-gas-pump',       color: '#3b82f6', step: 2500, baseCost: 950e6,  buyPrice: 13500000 },
+            pertamax_turbo: { label: 'Pertamax Turbo', unit: 'KL',  icon: 'fa-bolt',           color: '#a855f7', step: 1500, baseCost: 1100e6, buyPrice: 16000000 },
+            solar:          { label: 'Solar',          unit: 'KL',  icon: 'fa-oil-can',        color: '#f59e0b', step: 3000, baseCost: 850e6,  buyPrice: 9800000 },
+            dexlite:        { label: 'Dexlite',        unit: 'KL',  icon: 'fa-oil-can',        color: '#06b6d4', step: 2000, baseCost: 1000e6, buyPrice: 13200000 },
+            lpg_curah:      { label: 'LPG Curah',      unit: 'Ton', icon: 'fa-truck-ramp-box', color: '#f97316', step: 1500, baseCost: 1200e6, buyPrice: 9500000 },
+            lpg_tabung:     { label: 'LPG Tabung',     unit: 'Ton', icon: 'fa-dolly',          color: '#ef4444', step: 1200, baseCost: 1050e6 }
+        };
+        const KAP_GROUP = {
+            'Pusat Utama': Object.keys(PRODUCT_META),
+            'Depo Cabang BBM': ['pertalite', 'pertamax', 'pertamax_turbo', 'solar', 'dexlite'],
+            'Depo Cabang LPG': ['lpg_curah', 'lpg_tabung']
+        };
+        function initKapasitasDepo() {
+            refineryData.forEach(k => {
+                if (k.kap) return;
+                const keys = KAP_GROUP[k.tipe] || [];
+                k.kap = {};
+                keys.forEach(key => {
+                    const isLpg = key.startsWith('lpg');
+                    const startMax = k.tipe === 'Pusat Utama' ? (isLpg ? 6000 : 40000) : (isLpg ? 4000 : 15000);
+                    k.kap[key] = { max: startMax, cur: 0, level: 0 };
+                });
+                if (k.id === 'KILANG-01') {
+                    if (k.kap.pertalite) k.kap.pertalite.cur = Math.round(k.kap.pertalite.max * 0.4);
+                    if (k.kap.pertamax) k.kap.pertamax.cur = Math.round(k.kap.pertamax.max * 0.35);
+                    if (k.kap.pertamax_turbo) k.kap.pertamax_turbo.cur = Math.round(k.kap.pertamax_turbo.max * 0.25);
+                    if (k.kap.solar) k.kap.solar.cur = Math.round(k.kap.solar.max * 0.45);
+                    if (k.kap.dexlite) k.kap.dexlite.cur = Math.round(k.kap.dexlite.max * 0.3);
+                    if (k.kap.lpg_curah) k.kap.lpg_curah.cur = Math.round(k.kap.lpg_curah.max * 0.5);
+                }
+            });
+        }
+        initKapasitasDepo();
 
         // ===== KOTAK NOTIFIKASI (sistem + klaim top up) =====
         let notifs = [], notifUnread = 0, pendingTopups = [];
@@ -365,6 +399,13 @@
             { list: 'dealer-lpg-bulk-list', type: 'LPG', name: 'Pressure Tanker LPG 8 Ton', short: 'Pressure Tanker (8 Ton)', cap: 8, price: 880000000, engine: 'Diesel 4 Silinder Turbo 190 PS', axle: '2 Sumbu (6 Roda)', capText: '8 Ton LPG Curah (Pressure Vessel)' },
             { list: 'dealer-lpg-bulk-list', type: 'LPG', name: 'Skid Tank LPG 15 Ton', short: 'Skid Tank (15 Ton)', cap: 15, price: 1550000000, engine: 'Diesel 6 Silinder 235 PS', axle: '3 Sumbu Rigid (10 Roda)', capText: '15 Ton LPG Curah' },
             { list: 'dealer-lpg-bulk-list', type: 'LPG', name: 'Skid Tank LPG 20 Ton Trailer', short: 'Skid Tank Trailer (20 Ton)', cap: 20, price: 2400000000, engine: 'Kepala Trailer Diesel 6 Silinder 400 PS', axle: 'Semi-Trailer (18 Roda)', capText: '20 Ton LPG Curah (Pressure Vessel)' },
+
+            // --- Kapal Tanker (khusus transfer Kilang Pusat <-> Depo Cabang yang punya akses pelabuhan) ---
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Kapal Tanker BBM 500 KL', short: 'Tanker Kecil (500 KL)', cap: 500, price: 8500000000, engine: 'Marine Diesel 1200 HP', axle: 'Kapal Tanker Pelayaran Pantai', capText: '500.000 Liter · Tanker Curah' },
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Kapal Tanker BBM 1.500 KL', short: 'Tanker Sedang (1.500 KL)', cap: 1500, price: 21000000000, engine: 'Marine Diesel 2400 HP', axle: 'Kapal Tanker Pelayaran Nusantara', capText: '1.500.000 Liter · Tanker Curah' },
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Kapal Tanker BBM 3.000 KL', short: 'Tanker Besar (3.000 KL)', cap: 3000, price: 38000000000, engine: 'Marine Diesel 4000 HP', axle: 'Kapal Tanker Pelayaran Nusantara', capText: '3.000.000 Liter · Tanker Curah' },
+            { list: 'dealer-kapal-lpg-list', type: 'LPG', kelas: 'kapal', name: 'Kapal Tanker LPG 300 Ton', short: 'LPG Carrier Kecil (300 Ton)', cap: 300, price: 12000000000, engine: 'Marine Diesel 1600 HP', axle: 'Kapal LPG Carrier Pressurized', capText: '300 Ton LPG Curah' },
+            { list: 'dealer-kapal-lpg-list', type: 'LPG', kelas: 'kapal', name: 'Kapal Tanker LPG 800 Ton', short: 'LPG Carrier Besar (800 Ton)', cap: 800, price: 27000000000, engine: 'Marine Diesel 3200 HP', axle: 'Kapal LPG Carrier Pressurized', capText: '800 Ton LPG Curah' },
             // --- LPG tabung: Truk distribusi agen/SPBE ---
             { list: 'dealer-lpg-agent-list', type: 'LPG', name: 'Truk Agen Tabung 3 Kg (Oranye)', short: 'Agen Tabung 3 Kg (3 Ton)', cap: 3, price: 380000000, engine: 'Diesel 4 Silinder 110 PS', axle: '2 Sumbu (6 Roda)', capText: '3 Ton Tabung LPG 3 Kg' },
             { list: 'dealer-lpg-agent-list', type: 'LPG', name: 'Truk Agen LPG 12 Kg (Biru)', short: 'Agen LPG 12 Kg (4 Ton)', cap: 4, price: 420000000, engine: 'Diesel 4 Silinder 130 PS', axle: '2 Sumbu (6 Roda)', capText: '4 Ton Tabung LPG 12 Kg' },
@@ -426,7 +467,7 @@
             document.querySelectorAll('[id^="dealer-"][id$="-list"]').forEach(el => el.innerHTML = '');
             DEALER_CATALOG.forEach((u, idx) => {
                 const isBBM = u.type === 'BBM';
-                const btn = isBBM ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700';
+                const btn = u.kelas === 'kapal' ? 'bg-cyan-600 hover:bg-cyan-700' : (isBBM ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-amber-600 hover:bg-amber-700');
                 const row = document.createElement('div');
                 row.className = 'p-2.5 bg-gray-900 rounded-lg border border-gray-800 flex justify-between items-center gap-2';
                 row.innerHTML = `
@@ -445,11 +486,11 @@
 
         function buyFromCatalog(idx) {
             const u = DEALER_CATALOG[idx];
-            openDealerConfirm(u.name, u.cap, u.type, u.price, u.engine, u.axle, u.capText);
+            openDealerConfirm(u.name, u.cap, u.type, u.price, u.engine, u.axle, u.capText, u.kelas);
         }
 
-        function openDealerConfirm(name, cap, type, price, engine, axle, capText) {
-            pendingTruckPurchase = { name, cap, type, price, fee: regFee({ cap, price }) };
+        function openDealerConfirm(name, cap, type, price, engine, axle, capText, kelas) {
+            pendingTruckPurchase = { name, cap, type, price, fee: regFee({ cap, price }), kelas: kelas || 'truk' };
             
             document.getElementById('dealer-spec-name').innerText = name;
             document.getElementById('dealer-spec-engine').innerText = engine;
@@ -469,7 +510,7 @@
         function executeTruckPurchase() {
             if (!pendingTruckPurchase) return;
             
-            const { name, cap, type, price, fee } = pendingTruckPurchase;
+            const { name, cap, type, price, fee, kelas } = pendingTruckPurchase;
 
             if (companyCash < price + fee.total) {
                 closeDealerModal();
@@ -480,16 +521,19 @@
             companyCash -= price + fee.total;
             totalExpense += price + fee.total;
 
-            const randomPlat = 'W ' + Math.floor(1000 + Math.random() * 9000) + ' PK';
+            const isKapal = kelas === 'kapal';
+            const randomPlat = isKapal ? 'GT ' + Math.floor(100 + Math.random() * 900) + ' NUSA' : 'W ' + Math.floor(1000 + Math.random() * 9000) + ' PK';
+            const prefix = isKapal ? 'KPL-' : 'TRK-';
             let truckNo = companyFleet.length + 1;
-            while (companyFleet.some(t => t.id === 'TRK-' + String(truckNo).padStart(2, '0'))) truckNo++;
-            const newTruckId = 'TRK-' + String(truckNo).padStart(2, '0');
+            while (companyFleet.some(t => t.id === prefix + String(truckNo).padStart(2, '0'))) truckNo++;
+            const newTruckId = prefix + String(truckNo).padStart(2, '0');
 
             companyFleet.push({ 
                 id: newTruckId, 
                 name: name, 
                 cap: cap, 
                 type: type, 
+                kelas: isKapal ? 'kapal' : 'truk',
                 status: 'Sedia',
                 plat: randomPlat,
                 depotId: 'KILANG-01',
@@ -507,7 +551,7 @@
             renderFleetDashboard();
 
             addLog(`BERHASIL MEMBELI ARMADA: 1 Unit ${name} [${randomPlat}] ditambahkan ke garasi, berpangkalan di Kilang Tuban.`, 'success');
-            showModal('Pembelian Berhasil', `1 Unit ${name} [Plat: ${randomPlat}] berhasil dibeli!<br><br>STNK &amp; Plat Nomor aktif <b>5 tahun</b> sejak hari ini. Silakan assign driver saat hendak dispatch, dan atur pangkalan depo di tab Armada.`, 'fa-circle-check', 'blue');
+            showModal('Pembelian Berhasil', `1 Unit ${name} [Plat: ${randomPlat}] berhasil dibeli!<br><br>STNK &amp; Plat Nomor aktif <b>5 tahun</b> sejak hari ini. Silakan assign ${isKapal ? 'Nahkoda & ABK' : 'driver'} saat hendak dispatch, dan atur pangkalan depo di tab Armada.`, 'fa-circle-check', 'blue');
         }
 
         function formatRupiah(amount) {
@@ -587,9 +631,17 @@
         }
 
         // Tab yang tampil menggantikan peta (Peta & Dealer tetap tampil inline di sidebar)
-        const POPUP_TABS = ['tab-delivery', 'tab-lpg', 'tab-fleet', 'tab-bursa', 'tab-drivers', 'tab-partnership', 'tab-finance', 'tab-orders', 'tab-leaderboard'];
+        const POPUP_TABS = ['tab-dealer', 'tab-delivery', 'tab-lpg', 'tab-fleet', 'tab-bursa', 'tab-drivers', 'tab-partnership', 'tab-finance', 'tab-orders', 'tab-leaderboard'];
 
+        let currentTabId = 'tab-map-view';
         function switchTab(tabId) {
+            // Listener leaderboard & daftar lapak Bursa (koleksi bersama, broadcast ke semua pemain online -
+            // paling boros kuota baca Firestore gratis) hanya dihidupkan selagi tab terkait benar-benar
+            // dibuka, dan dimatikan begitu pindah ke tab lain.
+            if (currentTabId === 'tab-leaderboard' && tabId !== 'tab-leaderboard') stopLeaderboardListener();
+            if (currentTabId === 'tab-bursa' && tabId !== 'tab-bursa') stopBursaListingsListener();
+            currentTabId = tabId;
+
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('text-blue-400', 'border-l-4', 'border-blue-500', 'bg-gray-900');
@@ -603,9 +655,10 @@
 
             const target = document.getElementById(tabId);
             target.classList.remove('hidden');
-            if (tabId === 'tab-leaderboard') renderLeaderboard();
+            if (tabId === 'tab-leaderboard') { startLeaderboardListener(); renderLeaderboard(); }
             if (tabId === 'tab-orders') renderOrders();
-            if (tabId === 'tab-bursa') renderBursa();
+            if (tabId === 'tab-delivery' || tabId === 'tab-lpg') populateSpbuDropdowns(document.getElementById('delivery-region-filter') ? document.getElementById('delivery-region-filter').value : 'ALL');
+            if (tabId === 'tab-bursa') { startBursaListingsListener(); renderBursa(); }
             const activeBtn = document.getElementById('btn-' + tabId);
             activeBtn.classList.add('text-blue-400', 'border-l-4', 'border-blue-500', 'bg-gray-900');
             activeBtn.classList.remove('text-gray-400');
@@ -713,7 +766,7 @@
                           </div>`;
                     card.innerHTML = `
                         <div class="flex justify-between text-xs">
-                            <span class="text-gray-200 font-bold">${kilang.nama} <span class="text-[10px] text-blue-400 font-normal">(${kilang.tipe})</span></span>
+                            <span class="text-gray-200 font-bold">${kilang.nama} <span class="text-[10px] text-blue-400 font-normal">(${kilang.tipe})</span> ${isCoastal(kilang) ? '<span class="text-[9px] text-cyan-400 font-normal" title="Punya akses pelabuhan, bisa dilayani kapal tanker"><i class="fa-solid fa-anchor"></i> Pesisir</span>' : '<span class="text-[9px] text-gray-500 font-normal" title="Tidak ada akses pelabuhan, hanya bisa dilayani truk"><i class="fa-solid fa-road"></i> Darat</span>'}</span>
                             <span class="font-bold text-gray-200 font-mono">${kilang.stok_current.toLocaleString()} / ${kilang.stok_max.toLocaleString()} ${kilang.unit}</span>
                         </div>
                         <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
@@ -721,6 +774,7 @@
                         </div>
                         ${mekanikBlock}
                         ${kilang.id === 'KILANG-01' ? fuelBuyHtml(pct) : ''}
+                        ${renderKapPanel(kilang)}
                     `;
 
                     if (kilang.id !== 'KILANG-01') {
@@ -773,6 +827,7 @@
             if (targetSelect.options.length === 0) {
                 targetSelect.innerHTML = '<option value="">-- Beli Depo Cabang Terlebih Dahulu --</option>';
             }
+            populateTransferKapal();
         }
 
         // ===== MEKANIK DI SETIAP KILANG/DEPO (direkrut lewat Bursa Kerja Kru, lalu ditugaskan ke kilang) =====
@@ -916,25 +971,252 @@
             showModal('Kilang Berhasil Dibeli', `${kilang.nama} telah dibuka! Silakan lakukan transfer pasokan BBM dari Kilang Pusat (Tuban).`, 'fa-building-circle-check', 'blue');
         }
 
-        function executeTransferStock() {
-            const targetId = document.getElementById('transfer-target-select').value;
-            const amount = parseInt(document.getElementById('transfer-amount-input').value);
+        // ===== KAPASITAS DEPO: upgrade tangki, isi ulang, konversi LPG curah->tabung, kirim otomatis ke cabang =====
+        function kapUpgradeCost(meta, level) { return Math.round(meta.baseCost * Math.pow(1.32, level || 0)); }
 
-            if (!targetId || isNaN(amount) || amount <= 0) {
-                showModal('Peringatan', 'Masukkan target depo dan jumlah transfer yang valid!', 'fa-circle-exclamation', 'red');
+        function upgradeKapasitas(kilangId, key) {
+            const kilang = refineryData.find(k => k.id === kilangId);
+            if (!kilang || !kilang.is_unlocked || !kilang.kap || !kilang.kap[key]) return;
+            const meta = PRODUCT_META[key], slot = kilang.kap[key];
+            const cost = kapUpgradeCost(meta, slot.level);
+            if (companyCash < cost) {
+                showModal('Kas Tidak Cukup', `Upgrade kapasitas tangki ${meta.label} di ${kilang.nama} butuh ${formatRupiah(cost)}.`, 'fa-triangle-exclamation', 'red');
                 return;
             }
+            companyCash -= cost; totalExpense += cost;
+            slot.max += meta.step; slot.level = (slot.level || 0) + 1;
+            addFinanceLog(`Upgrade Kapasitas ${meta.label} - ${kilang.nama}`, -cost);
+            updateCashDisplay();
+            addLog(`KAPASITAS DITINGKATKAN: Tangki ${meta.label} di ${kilang.nama} kini menampung ${slot.max.toLocaleString('id-ID')} ${meta.unit}.`, 'success');
+            renderRefineries();
+        }
 
+        function isiUlangProduk(kilangId, key, amount) {
+            const kilang = refineryData.find(k => k.id === kilangId);
+            if (!kilang || kilang.id !== 'KILANG-01' || !kilang.kap || !kilang.kap[key]) return;
+            const meta = PRODUCT_META[key];
+            if (!meta.buyPrice) return;
+            const slot = kilang.kap[key], room = slot.max - slot.cur, qty = Math.min(amount || room, room);
+            if (qty <= 0) return showModal('Tangki Penuh', `Tangki ${meta.label} di ${kilang.nama} sudah penuh.`, 'fa-circle-info', 'blue');
+            const cost = Math.round(qty * meta.buyPrice);
+            if (companyCash < cost) return showModal('Kas Tidak Cukup', `Butuh ${formatRupiah(cost)} untuk ${qty.toLocaleString('id-ID')} ${meta.unit} ${meta.label}.`, 'fa-triangle-exclamation', 'red');
+            companyCash -= cost; totalExpense += cost; bbmSpent += cost;
+            slot.cur = Math.min(slot.max, Math.round((slot.cur + qty) * 100) / 100);
+            addFinanceLog(`Pembelian ${meta.label} ${qty.toLocaleString('id-ID')} ${meta.unit} (${kilang.nama})`, -cost);
+            updateCashDisplay(); renderRefineries();
+            addLog(`PEMBELIAN ${meta.label.toUpperCase()}: ${qty.toLocaleString('id-ID')} ${meta.unit} masuk ${kilang.nama}.`, 'success');
+        }
+
+        function convertLpgCurah(kilangId) {
+            const kilang = refineryData.find(k => k.id === kilangId);
+            if (!kilang || !kilang.kap || !kilang.kap.lpg_curah || !kilang.kap.lpg_tabung) return;
+            const curah = kilang.kap.lpg_curah, tabung = kilang.kap.lpg_tabung, RATIO = 0.92;
+            const room = tabung.max - tabung.cur;
+            const amount = Math.min(curah.cur, room / RATIO);
+            if (amount <= 0) {
+                showModal('Tidak Bisa Konversi', curah.cur <= 0 ? `Stok LPG Curah di ${kilang.nama} kosong.` : `Tangki LPG Tabung di ${kilang.nama} sudah penuh.`, 'fa-circle-exclamation', 'amber');
+                return;
+            }
+            const hasil = Math.round(amount * RATIO * 100) / 100;
+            curah.cur = Math.round((curah.cur - amount) * 100) / 100;
+            tabung.cur = Math.min(tabung.max, Math.round((tabung.cur + hasil) * 100) / 100);
+            addLog(`KONVERSI LPG: ${kilang.nama} mengonversi ${amount.toLocaleString('id-ID')} Ton LPG Curah menjadi ${hasil.toLocaleString('id-ID')} Ton LPG Tabung siap distribusi.`, 'purple');
+            showModal('Konversi Berhasil', `${amount.toLocaleString('id-ID')} Ton LPG Curah dikonversi menjadi ${hasil.toLocaleString('id-ID')} Ton LPG Tabung di ${kilang.nama}. (Susut proses pengisian tabung 8%)`, 'fa-fire-flame-simple', 'blue');
+            renderRefineries();
+        }
+
+        const KAP_KIRIM_STEP = { pertalite: 3000, pertamax: 2500, pertamax_turbo: 1200, solar: 3000, dexlite: 1800, lpg_curah: 500 };
+        function kirimProdukKeDepo(key) {
+            const sel = document.getElementById('kap-kirim-target-' + key);
+            if (!sel || !sel.value) return showModal('Pilih Tujuan', 'Pilih dulu Depo Cabang tujuan pengiriman.', 'fa-circle-exclamation', 'amber');
+            const pusat = refineryData[0], target = refineryData.find(k => k.id === sel.value), meta = PRODUCT_META[key];
+            if (!pusat.kap[key] || !target || !target.kap || !target.kap[key]) return;
+            const room = target.kap[key].max - target.kap[key].cur;
+            const amount = Math.min(KAP_KIRIM_STEP[key] || 500, pusat.kap[key].cur, room);
+            if (amount <= 0) {
+                showModal('Tidak Bisa Kirim', pusat.kap[key].cur <= 0 ? `Stok ${meta.label} di Kilang Tuban kosong.` : `Tangki ${meta.label} di ${target.nama} sudah penuh.`, 'fa-circle-exclamation', 'amber');
+                return;
+            }
+            pusat.kap[key].cur = Math.round((pusat.kap[key].cur - amount) * 100) / 100;
+            target.kap[key].cur = Math.round((target.kap[key].cur + amount) * 100) / 100;
+            addLog(`KIRIM OTOMATIS: ${amount.toLocaleString('id-ID')} ${meta.unit} ${meta.label} dikirim dari Kilang Tuban ke ${target.nama}${key === 'lpg_curah' ? ' (curah, siap dikonversi jadi tabung di sana)' : ''}.`, 'purple');
+            showModal('Pengiriman Terkirim', `${amount.toLocaleString('id-ID')} ${meta.unit} ${meta.label} berhasil dikirim otomatis ke ${target.nama}.`, key === 'lpg_curah' ? 'fa-truck-ramp-box' : 'fa-gas-pump', 'blue');
+            renderRefineries();
+        }
+
+        function toggleKapPanel(id) {
+            const el = document.getElementById('kap-panel-' + id), btn = document.getElementById('kap-toggle-' + id);
+            if (!el) return;
+            el.classList.toggle('hidden');
+            if (btn) { const ic = btn.querySelector('.kap-chev'); if (ic) ic.classList.toggle('rotate-180'); }
+        }
+
+        function renderKapPanel(kilang) {
+            if (!kilang.kap) return '';
+            const keys = Object.keys(kilang.kap);
+            if (!keys.length) return '';
+            const isPusat = kilang.id === 'KILANG-01';
+            const rows = keys.map(key => {
+                const meta = PRODUCT_META[key], slot = kilang.kap[key];
+                const pct = slot.max ? Math.round((slot.cur / slot.max) * 100) : 0;
+                const cost = kapUpgradeCost(meta, slot.level);
+                const restockBtn = (isPusat && meta.buyPrice)
+                    ? `<button onclick="isiUlangProduk('${kilang.id}','${key}',${meta.step})" class="text-[9px] bg-gray-800 hover:bg-gray-700 text-gray-200 rounded px-1.5 py-0.5 font-semibold"><i class="fa-solid fa-plus"></i> Isi ${meta.step.toLocaleString('id-ID')} ${meta.unit}</button>`
+                    : '';
+                return `<div class="text-[10px]">
+                    <div class="flex justify-between items-center mb-0.5 gap-1">
+                        <span class="text-gray-300 font-semibold truncate"><i class="fa-solid ${meta.icon} mr-1" style="color:${meta.color}"></i>${meta.label}</span>
+                        <span class="font-mono text-gray-400 shrink-0">${slot.cur.toLocaleString('id-ID', { maximumFractionDigits: 1 })}/${slot.max.toLocaleString('id-ID')} ${meta.unit}</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mb-1">
+                        <div class="h-full" style="width:${pct}%;background:${meta.color}"></div>
+                    </div>
+                    <div class="flex gap-1 flex-wrap">
+                        ${restockBtn}
+                        <button onclick="upgradeKapasitas('${kilang.id}','${key}')" class="text-[9px] bg-emerald-700 hover:bg-emerald-600 text-white rounded px-1.5 py-0.5 font-semibold"><i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Tangki (${formatRupiah(cost)})</button>
+                    </div>
+                </div>`;
+            }).join('<div class="border-t border-gray-800/70"></div>');
+
+            const convertBtn = (kilang.kap.lpg_curah && kilang.kap.lpg_tabung)
+                ? `<button onclick="convertLpgCurah('${kilang.id}')" class="w-full mt-1.5 bg-amber-700 hover:bg-amber-600 text-white text-[10px] font-bold py-1.5 rounded"><i class="fa-solid fa-arrows-turn-to-dots mr-1"></i> Konversi LPG Curah &rarr; Tabung</button>`
+                : '';
+
+            let kirimForm = '';
+            if (isPusat) {
+                const cabangOpts = k2 => refineryData.filter(d => d.is_unlocked && d.id !== 'KILANG-01' && d.kap && d.kap[k2])
+                    .map(d => `<option value="${d.id}">${d.nama}</option>`).join('');
+                const rows2 = keys.filter(k2 => k2 !== 'lpg_tabung').map(k2 => {
+                    const opts = cabangOpts(k2);
+                    if (!opts) return '';
+                    return `<div class="flex gap-1 items-center">
+                        <span class="text-[9px] text-gray-400 w-16 shrink-0 truncate">${PRODUCT_META[k2].label}</span>
+                        <select id="kap-kirim-target-${k2}" class="flex-1 bg-gray-900 border border-gray-800 rounded text-[9px] px-1 py-0.5 text-gray-200 min-w-0"><option value="">-- Tujuan Depo --</option>${opts}</select>
+                        <button onclick="kirimProdukKeDepo('${k2}')" class="text-[9px] bg-blue-700 hover:bg-blue-600 text-white rounded px-1.5 py-0.5 font-bold shrink-0">Kirim</button>
+                    </div>`;
+                }).join('');
+                if (rows2) kirimForm = `<div class="mt-2 pt-2 border-t border-gray-800 space-y-1">
+                    <div class="text-[9px] text-gray-500 uppercase font-bold">Kirim Otomatis ke Depo Cabang</div>
+                    ${rows2}
+                </div>`;
+            }
+
+            return `<div class="pt-1.5 border-t border-gray-800">
+                <button id="kap-toggle-${kilang.id}" onclick="toggleKapPanel('${kilang.id}')" class="w-full flex items-center justify-between text-[10px] font-bold text-teal-400 uppercase tracking-wide py-1">
+                    <span><i class="fa-solid fa-warehouse mr-1"></i> Kapasitas Depo (${keys.length} Jenis)</span>
+                    <i class="fa-solid fa-chevron-down kap-chev text-[9px] transition-transform"></i>
+                </button>
+                <div id="kap-panel-${kilang.id}" class="hidden space-y-1.5 mt-1">
+                    ${rows}
+                    ${convertBtn}
+                    ${kirimForm}
+                </div>
+            </div>`;
+        }
+
+        // Info rute transfer Kilang Pusat -> Depo tujuan: jenis muatan yg dibutuhkan & apakah dua-duanya Pesisir
+        // (kalau ya, bisa dilayani kapal tanker; kalau tidak, hanya bisa lewat jalur darat).
+        function transferModeInfo() {
+            const targetId = document.getElementById('transfer-target-select').value;
             const pusat = refineryData[0];
             const target = refineryData.find(k => k.id === targetId);
-            const bblUse = target.unit === 'KL' ? Math.ceil(amount * ECO.bblPerKl) : amount;
+            if (!target) return { target: null, pusat, neededType: null, coastal: false };
+            const neededType = target.tipe.includes('LPG') ? 'LPG' : 'BBM';
+            return { target, pusat, neededType, coastal: isCoastal(pusat) && isCoastal(target) };
+        }
 
-            if (pusat.stok_current < bblUse) {
-                showModal('Stok Kurang', `Stok Kilang Tuban tidak mencukupi!`, 'fa-triangle-exclamation', 'red');
+        // Isi ulang dropdown Unit Kapal Tanker & tampilkan/sembunyikan panel laut vs darat sesuai kelayakan rute.
+        function populateTransferKapal() {
+            const sel = document.getElementById('transfer-kapal-select');
+            const wrapKapal = document.getElementById('transfer-kapal-wrap');
+            const wrapLand = document.getElementById('transfer-land-wrap');
+            const hint = document.getElementById('transfer-hint');
+            if (!sel || !wrapKapal) return;
+            const info = transferModeInfo();
+            const prev = sel.value;
+            sel.innerHTML = '';
+            let ships = [];
+            if (info.target && info.coastal) {
+                ships = companyFleet.filter(t => t.kelas === 'kapal' && t.type === info.neededType && !busyIds.has(t.id));
+                ships.forEach(s => { const o = document.createElement('option'); o.value = s.id; o.innerText = `${s.id} [${s.plat}] - ${s.name} (${s.cap.toLocaleString()} ${info.neededType === 'LPG' ? 'Ton' : 'KL'})`; sel.appendChild(o); });
+            }
+            if (prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev;
+            else if (sel.options.length) sel.selectedIndex = 0;
+
+            const useKapal = !!(info.target && info.coastal && ships.length);
+            wrapKapal.classList.toggle('hidden', !useKapal);
+            if (wrapLand) wrapLand.classList.toggle('hidden', useKapal);
+
+            if (hint) {
+                if (!info.target) hint.textContent = '';
+                else if (info.coastal && !ships.length) hint.textContent = `${info.target.nama} berakses pelabuhan (Pesisir), tapi Anda belum punya Kapal Tanker ${info.neededType} - beli dulu di tab Dealer, atau kirim sementara lewat jalur darat di bawah.`;
+                else if (info.coastal) hint.textContent = `${info.target.nama} berakses pelabuhan - kirim otomatis pakai Kapal Tanker ${info.neededType}, durasi pelayaran mengikuti jarak laut sesungguhnya.`;
+                else hint.textContent = `${info.target.nama} tidak berakses pelabuhan (Darat) - hanya bisa ditransfer lewat jalur darat.`;
+            }
+            if (useKapal) populateTransferCrew();
+        }
+
+        // Isi ulang dropdown Nahkoda & ABK yang sedang tidak bertugas.
+        function populateTransferCrew() {
+            const nSel = document.getElementById('transfer-nahkoda-select');
+            const aSel = document.getElementById('transfer-abk-select');
+            if (!nSel || !aSel) return;
+            const prev = [nSel.value, aSel.value];
+            nSel.innerHTML = ''; aSel.innerHTML = '';
+            companyCrew.forEach(c => {
+                if (busyIds.has(c.id)) return;
+                const stars = '★'.repeat(repToStars(c.reputation));
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.innerText = `${c.name} (${stars} Rep ${Math.round(c.reputation)} - Viol: ${c.violations})`;
+                if (c.role === 'Nahkoda') nSel.appendChild(opt.cloneNode(true));
+                else if (c.role === 'ABK') aSel.appendChild(opt.cloneNode(true));
+            });
+            [nSel, aSel].forEach((el, i) => { if (prev[i] && el.querySelector(`option[value="${prev[i]}"]`)) el.value = prev[i]; else if (el.options.length) el.selectedIndex = 0; });
+        }
+
+        function executeTransferStock() {
+            const info = transferModeInfo();
+            if (!info.target) return showModal('Peringatan', 'Pilih depo tujuan terlebih dahulu!', 'fa-circle-exclamation', 'red');
+
+            const wrapKapal = document.getElementById('transfer-kapal-wrap');
+            const useKapal = wrapKapal && !wrapKapal.classList.contains('hidden');
+            const { pusat, target, neededType } = info;
+
+            // ===== RUTE LAUT: Kapal Tanker (Kilang Pusat <-> Depo Pesisir), volume = kapasitas kapal, durasi = jarak laut =====
+            if (useKapal) {
+                const kapal = companyFleet.find(t => t.id === document.getElementById('transfer-kapal-select').value);
+                const nahkoda = companyCrew.find(c => c.id === document.getElementById('transfer-nahkoda-select').value);
+                const abk = companyCrew.find(c => c.id === document.getElementById('transfer-abk-select').value);
+                if (!kapal || !nahkoda || !abk) return showModal('Peringatan', 'Lengkapi pilihan Kapal Tanker, Nahkoda & ABK!', 'fa-circle-exclamation', 'red');
+                if (busyCheck(kapal, nahkoda, abk)) return;
+                if (docBlock(kapal)) return;
+
+                const bblUse = target.unit === 'KL' ? Math.ceil(kapal.cap * ECO.bblPerKl) : kapal.cap;
+                if (pusat.stok_current < bblUse) return showModal('Stok Kurang', `Stok Kilang Tuban tidak cukup untuk memuat kapal (butuh setara ${kapal.cap.toLocaleString()} ${target.unit}).`, 'fa-triangle-exclamation', 'red');
+
+                const d = { spbu: target, truck: kapal, driver: nahkoda, kernet: abk, origin: pusat };
+                openSuratJalanModal({ mode: 'KLG', tujuanNama: target.nama, tujuanKode: target.id, jenisMuatan: `${neededType} Curah (dari Kilang Pusat Tuban)`, volumeText: `${kapal.cap.toLocaleString()} ${target.unit}`,
+                    truck: kapal, driver: nahkoda, kernet: abk, labels: { truk: 'Unit Kapal Tanker', plat: 'No. Registrasi', driver: 'Nahkoda Bertugas', kernet: 'ABK Pendamping' },
+                    execute: (nomorSJ) => {
+                        if (pusat.stok_current < bblUse) return showModal('Stok Kurang', 'Stok Kilang Tuban tidak mencukupi!', 'fa-triangle-exclamation', 'red');
+                        pusat.stok_current = Math.max(0, pusat.stok_current - bblUse);
+                        renderRefineries();
+                        d.nomorSJ = nomorSJ;
+                        animateKapalTransfer(d);
+                        addLog(`SURAT JALAN ${nomorSJ}: Kapal ${kapal.id} [Nahkoda: ${nahkoda.name}] DITANDATANGANI & BERLAYAR membawa ${kapal.cap.toLocaleString()} ${target.unit} ${neededType} curah ke ${target.nama}.`, 'purple');
+                        showModal('Kapal Berangkat', `Surat Jalan ${nomorSJ} telah ditandatangani. ${kapal.id} resmi berlayar membawa ${kapal.cap.toLocaleString()} ${target.unit} ke ${target.nama}.\nStok depo tujuan bertambah otomatis setelah kapal tiba & kru selesai bongkar muatan.`, 'fa-ship', 'blue');
+                    } });
                 return;
             }
 
-            openSuratJalanModal({ mode: 'KLG', tujuanNama: target.nama, tujuanKode: target.id, jenisMuatan: 'BBM (dari Kilang Pusat Tuban)', volumeText: `${amount.toLocaleString()} ${target.unit}`,
+            // ===== RUTE DARAT: transfer instan (truk konvoi, diabstraksikan) untuk depo tanpa akses pelabuhan =====
+            const amount = parseInt(document.getElementById('transfer-amount-input').value);
+            if (isNaN(amount) || amount <= 0) return showModal('Peringatan', 'Masukkan jumlah transfer yang valid!', 'fa-circle-exclamation', 'red');
+            const bblUse = target.unit === 'KL' ? Math.ceil(amount * ECO.bblPerKl) : amount;
+            if (pusat.stok_current < bblUse) return showModal('Stok Kurang', `Stok Kilang Tuban tidak mencukupi!`, 'fa-triangle-exclamation', 'red');
+
+            openSuratJalanModal({ mode: 'KLG', tujuanNama: target.nama, tujuanKode: target.id, jenisMuatan: `${neededType} (dari Kilang Pusat Tuban, jalur darat)`, volumeText: `${amount.toLocaleString()} ${target.unit}`,
                 execute: (nomorSJ) => {
                     if (pusat.stok_current < bblUse) {
                         showModal('Stok Kurang', 'Stok Kilang Tuban tidak mencukupi!', 'fa-triangle-exclamation', 'red');
@@ -946,8 +1228,8 @@
                     renderRefineries();
                     document.getElementById('transfer-amount-input').value = '';
 
-                    addLog(`SURAT JALAN ${nomorSJ}: TRANSFER PASOKAN ${amount.toLocaleString()} ${target.unit} dikirim dari Tuban ke ${target.nama}.`, 'purple');
-                    showModal('Transfer Berhasil', `Surat Jalan ${nomorSJ} telah ditandatangani. Berhasil mentransfer ${amount.toLocaleString()} ${target.unit} BBM ke ${target.nama}.`, 'fa-truck-arrow-right', 'blue');
+                    addLog(`SURAT JALAN ${nomorSJ}: TRANSFER PASOKAN DARAT ${amount.toLocaleString()} ${target.unit} dikirim dari Tuban ke ${target.nama}.`, 'purple');
+                    showModal('Transfer Berhasil', `Surat Jalan ${nomorSJ} telah ditandatangani. Berhasil mentransfer ${amount.toLocaleString()} ${target.unit} ${neededType} ke ${target.nama} lewat jalur darat.`, 'fa-truck-arrow-right', 'blue');
                 } });
         }
 
@@ -985,6 +1267,7 @@
                         <div class="text-[10px] font-bold text-blue-700">${spbu.kode}</div>
                         <strong class="text-xs font-bold block">${spbu.nama}</strong>
                         <div class="text-[10px] text-gray-600">Wilayah: ${spbu.region}</div>
+                        <div class="text-[10px] text-gray-600">Keramaian: <b>${TRAFFIC[spbu.traffic || (spbu.traffic = pickTraffic())].label}</b> &middot; konsumsi BBM/LPG ${TRAFFIC[spbu.traffic].mult}x</div>
                         <div class="text-[10px] text-gray-600">${spbu.tipe === 'COCO' ? 'Milik perusahaan (dikelola swasta)' : 'Mitra: ' + esc(spbu.mitra ? spbu.mitra.nama : '-')}${spbu.has_lpg ? ' &middot; + LPG' : ''}</div>
                         ${spbu.blocked ? '<div class="text-[10px] font-bold text-red-600">DIBLOKIR - operasional off</div>' : ''}
                     </div>
@@ -999,35 +1282,57 @@
         function populateSpbuDropdowns(filterRegion = 'ALL') {
             const deliverySelect = document.getElementById('delivery-spbu-select');
             const lpgSelect = document.getElementById('lpg-spbu-select');
+            const prevDelivery = deliverySelect.value, prevLpg = lpgSelect.value;
 
             deliverySelect.innerHTML = '';
             lpgSelect.innerHTML = '';
 
             const filteredList = loadedSpbuList.filter(s => isOp(s) && (filterRegion === 'ALL' || s.region === filterRegion));
+            // Dropdown target dispatch SEKARANG cuma nampilin SPBU yang lagi punya pesanan terbuka -
+            // dispatch bebas ke SPBU yang stoknya masih aman dimatikan supaya nggak dobel/bentrok
+            // sama alur Pesanan SPBU. Transfer antar Kilang/Depo (tab Kilang) TIDAK kena filter ini.
+            const orderFor = (kode, wantLpg) => orders.find(x => x.kode === kode && (wantLpg ? x.fuel === 'lpg' : x.fuel !== 'lpg'));
 
             filteredList.forEach(spbu => {
-                const opt1 = document.createElement('option');
-                opt1.value = spbu.kode;
-                opt1.innerText = `[${spbu.kode}] ${spbu.nama}`;
-                deliverySelect.appendChild(opt1);
+                const oBbm = orderFor(spbu.kode, false);
+                if (oBbm) {
+                    const opt1 = document.createElement('option');
+                    opt1.value = spbu.kode;
+                    opt1.innerText = `[${spbu.kode}] ${spbu.nama} \u{1F4E6} Pesan ${fuelLabel(oBbm.fuel)} ${oBbm.kl - oBbm.terkirim} KL (+6%)`;
+                    deliverySelect.appendChild(opt1);
+                }
 
                 if (spbu.has_lpg) {
-                    const opt2 = document.createElement('option');
-                    opt2.value = spbu.kode;
-                    opt2.innerText = `[${spbu.kode}] ${spbu.nama} - Outlet LPG`;
-                    lpgSelect.appendChild(opt2);
+                    const oLpg = orderFor(spbu.kode, true);
+                    if (oLpg) {
+                        const opt2 = document.createElement('option');
+                        opt2.value = spbu.kode;
+                        opt2.innerText = `[${spbu.kode}] ${spbu.nama} - Outlet LPG \u{1F4E6} Pesan ${oLpg.kl - oLpg.terkirim} Ton (+6%)`;
+                        lpgSelect.appendChild(opt2);
+                    }
                 }
             });
+
+            if (!deliverySelect.options.length) deliverySelect.appendChild(new Option('-- Tidak ada SPBU dengan pesanan terbuka saat ini --', ''));
+            if (!lpgSelect.options.length) lpgSelect.appendChild(new Option('-- Tidak ada Outlet LPG dengan pesanan terbuka saat ini --', ''));
+
+            // Pertahankan pilihan SPBU sebelumnya kalau masih ada di daftar hasil filter,
+            // supaya isian form pemain nggak kereset tiap dropdown di-refresh.
+            if (prevDelivery && deliverySelect.querySelector(`option[value="${prevDelivery}"]`)) deliverySelect.value = prevDelivery;
+            if (prevLpg && lpgSelect.querySelector(`option[value="${prevLpg}"]`)) lpgSelect.value = prevLpg;
         }
 
         function populateTruckDropdowns() {
             const deliveryTruckSelect = document.getElementById('delivery-truck-select');
             const lpgTruckSelect = document.getElementById('lpg-truck-select');
+            const prev = [deliveryTruckSelect.value, lpgTruckSelect.value];
 
             deliveryTruckSelect.innerHTML = '';
             lpgTruckSelect.innerHTML = '';
 
             companyFleet.forEach(trk => {
+                if (busyIds.has(trk.id)) return; // sedang bertugas, sembunyikan dari pilihan
+                if (trk.kelas === 'kapal') return; // kapal cuma buat transfer Kilang<->Depo, bukan ke SPBU
                 const opt = document.createElement('option');
                 opt.value = trk.id;
                 opt.innerText = `${trk.id} [${trk.plat}] - ${trk.name}`;
@@ -1035,6 +1340,10 @@
                 if (trk.type === 'BBM') deliveryTruckSelect.appendChild(opt);
                 else lpgTruckSelect.appendChild(opt);
             });
+            [deliveryTruckSelect, lpgTruckSelect].forEach((el, i) => { if (prev[i] && el.querySelector(`option[value="${prev[i]}"]`)) el.value = prev[i]; });
+            if (!deliveryTruckSelect.value && deliveryTruckSelect.options.length) deliveryTruckSelect.selectedIndex = 0;
+            if (!lpgTruckSelect.value && lpgTruckSelect.options.length) lpgTruckSelect.selectedIndex = 0;
+            populateTransferKapal();
         }
 
         // POPULATE DROPDOWN DRIVER & KERNET
@@ -1049,6 +1358,7 @@
             lDriver.innerHTML = ''; lKernet.innerHTML = '';
 
             companyCrew.forEach(c => {
+                if (busyIds.has(c.id)) return; // sedang bertugas, sembunyikan dari pilihan
                 const stars = '★'.repeat(repToStars(c.reputation));
                 const text = `${c.name} (${stars} Rep ${Math.round(c.reputation)} - Viol: ${c.violations})`;
                 const opt = document.createElement('option');
@@ -1058,12 +1368,14 @@
                 if (c.role === 'Supir') {
                     dDriver.appendChild(opt.cloneNode(true));
                     lDriver.appendChild(opt.cloneNode(true));
-                } else {
+                } else if (c.role === 'Kernet') {
                     dKernet.appendChild(opt.cloneNode(true));
                     lKernet.appendChild(opt.cloneNode(true));
                 }
             });
             [dDriver, dKernet, lDriver, lKernet].forEach((el, i) => { if (prev[i] && el.querySelector(`option[value="${prev[i]}"]`)) el.value = prev[i]; });
+            [dDriver, dKernet, lDriver, lKernet].forEach(el => { if (!el.value && el.options.length) el.selectedIndex = 0; });
+            populateTransferCrew();
         }
 
         // ===== KEMITRAAN: izin, tagihan bulanan, blokir otomatis =====
@@ -1149,7 +1461,7 @@
             });
             const mi = miNow();
             if (mi > lastSetor) {
-                const bln = mi - lastSetor, gaji = Math.round(companyCrew.reduce((n, c) => n + (c.role === 'Supir' ? ECO.gajiSupir[0] + c.reputation * ECO.gajiSupir[1] : c.role === 'Mekanik' ? ECO.gajiMekanik[0] + c.reputation * ECO.gajiMekanik[1] : ECO.gajiKernet[0] + c.reputation * ECO.gajiKernet[1]), 0) * bln);
+                const bln = mi - lastSetor, gaji = Math.round(companyCrew.reduce((n, c) => n + (ECO[ROLE_META[c.role].salary][0] + c.reputation * ECO[ROLE_META[c.role].salary][1]), 0) * bln);
                 if (gaji > 0) { companyCash -= gaji; totalExpense += gaji; addFinanceLog(`Gaji kru (${companyCrew.length} orang, ${bln} bulan)`, -gaji); addLog(`GAJI KRU: ${formatRupiah(gaji)} dibayarkan untuk ${companyCrew.length} kru.`, 'info'); updateCashDisplay(); }
                 const own = loadedSpbuList.filter(x => isOp(x) && x.tipe === 'COCO'); let tot = 0;
                 own.forEach(x => tot += MITRA_CFG.setorCoco[jenisKey(x)] * (mi - lastSetor));
@@ -1233,6 +1545,12 @@
                             <button onclick="pindahDepot('${trk.id}')" class="block mt-1 w-full bg-gray-800 hover:bg-gray-700 text-gray-200 rounded px-2 py-0.5 font-sans">Pindah Depot ${formatRupiah(DEPOT_MOVE_FEE)}</button>
                         </div>
                     </div>
+
+                    <div class="pt-1 border-t border-gray-800">
+                        ${busyIds.has(trk.id)
+                            ? `<button disabled class="w-full bg-gray-800/60 text-gray-500 font-semibold py-1.5 rounded-lg text-[11px] cursor-not-allowed"><i class="fa-solid fa-truck-fast mr-1.5"></i>Sedang Bertugas &mdash; Tidak Bisa Dijual</button>`
+                            : `<button onclick="openSellModal('${trk.id}')" class="w-full bg-orange-600/90 hover:bg-orange-600 text-white font-semibold py-1.5 rounded-lg text-[11px] transition"><i class="fa-solid fa-right-left mr-1.5"></i>Jual ke Bursa P2P</button>`}
+                    </div>
                 `;
                 container.appendChild(card);
             });
@@ -1241,7 +1559,17 @@
         // ===== SISTEM REPUTASI KRU =====
         let crewIdCounter = 10;
         let recruitRole = 'Supir';
-        let candidatePool = { Supir: [], Kernet: [], Mekanik: [] };
+        let candidatePool = { Supir: [], Kernet: [], Mekanik: [], Nahkoda: [], ABK: [] };
+
+        // Metadata generik per role - dipusatkan di sini biar nambah role baru (Nahkoda/ABK utk kapal)
+        // gak perlu ubah ternary di banyak tempat.
+        const ROLE_META = {
+            Supir:   { salary: 'gajiSupir',   hireBase: 1000000, hirePer: 40000, idPrefix: 'DRV-', icon: 'fa-id-card' },
+            Kernet:  { salary: 'gajiKernet',  hireBase: 600000,  hirePer: 20000, idPrefix: 'KRN-', icon: 'fa-user-gear' },
+            Mekanik: { salary: 'gajiMekanik', hireBase: 800000,  hirePer: 30000, idPrefix: 'MEK-', icon: 'fa-screwdriver-wrench' },
+            Nahkoda: { salary: 'gajiNahkoda', hireBase: 1200000, hirePer: 45000, idPrefix: 'NHK-', icon: 'fa-user-tie' },
+            ABK:     { salary: 'gajiABK',     hireBase: 650000,  hirePer: 22000, idPrefix: 'ABK-', icon: 'fa-anchor' }
+        };
 
         const FIRST_NAMES = ['Eko','Setyo','Hendra','Deni','Bambang','Rudi','Agus','Slamet','Wahyu','Dimas','Yusuf','Heru','Bayu','Rizal','Joko','Andi','Fajar','Tono','Rian','Gunawan','Purnomo','Anwar','Imam','Taufik','Hadi','Sugeng'];
         const LAST_NAMES = ['Prasetyo','Budiman','Wijaya','Raharjo','Sukoco','Hartono','Santoso','Saputra','Kurniawan','Nugroho','Utomo','Wibowo','Firmansyah','Setiawan','Susanto','Hidayat','Mulyadi','Suryanto'];
@@ -1274,18 +1602,20 @@
 
         // Harga rekrut: makin tinggi reputasi, makin mahal
         function hireCost(role, rep) {
-            const base = role === 'Supir' ? 1000000 : role === 'Mekanik' ? 800000 : 600000;
-            const per = role === 'Supir' ? 40000 : role === 'Mekanik' ? 30000 : 20000;
-            return Math.round((base + rep * per) / 50000) * 50000;
+            const m = ROLE_META[role];
+            return Math.round((m.hireBase + rep * m.hirePer) / 50000) * 50000;
         }
 
         // ===== REKRUTMEN KRU: KANDIDAT =====
         const KOTA = ['Surabaya','Malang','Sidoarjo','Gresik','Tuban','Bojonegoro','Ngawi','Madiun','Kediri','Jember','Banyuwangi','Probolinggo','Pasuruan','Lamongan','Mojokerto','Situbondo'];
-        const SKILLS = { Supir: ['Mengemudi','Disiplin','Keselamatan'], Kernet: ['Ketelitian','Stamina','Disiplin'], Mekanik: ['Servis Mesin','Kelistrikan','Ketelitian'] };
+        const SKILLS = { Supir: ['Mengemudi','Disiplin','Keselamatan'], Kernet: ['Ketelitian','Stamina','Disiplin'], Mekanik: ['Servis Mesin','Kelistrikan','Ketelitian'],
+                         Nahkoda: ['Navigasi','Kepemimpinan','Disiplin'], ABK: ['Stamina','Ketelitian','Kerja Tim'] };
         const TAGS = {
             Supir: ['SIM B2 Umum','Diklat Defensive Driving','Sertifikat Angkutan B3','Hafal Jalur Pantura','Terbiasa Tol Trans-Jawa'],
             Kernet: ['Sertifikat K3 Dasar','Cekatan Bongkar Muat','Paham Prosedur Segel','Pernah Kerja di SPBU','Terlatih APAR'],
-            Mekanik: ['Sertifikat Mekanik Diesel','Bengkel Resmi Terlatih','Spesialis Tangki BBM','Pengalaman Kilang/Depo','K3 Bengkel']
+            Mekanik: ['Sertifikat Mekanik Diesel','Bengkel Resmi Terlatih','Spesialis Tangki BBM','Pengalaman Kilang/Depo','K3 Bengkel'],
+            Nahkoda: ['ANT (Ahli Nautika)','Sertifikat BST','Hafal Jalur Pelayaran Nusantara','Pengalaman Kapal Tanker','Radar & GPS Bersertifikat'],
+            ABK: ['Sertifikat BST Dasar','Cekatan Tambat Kapal','Paham Prosedur Muatan B3 Laut','Pernah Berlayar Antar Pulau','Terlatih Alat Keselamatan Laut']
         };
         const AVATAR = ['bg-purple-600','bg-blue-600','bg-emerald-600','bg-amber-600','bg-rose-600','bg-cyan-600','bg-indigo-600'];
         const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
@@ -1431,7 +1761,7 @@
 
         function openRecruitModal(role) {
             confirmCid = null;
-            ensureCandidatePool('Supir'); ensureCandidatePool('Kernet'); ensureCandidatePool('Mekanik');
+            ['Supir', 'Kernet', 'Mekanik', 'Nahkoda', 'ABK'].forEach(r => ensureCandidatePool(r));
             if (role) recruitRole = role;
             document.getElementById('recruit-status').classList.add('hidden');
             document.getElementById('recruit-modal').classList.remove('hidden');
@@ -1444,11 +1774,11 @@
 
         function renderCandidateList() {
             document.getElementById('recruit-cash').innerText = formatRupiah(companyCash);
-            ['Supir', 'Kernet', 'Mekanik'].forEach(r => {
+            ['Supir', 'Kernet', 'Mekanik', 'Nahkoda', 'ABK'].forEach(r => {
                 const el = document.getElementById('recruit-tab-' + r);
                 const n = companyCrew.filter(c => c.role === r).length;
                 el.className = 'py-2 rounded-lg text-xs font-bold transition ' + (r === recruitRole ? 'bg-purple-600 text-white shadow' : 'bg-gray-800 text-gray-400 hover:bg-gray-700');
-                el.innerHTML = `<i class="fa-solid ${r === 'Supir' ? 'fa-id-card' : r === 'Mekanik' ? 'fa-screwdriver-wrench' : 'fa-user-gear'} mr-1.5"></i>${r} <span class="opacity-70 font-normal">(${n} di tim)</span>`;
+                el.innerHTML = `<i class="fa-solid ${ROLE_META[r].icon} mr-1.5"></i>${r} <span class="opacity-70 font-normal">(${n} di tim)</span>`;
             });
             document.getElementById('recruit-sorts').innerHTML = [['cost', 'Termurah'], ['rep', 'Reputasi Tertinggi'], ['exp', 'Paling Berpengalaman']].map(([k, l]) =>
                 `<button onclick="setRecruitSort('${k}')" class="px-2.5 py-1 rounded-full text-[10px] font-semibold border transition ${recruitSort === k ? 'bg-purple-600/20 text-purple-300 border-purple-500/40' : 'text-gray-400 border-gray-700 hover:border-gray-500'}">${l}</button>`).join('');
@@ -1514,7 +1844,7 @@
 
             crewIdCounter++;
             companyCrew.push({
-                id: (cand.role === 'Supir' ? 'DRV-' : cand.role === 'Mekanik' ? 'MEK-' : 'KRN-') + crewIdCounter,
+                id: ROLE_META[cand.role].idPrefix + crewIdCounter,
                 name: cand.name, role: cand.role, reputation: cand.reputation,
                 violations: 0, status: cand.role === 'Mekanik' ? 'Belum Ditugaskan' : 'Siap Bertugas', trips: 0,
                 age: cand.age, exp: cand.exp, kota: cand.kota, kilangId: null
@@ -1556,6 +1886,20 @@
             return { fine, notes, violated: dRes.violated || kRes.violated };
         }
 
+        // Cek kesesuaian ukuran truk vs sisa pesanan SPBU: truk kecil boleh dipakai kirim bertahap (nyicil),
+        // TAPI hanya kalau semua truk yang cukup besar untuk melunasi sisa pesanan dalam sekali jalan sedang bertugas/tidak ada.
+        // Kalau ada truk yang pas & lagi nganggur, truk kecil harus nunggu / pemain diarahkan pakai truk itu dulu.
+        function truckSizeBlock(spbu, fuelId, truck, type) {
+            const o = orders.find(x => x.kode === spbu.kode && x.fuel === fuelId);
+            if (!o) return null; // tidak ada pesanan aktif buat kombinasi ini, tidak ada batasan
+            const sisa = Math.round((o.kl - o.terkirim) * 10) / 10;
+            if (truck.cap >= sisa) return null; // truk ini sendiri sudah cukup buat lunasi sisa pesanan
+            const unit = type === 'LPG' ? 'Ton' : 'KL';
+            const better = companyFleet.find(t => t.type === type && t.id !== truck.id && t.cap >= sisa && !busyIds.has(t.id));
+            if (!better) return null; // tidak ada truk yang lebih pas & available - truk kecil boleh nyicil
+            return `Sisa pesanan ${spbu.nama} tinggal ${sisa} ${unit}, dan armada ${better.id} [${better.name}] berkapasitas ${better.cap} ${unit} sedang tidak bertugas - cukup buat melunasi sekali jalan. Gunakan ${better.id} dulu sebelum memakai ${truck.id} [${truck.cap} ${unit}] buat kirim bertahap.`;
+        }
+
         // DISPATCH BBM - Tahap 1: validasi pilihan lalu buka Surat Jalan untuk ditandatangani
         function dispatchToSpbu() {
             const kodeSpbu = document.getElementById('delivery-spbu-select').value;
@@ -1576,6 +1920,9 @@
             }
             if (busyCheck(truck, driver, kernet)) return;
             if (docBlock(truck)) return;
+            const fBBM = FUELS.find(x => x.label === fuelType);
+            const sizeMsg = fBBM ? truckSizeBlock(spbu, fBBM.id, truck, 'BBM') : null;
+            if (sizeMsg) return showModal('Pakai Armada yang Lebih Pas', sizeMsg, 'fa-truck-ramp-box', 'red');
             const origin = pickOrigin('BBM', spbu, truck.cap, truck);
             if (!origin) return showModal('Stok Kilang Kurang', `Tidak ada kilang/depo aktif dengan stok cukup untuk ${truck.cap} KL (${Math.ceil(truck.cap * ECO.bblPerKl)} Bbl). Beli bahan bakar di tab Kilang atau transfer ke depo.`, 'fa-gas-pump', 'red');
 
@@ -1637,10 +1984,15 @@
             set('sj-fuel', data.jenisMuatan);
             set('sj-volume', data.volumeText);
 
-            // Transfer kilang tidak memakai truk/kru, jadi kolom itu disembunyikan
+            // Transfer kilang darat (instan, tanpa armada) tidak memakai truk/kru, jadi kolom itu disembunyikan
             const adaKru = !!data.truck;
             document.querySelectorAll('#surat-jalan-modal .sj-truck-cell').forEach(el => el.classList.toggle('hidden', !adaKru));
             if (adaKru) {
+                const lb = data.labels || {};
+                set('sj-l-truk', lb.truk || 'Armada Truk');
+                set('sj-l-plat', lb.plat || 'No. Polisi');
+                set('sj-l-driver', lb.driver || 'Supir Bertugas');
+                set('sj-l-kernet', lb.kernet || 'Kernet Pendamping');
                 set('sj-truk', `${data.truck.id} - ${data.truck.name}`);
                 set('sj-plat', data.truck.plat);
                 set('sj-driver', `${data.driver.name} (${data.driver.id})`);
@@ -1762,6 +2114,8 @@
             if (busyCheck(truck, driver, kernet)) return;
             if (docBlock(truck)) return;
             if (truck.type !== 'LPG') return showModal('Armada Salah', 'Pilih truk LPG untuk pengiriman LPG.', 'fa-circle-exclamation', 'red');
+            const sizeMsg = truckSizeBlock(spbu, 'lpg', truck, 'LPG');
+            if (sizeMsg) return showModal('Pakai Armada yang Lebih Pas', sizeMsg, 'fa-truck-ramp-box', 'red');
             const hpp = truck.cap * ECO.hppTon;
             if (companyCash < hpp) return showModal('Kas Tidak Cukup', `Butuh ${formatRupiah(hpp)} untuk membeli ${truck.cap} Ton LPG dari pemasok.`, 'fa-triangle-exclamation', 'red');
 
@@ -1795,7 +2149,6 @@
         });
 
         // ===== ANIMASI KENDARAAN DI PETA (mengikuti jalan sebenarnya) =====
-        const busyIds = new Set();
         const routeCache = new Map();
         let activeAnims = 0;
         const TRUCK_COLOR = { BBM: '#10b981', LPG: '#f59e0b' };
@@ -1808,6 +2161,61 @@
             const h = Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lon - a.lon) / 2) ** 2;
             return 12742 * Math.asin(Math.sqrt(h));
         }
+
+        // ===== DETEKSI AKSES PELABUHAN (OTOMATIS DARI LAT/LON) =====
+        // Titik acuan kota-kota pesisir besar se-Indonesia. Kilang/Depo dianggap "punya akses laut" (coastal)
+        // kalau jaraknya ke titik acuan terdekat di bawah COASTAL_THRESHOLD_KM - dipakai buat nentuin apakah
+        // sebuah cabang bisa dilayani kapal tanker, atau cuma bisa lewat darat pakai truk.
+        const COASTAL_ANCHORS = [
+            { name: 'Tuban', lat: -6.8979, lon: 112.0649 },
+            { name: 'Jakarta/Tanjung Priok', lat: -6.10, lon: 106.88 }, { name: 'Semarang', lat: -6.95, lon: 110.43 },
+            { name: 'Surabaya', lat: -7.20, lon: 112.75 }, { name: 'Banyuwangi', lat: -8.22, lon: 114.37 },
+            { name: 'Denpasar/Bali', lat: -8.55, lon: 115.22 }, { name: 'Makassar', lat: -5.13, lon: 119.43 },
+            { name: 'Balikpapan', lat: -1.27, lon: 116.83 }, { name: 'Banjarmasin', lat: -3.32, lon: 114.59 },
+            { name: 'Pontianak', lat: -0.02, lon: 109.34 }, { name: 'Tarakan', lat: 3.30, lon: 117.63 },
+            { name: 'Bitung', lat: 1.45, lon: 125.18 }, { name: 'Donggala', lat: -0.68, lon: 119.75 },
+            { name: 'Mamuju', lat: -2.68, lon: 118.89 }, { name: 'Belawan/Medan', lat: 3.78, lon: 98.68 },
+            { name: 'Palembang', lat: -2.99, lon: 104.76 }, { name: 'Padang', lat: -0.95, lon: 100.35 },
+            { name: 'Dumai', lat: 1.68, lon: 101.45 }, { name: 'Jayapura', lat: -2.53, lon: 140.72 },
+            { name: 'Ambon', lat: -3.70, lon: 128.18 }, { name: 'Kupang', lat: -10.17, lon: 123.61 }
+        ];
+        const COASTAL_THRESHOLD_KM = 40;
+        function isCoastal(entity) {
+            if (!entity || entity.lat == null || entity.lon == null) return false;
+            return COASTAL_ANCHORS.some(a => distKm(entity, a) <= COASTAL_THRESHOLD_KM);
+        }
+
+        // ===== PENYEBERANGAN FERRY ANTAR PULAU =====
+        // Deteksi pulau dari nama/provinsi (kilang, depo, maupun SPBU) - dipakai untuk menentukan apakah
+        // sebuah pengiriman perlu naik kapal ferry (Jawa <-> Bali/Kalimantan/Sulawesi).
+        function islandOfName(txt) {
+            const t = String(txt || '').toLowerCase();
+            if (/\bbali\b/.test(t)) return 'Bali';
+            if (/sulawesi|sul(ut|teng|bar|sel|tra)|manado|bitung|palu|mamuju|makassar|kendari|parepare|gowa|maros/.test(t)) return 'Sulawesi';
+            if (/kalimantan|kal(tim|sel|bar|teng|tara)|balikpapan|samarinda|banjarmasin|banjarbaru|pontianak|singkawang|palangka|sampit|bontang|tarakan/.test(t)) return 'Kalimantan';
+            return 'Jawa';
+        }
+        const islandOf = e => islandOfName(`${e.provinsi || ''} ${e.nama || ''} ${e.region || ''}`);
+        // Pelabuhan penyeberangan (nama & koordinat mengikuti OpenStreetMap) - satu entri per rute tujuan pulau.
+        const PORTS = {
+            Jawa: [
+                { name: 'Pelabuhan ASDP Ketapang, Banyuwangi', lat: -8.1247, lon: 114.3903, ke: 'Bali' },
+                { name: 'Pelabuhan Tanjung Perak, Surabaya', lat: -7.1978, lon: 112.7378, ke: 'Kalimantan' },
+                { name: 'Pelabuhan Tanjung Perak, Surabaya', lat: -7.1978, lon: 112.7378, ke: 'Sulawesi' }
+            ],
+            Bali: [{ name: 'Pelabuhan ASDP Gilimanuk, Bali', lat: -8.1594, lon: 114.4364, ke: 'Jawa' }],
+            Kalimantan: [{ name: 'Pelabuhan Trisakti, Banjarmasin', lat: -3.3208, lon: 114.5875, ke: 'Jawa' }],
+            Sulawesi: [{ name: 'Pelabuhan Soekarno-Hatta, Makassar', lat: -5.1289, lon: 119.4022, ke: 'Jawa' }]
+        };
+        function getPort(island, towardIsland) {
+            const list = PORTS[island] || PORTS.Jawa;
+            return list.find(p => p.ke === towardIsland) || list[0];
+        }
+        const AVG_FERRY_SPEED_KMH = 25; // kecepatan rata-rata kapal ferry RoRo
+        const FERRY_QUEUE_SEC = 15; // waktu nyata (detik) antre naik/turun kapal di pelabuhan
+        const AVG_SHIP_SPEED_KMH = 22; // kecepatan rata-rata kapal tanker niaga (kargo curah) - lebih pelan dari ferry RoRo
+        const UNLOAD_SECONDS_KAPAL = 90; // waktu nyata (detik) bongkar-muat curah kapal tanker di pelabuhan, lebih lama dari truk
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
 
         // Truk berangkat dari kilang/depo aktif terdekat yang cocok dengan jenis muatan
         const stokNeed = (k, cap) => k.unit === 'Bbl' ? Math.ceil(cap * ECO.bblPerKl) : cap;
@@ -1868,14 +2276,17 @@
             if (Date.now() - e.startAt >= e.dur || flying.size > 80) return null;
             const pts = e.pts, cum = [0];
             for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + distKm({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] }));
-            const color = remote ? '#38bdf8' : (TRUCK_COLOR[e.type] || '#3b82f6');
-            const line = L.polyline(pts, { color, weight: remote ? 2 : 3, opacity: 0.3, dashArray: '6 8' }).addTo(map);
+            const isFerry = e.vehicle === 'ferry';
+            const isKapal = e.vehicle === 'kapal';
+            const isBoat = isFerry || isKapal;
+            const color = isFerry ? '#0ea5e9' : isKapal ? '#06b6d4' : (remote ? '#38bdf8' : (TRUCK_COLOR[e.type] || '#3b82f6'));
+            const line = L.polyline(pts, { color, weight: remote ? 2 : 3, opacity: isBoat ? 0.45 : 0.3, dashArray: isBoat ? '2 10' : '6 8' }).addTo(map);
             const trail = L.polyline([pts[0]], { color, weight: remote ? 3 : 4, opacity: 0.85 }).addTo(map);
             const marker = L.marker(pts[0], {
-                icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="truck-ico" style="background:${color};${remote ? 'opacity:.85' : ''}"><span class="tf"><i class="fa-solid fa-truck"></i></span></div>` }),
+                icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="truck-ico" style="background:${color};${remote ? 'opacity:.85' : ''}"><span class="tf"><i class="fa-solid fa-${isBoat ? 'ship' : 'truck'}"></i></span></div>` }),
                 zIndexOffset: remote ? 500 : 1000
             }).addTo(map);
-            marker.bindTooltip(esc(remote ? `${e.owner} · ${e.plat}` : `${e.id} · ${e.plat}`), { permanent: true, direction: 'top', offset: [0, -16], className: 'truck-tip' });
+            marker.bindTooltip(esc(remote ? `${e.owner} · ${e.plat}` : `${isFerry ? 'Ferry · ' + e.id : isKapal ? 'Kapal · ' + e.id : e.id} · ${e.plat}`), { permanent: true, direction: 'top', offset: [0, -16], className: 'truck-tip' });
             const t = { e, pts, cum, total: cum[cum.length - 1] || 0.01, marker, line, trail, remote, lastTrail: 0, done: null };
             flying.add(t);
             if (flying.size === 1) requestAnimationFrame(flyLoop);
@@ -1908,37 +2319,146 @@
             return (jam ? `${jam}j ` : '') + `${men}m`;
         }
 
+        // Jalankan satu ruas perjalanan (darat via OSRM ATAU laut/ferry garis lurus) dan tunggu sampai tiba.
+        function runVehicleLeg(pts, dur, meta, fit) {
+            return new Promise(resolve => {
+                const e = { ...meta, pts, dur, startAt: Date.now() };
+                const t = launchTruck(e, false);
+                if (!t) { resolve(); return; }
+                if (fit) map.fitBounds(t.line.getBounds(), { padding: [50, 50], maxZoom: 11 });
+                t.done = () => resolve();
+            });
+        }
+        async function driveLeg(from, to, meta, fit) {
+            const { pts, real } = await fetchRoute(from, to);
+            let total = 0;
+            for (let i = 1; i < pts.length; i++) total += distKm({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] });
+            const dur = Math.min(900000, Math.max(6000, (total / AVG_TRUCK_SPEED_KMH) * (3600000 / GAME_SPEED)));
+            await runVehicleLeg(pts, dur, { ...meta, vehicle: 'truck' }, fit);
+            return { km: total, dur, real };
+        }
+        async function ferryLeg(from, to, meta, fit) {
+            const pts = [[from.lat, from.lon], [to.lat, to.lon]];
+            const total = distKm(from, to);
+            const dur = Math.min(900000, Math.max(6000, (total / AVG_FERRY_SPEED_KMH) * (3600000 / GAME_SPEED)));
+            await runVehicleLeg(pts, dur, { ...meta, vehicle: 'ferry' }, fit);
+            return { km: total, dur };
+        }
+        // Pelayaran langsung Kilang Pusat <-> Depo Cabang Pesisir (kapal tanker curah): garis lurus laut, TIDAK lewat
+        // logika jalan darat/ferry pulau seperti journey() di bawah - kapal tanker niaga jalan sendiri lewat rute laut.
+        async function shipLeg(from, to, meta, fit) {
+            const pts = [[from.lat, from.lon], [to.lat, to.lon]];
+            const total = distKm(from, to);
+            const dur = Math.min(1800000, Math.max(10000, (total / AVG_SHIP_SPEED_KMH) * (3600000 / GAME_SPEED)));
+            await runVehicleLeg(pts, dur, { ...meta, vehicle: 'kapal' }, fit);
+            return { km: total, dur };
+        }
+        // Satu perjalanan lengkap dari titik A ke titik B, otomatis menyisipkan penyeberangan ferry bila beda pulau.
+        // Alur: [darat ke pelabuhan] -> antre masuk kapal -> [penyeberangan] -> kapal sandar & antre turun -> [darat ke tujuan].
+        async function journey(from, to, meta, fitFirst) {
+            const oIsl = islandOf(from), dIsl = islandOf(to);
+            if (oIsl === dIsl) {
+                const leg = await driveLeg(from, to, meta, fitFirst);
+                addLog(`BERANGKAT: ${meta.id} dari ${from.nama} menuju ${to.nama} (±${Math.round(leg.km)} km${leg.real ? ', mengikuti jalan' : ', rute perkiraan'} &middot; estimasi ${fmtJam(leg.dur * GAME_SPEED / 3600000)} perjalanan).`, 'info', 'truck');
+                return leg.km;
+            }
+            const depPort = getPort(oIsl, dIsl), arrPort = getPort(dIsl, oIsl);
+            let km = 0;
+            const l1 = await driveLeg(from, depPort, meta, fitFirst);
+            km += l1.km;
+            addLog(`BERANGKAT: ${meta.id} dari ${from.nama} menuju ${depPort.name} (±${Math.round(l1.km)} km) untuk menyeberang ke Pulau ${dIsl}.`, 'info', 'truck');
+            addLog(`TIBA DI PELABUHAN: ${meta.id} tiba di ${depPort.name}, mengantre masuk kapal ferry...`, 'info', 'truck');
+            notify(`${meta.id} mengantre naik kapal di ${depPort.name}...`, 'info');
+            await sleep(FERRY_QUEUE_SEC * 1000);
+            addLog(`PENYEBERANGAN: Kapal ferry membawa ${meta.id} dari ${depPort.name} menuju ${arrPort.name} (±${Math.round(distKm(depPort, arrPort))} km laut)...`, 'info', 'truck');
+            const l2 = await ferryLeg(depPort, arrPort, meta, false);
+            km += l2.km;
+            addLog(`SANDAR: Kapal tiba &amp; sandar di ${arrPort.name}, ${meta.id} mengantre turun kapal...`, 'info', 'truck');
+            notify(`Kapal sandar di ${arrPort.name}, ${meta.id} bersiap lanjut jalan darat.`, 'info');
+            await sleep(FERRY_QUEUE_SEC * 1000);
+            const l3 = await driveLeg(arrPort, to, meta, false);
+            km += l3.km;
+            addLog(`LANJUT PERJALANAN: ${meta.id} melanjutkan jalan darat dari ${arrPort.name} menuju ${to.nama} (±${Math.round(l3.km)} km).`, 'info', 'truck');
+            return km;
+        }
         async function animateDelivery(d) {
             const { spbu, truck, driver, kernet, origin: origin0 } = d;
             const ids = [truck.id, driver.id, kernet.id];
             const origin = origin0 || pickOrigin(truck.type, spbu, truck.cap, truck);
             if (!origin) return;
             ids.forEach(i => busyIds.add(i));
+            populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
             ownAnims++;
+            const meta = { id: truck.id, plat: truck.plat, type: truck.type, owner: currentAccount ? currentAccount.company : 'Pemain' };
+            const fit = ownAnims === 1;
             try {
-                const { pts, real } = await fetchRoute(origin, spbu);
-                let total = 0;
-                for (let i = 1; i < pts.length; i++) total += distKm({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] });
-                // Estimasi lama perjalanan seperti Google Maps: jarak rute nyata dibagi kecepatan rata-rata truk tangki.
-                // Durasi animasi (waktu nyata) disamakan dengan berapa jam game yang seharusnya berlalu untuk jarak sejauh itu,
-                // memakai rasio jam game milik GAME_SPEED (1 jam game = 3.600.000/GAME_SPEED md nyata), jadi jam di game ikut maju sesuai jarak tempuh.
-                const travelHours = total / AVG_TRUCK_SPEED_KMH;
-                const dur = Math.min(900000, Math.max(6000, travelHours * (3600000 / GAME_SPEED)));
-                d.km = total; // dipakai completeUnloading utk hitung odometer & keausan ban pulang-pergi
-                const e = { id: truck.id, plat: truck.plat, type: truck.type, owner: currentAccount ? currentAccount.company : 'Pemain', pts, dur, startAt: Date.now() };
-                const t = launchTruck(e, false);
-                t.done = () => {
-                    addLog(`TIBA: ${truck.id} [Supir: ${driver.name}] sampai di ${spbu.nama}. Kru bersiap bongkar muatan (±${UNLOAD_SECONDS} detik)...`, 'info', 'truck');
-                    notify(`${truck.id} tiba di ${spbu.nama}, sedang bongkar muatan...`, 'info');
-                    ownAnims = Math.max(0, ownAnims - 1);
-                    setTimeout(() => completeUnloading(d), UNLOAD_SECONDS * 1000);
-                };
-                if (ownAnims === 1) map.fitBounds(t.line.getBounds(), { padding: [50, 50], maxZoom: 11 });
-                addLog(`BERANGKAT: ${truck.id} dari ${origin.nama} menuju ${spbu.nama} (±${Math.round(total)} km${real ? ', mengikuti jalan' : ', rute perkiraan'} &middot; estimasi ${fmtJam(travelHours)} perjalanan).`, 'info', 'truck');
+                d.km = await journey(origin, spbu, meta, fit);
+                addLog(`TIBA: ${truck.id} [Supir: ${driver.name}] sampai di ${spbu.nama}. Kru bersiap bongkar muatan (±${UNLOAD_SECONDS} detik)...`, 'info', 'truck');
+                notify(`${truck.id} tiba di ${spbu.nama}, sedang bongkar muatan...`, 'info');
+                ownAnims = Math.max(0, ownAnims - 1);
+                setTimeout(async () => {
+                    completeUnloading(d);
+                    // Animasi truk/kapal berjalan balik ke depot asal setelah bongkar muatan tuntas (lewat ferry lagi bila perlu)
+                    try {
+                        await journey(spbu, origin, meta, false);
+                        addLog(`TIBA DI DEPOT: ${truck.id} [Supir: ${driver.name}] kembali ke ${origin.nama} setelah selesai bongkar muatan.`, 'info', 'truck');
+                    } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi keuangan yang sudah cair */ }
+                }, UNLOAD_SECONDS * 1000);
             } catch (err) {
                 ids.forEach(x => busyIds.delete(x));
+                populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
                 ownAnims = Math.max(0, ownAnims - 1);
             }
+        }
+
+        // ===== TRANSFER KAPAL TANKER: Kilang Pusat <-> Depo Cabang Pesisir =====
+        // Berbeda dari animateDelivery (BBM/LPG ke SPBU, ada pendapatan) - ini murni pemindahan stok internal
+        // perusahaan sendiri lewat laut, jadi tidak ada pendapatan, hanya biaya pelayaran implisit dari harga beli kapal.
+        async function animateKapalTransfer(d) {
+            const { spbu: target, truck, driver, kernet, origin } = d;
+            const ids = [truck.id, driver.id, kernet.id];
+            ids.forEach(i => busyIds.add(i));
+            populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
+            ownAnims++;
+            const meta = { id: truck.id, plat: truck.plat, type: truck.type, owner: currentAccount ? currentAccount.company : 'Pemain' };
+            const fit = ownAnims === 1;
+            try {
+                const leg = await shipLeg(origin, target, meta, fit);
+                d.km = leg.km;
+                addLog(`BERLAYAR: Kapal ${truck.id} [Nahkoda: ${driver.name}] dari ${origin.nama} menuju ${target.nama} (±${Math.round(leg.km)} km laut &middot; estimasi ${fmtJam(leg.dur * GAME_SPEED / 3600000)} pelayaran).`, 'info', 'truck');
+                addLog(`SANDAR: Kapal ${truck.id} tiba &amp; sandar di ${target.nama}, kru bongkar muatan curah (±${UNLOAD_SECONDS_KAPAL} detik)...`, 'info', 'truck');
+                notify(`${truck.id} sandar di ${target.nama}, sedang bongkar muatan curah...`, 'info');
+                ownAnims = Math.max(0, ownAnims - 1);
+                setTimeout(async () => {
+                    completeKapalTransfer(d);
+                    try {
+                        await shipLeg(target, origin, meta, false);
+                        addLog(`TIBA DI DEPOT: Kapal ${truck.id} [Nahkoda: ${driver.name}] kembali berlabuh di ${origin.nama} setelah selesai bongkar muatan.`, 'info', 'truck');
+                    } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi stok yang sudah masuk */ }
+                }, UNLOAD_SECONDS_KAPAL * 1000);
+            } catch (err) {
+                ids.forEach(x => busyIds.delete(x));
+                populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
+                ownAnims = Math.max(0, ownAnims - 1);
+            }
+        }
+
+        // Dieksekusi setelah kapal sandar DAN selesai masa bongkar (UNLOAD_SECONDS_KAPAL) - stok depo tujuan baru bertambah di sini
+        function completeKapalTransfer(d) {
+            const { spbu: target, truck, driver, kernet, nomorSJ } = d;
+            const ids = [truck.id, driver.id, kernet.id];
+            target.stok_current = Math.min(target.stok_max, Math.round((target.stok_current + truck.cap) * 10) / 10);
+            const result = settleCrewResult(driver, kernet);
+            if (result.fine) {
+                companyCash -= result.fine; totalExpense += result.fine;
+                addFinanceLog(`Denda pelanggaran pelayaran kapal ${truck.id} (${target.nama})`, -result.fine);
+            }
+            ids.forEach(i => busyIds.delete(i));
+            addLog(`TRANSFER SELESAI ${nomorSJ || ''}: ${truck.cap.toLocaleString()} ${target.unit} pasokan curah diturunkan di ${target.nama}. Stok kini ${Math.round(target.stok_current).toLocaleString()}/${target.stok_max.toLocaleString()} ${target.unit}.`, 'success');
+            notify(`${truck.id} selesai bongkar muatan di ${target.nama}.`, 'ok');
+            updateCashDisplay();
+            renderRefineries();
+            populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
         }
 
         // Dieksekusi setelah truk tiba DAN selesai masa bongkar muatan (UNLOAD_SECONDS) - baru di sinilah pendapatan cair
@@ -1984,6 +2504,7 @@
             notify(`Pendapatan ${formatRupiah(revenueBersih)} cair dari ${truck.id} setelah bongkar muatan di ${spbu.nama}.`, result.violated ? 'warn' : 'info');
 
             ids.forEach(x => busyIds.delete(x));
+            populateTruckDropdowns(); populateCrewDropdowns();
         }
 
         // ===== AKUN, PENYIMPANAN & LEADERBOARD =====
@@ -2083,20 +2604,14 @@
             // oleh Firebase, fungsi ini berjalan di belakang layar loading - biar transisinya tetap
             // loading -> "Main Sekarang" (bukan loading -> sempat kelihatan layar in-game -> baru "Main Sekarang").
             // Loading overlay baru ditutup oleh finishLoadingIfReady() setelah animasi loading selesai.
-            // PENTING: pakai flag manualAuthEntry, BUKAN cek classList splash-overlay. Splash-overlay juga
-            // berstatus "hidden" sebelum pernah ditampilkan sama sekali, jadi kalau sesi lama Firebase pulih
-            // lebih cepat daripada animasi loading, cek classList salah membaca ini sebagai "dari form auth"
-            // dan tutorial jadi muncul tiba-tiba begitu loading selesai, padahal splash "Main Sekarang" belum
-            // sempat tampil sama sekali.
-            const fromAuthForm = manualAuthEntry;
-            manualAuthEntry = false;
+            const fromAuthForm = document.getElementById('splash-overlay').classList.contains('hidden');
             const revealGame = () => {
                 document.getElementById('auth-overlay').classList.add('hidden');
                 updateCashDisplay();
                 renderCloudStatus();
                 startTopupListener();
-                startBoardListener();
-                startBursaListener();
+                startVerifiedListener();
+                startBursaSalesListener();
                 checkAdmin();
                 map.invalidateSize();
                 addLog(`LOGIN: ${acc.owner} masuk sebagai pemilik ${acc.company}.`, 'success');
@@ -2170,11 +2685,11 @@
 
         function liveStats() { return { cash: companyCash, units: companyFleet.length, kilang: refineryData.filter(k => k.is_unlocked).length }; }
 
-        // ===== SAVE: lokal otomatis (5 dtk), cloud manual lewat tombol "Save Cloud" =====
+        // ===== SAVE: lokal otomatis (30 dtk), cloud manual lewat tombol "Save Cloud" =====
         function buildSave() {
             return {
                 cash: companyCash, income: totalIncome, expense: totalExpense,
-                refineries: refineryData.map(k => ({ id: k.id, u: k.is_unlocked, s: k.stok_current, mid: k.mekanikId })),
+                refineries: refineryData.map(k => ({ id: k.id, u: k.is_unlocked, s: k.stok_current, mid: k.mekanikId, kap: k.kap })),
                 fleet: companyFleet, crew: companyCrew, crewCounter: crewIdCounter, sj: suratJalanCounter,
                 spbu: loadedSpbuList, fin: financeEntries, orders, ordHist, setor: lastSetor, izin: izinLog, clock: gameElapsed, topups: appliedTopups, pph: pphPaid, bbm: bbmSpent, tsetor: topupTotal, ts: Date.now()
             };
@@ -2308,6 +2823,10 @@
             if (!currentAccount) return;
             renderTopupBox(); selTopup = null; topupRegistered = false; topupSender = ''; topupMsg('');
             document.getElementById('topup-uid').textContent = currentAccount.id;
+            const senderInput = document.getElementById('topup-sender-input'); if (senderInput) senderInput.value = '';
+            const qrisImg = document.getElementById('topup-qris-img'), qrisMissing = document.getElementById('topup-qris-missing');
+            if (qrisImg) { qrisImg.style.display = ''; qrisImg.src = 'asset/qris.png?r=' + Date.now(); } // paksa coba muat ulang kalau sebelumnya gagal
+            if (qrisMissing) qrisMissing.classList.add('hidden');
             renderTopupGrid(); renderTopupPayStep(); renderVerified();
             document.getElementById('topup-modal').classList.remove('hidden');
         }
@@ -2448,15 +2967,24 @@
         }
 
         // ===== Bursa P2P: jual-beli truk bekas antar pemain nyata (Firestore) =====
-        function startBursaListener() {
+        function startBursaSalesListener() {
+            // Uid-scoped (cuma dengar notifikasi truk MILIK SENDIRI yang laku) - murah, tetap nyala sepanjang sesi
+            // supaya notifikasi "truk terjual" tetap masuk walau pemain sedang di tab lain.
             if (!window.fb || !currentAccount) return;
-            if (!bursaListingsUnsub) bursaListingsUnsub = fb.listenBursaListings(list => { bursaListings = list; if (!document.getElementById('tab-bursa').classList.contains('hidden')) renderBursa(); });
             if (!bursaSalesUnsub) bursaSalesUnsub = fb.listenBursaSales(currentAccount.id, list => {
                 pendingBursaSales = list.sort((x, y) => (x.created && x.created.seconds || 0) - (y.created && y.created.seconds || 0));
                 pendingBursaSales.forEach(s => { if (!bursaSeen.has(s.id)) { bursaSeen.add(s.id); addLog(`BURSA P2P: ${esc(s.buyerCompany)} membeli ${esc(s.truck.name)} [${esc(s.truck.plat)}] seharga ${formatRupiah(s.harga)}. Klaim pembayarannya di tab Bursa P2P.`, 'success'); notify(`Truk ${s.truck.name} terjual seharga ${formatRupiah(s.harga)}. Klaim di Bursa P2P.`, 'info'); } });
                 renderBursaClaimBox();
             });
         }
+        // Listener daftar lapak terbuka (sampai 200 dokumen, koleksi bersama semua pemain) - broadcast ke
+        // semua yang mendengarkan tiap kali ada yang pasang/batal/beli lapak. Sengaja hanya menyala selagi
+        // tab Bursa P2P dibuka (lihat switchTab), bukan sepanjang sesi login.
+        function startBursaListingsListener() {
+            if (!window.fb || !currentAccount) return;
+            if (!bursaListingsUnsub) bursaListingsUnsub = fb.listenBursaListings(list => { bursaListings = list; if (!document.getElementById('tab-bursa').classList.contains('hidden')) renderBursa(); });
+        }
+        function stopBursaListingsListener() { if (bursaListingsUnsub) { bursaListingsUnsub(); bursaListingsUnsub = null; } }
 
         function renderBursaClaimBox() {
             const box = document.getElementById('bursa-claim-box');
@@ -2521,28 +3049,68 @@
             renderBursaClaimBox();
         }
 
-        async function submitBursaListing() {
-            if (!currentAccount) return;
-            if (!window.fb) return showModal('Belum Siap', 'Firebase belum siap. Periksa koneksi lalu muat ulang halaman.', 'fa-triangle-exclamation', 'red');
-            const truckId = document.getElementById('bursa-sell-truck').value;
-            const harga = Math.round(Number(document.getElementById('bursa-sell-price').value));
+        // Logika inti pasang iklan jual, dipakai bareng oleh form di tab Bursa P2P
+        // dan tombol "Jual ke Bursa P2P" cepat di tiap kartu tab Armada.
+        async function postTruckToBursa(truckId, harga) {
+            if (!currentAccount) return false;
+            if (!window.fb) { showModal('Belum Siap', 'Firebase belum siap. Periksa koneksi lalu muat ulang halaman.', 'fa-triangle-exclamation', 'red'); return false; }
             const idx = companyFleet.findIndex(t => t.id === truckId);
-            if (idx < 0) return showModal('Pilih Truk', 'Pilih unit truk yang ingin dijual terlebih dahulu.', 'fa-truck', 'red');
-            if (busyIds.has(truckId)) return showModal('Truk Sedang Bertugas', 'Truk yang sedang dalam perjalanan tidak bisa dijual. Tunggu sampai tiba di depot.', 'fa-truck-fast', 'red');
-            if (!harga || harga < 1000000) return showModal('Harga Tidak Valid', 'Masukkan harga jual minimal Rp 1.000.000.', 'fa-circle-exclamation', 'red');
+            if (idx < 0) { showModal('Pilih Truk', 'Pilih unit truk yang ingin dijual terlebih dahulu.', 'fa-truck', 'red'); return false; }
+            if (busyIds.has(truckId)) { showModal('Truk Sedang Bertugas', 'Truk yang sedang dalam perjalanan tidak bisa dijual. Tunggu sampai tiba di depot.', 'fa-truck-fast', 'red'); return false; }
+            if (!harga || harga < 1000000) { showModal('Harga Tidak Valid', 'Masukkan harga jual minimal Rp 1.000.000.', 'fa-circle-exclamation', 'red'); return false; }
             const truck = companyFleet[idx];
             companyFleet.splice(idx, 1);   // truk keluar dari garasi selama iklan aktif
             try {
                 await fb.postBursaListing(currentAccount.id, currentAccount.company, truck, harga);
-                document.getElementById('bursa-sell-price').value = '';
                 populateTruckDropdowns(); renderFleetDashboard(); updateCashDisplay();
                 addLog(`BURSA P2P: Truk ${truck.id} [${truck.plat}] dipasang di Bursa P2P seharga ${formatRupiah(harga)}.`, 'info');
                 notify(`${truck.name} dipasang di Bursa P2P.`, 'info');
+                return true;
             } catch (e) {
                 companyFleet.push(truck);   // gagal terbit, kembalikan ke garasi
                 populateTruckDropdowns(); renderFleetDashboard(); updateCashDisplay();
                 showModal('Gagal Memasang Iklan', 'Coba lagi. (' + (e.code || e.message) + ')', 'fa-triangle-exclamation', 'red');
+                return false;
             }
+        }
+
+        async function submitBursaListing() {
+            const truckId = document.getElementById('bursa-sell-truck').value;
+            const harga = Math.round(Number(document.getElementById('bursa-sell-price').value));
+            const ok = await postTruckToBursa(truckId, harga);
+            if (ok) document.getElementById('bursa-sell-price').value = '';
+        }
+
+        // ===== Jual Cepat dari Tab Armada =====
+        let sellModalTruckId = null;
+        function estimateTruckValue(truck) {
+            // Estimasi kasar buat isian awal harga: harga beli dikurangi penyusutan odometer & kondisi ban
+            const base = truck.price || 500000000;
+            const wear = Math.max(0.4, 1 - (truck.odometer / 300000) * 0.5 - ((100 - truck.banPct) / 100) * 0.15);
+            return Math.round(base * wear / 1000000) * 1000000;
+        }
+        function openSellModal(truckId) {
+            const truck = companyFleet.find(t => t.id === truckId);
+            if (!truck) return;
+            if (busyIds.has(truckId)) return showModal('Truk Sedang Bertugas', 'Truk yang sedang dalam perjalanan tidak bisa dijual. Tunggu sampai tiba di depot.', 'fa-truck-fast', 'red');
+            if (!currentAccount || !window.fb) return showModal('Belum Siap', 'Firebase belum siap. Periksa koneksi lalu muat ulang halaman.', 'fa-triangle-exclamation', 'red');
+            sellModalTruckId = truckId;
+            document.getElementById('sell-spec-name').innerText = `${truck.id} - ${truck.name}`;
+            document.getElementById('sell-spec-plat').innerText = truck.plat;
+            document.getElementById('sell-spec-cond').innerText = `${truck.odometer.toLocaleString('id-ID')} km \u00b7 Ban ${truck.banPct}%`;
+            document.getElementById('sell-modal-price').value = estimateTruckValue(truck);
+            document.getElementById('sell-modal').classList.remove('hidden');
+        }
+        function closeSellModal() {
+            sellModalTruckId = null;
+            document.getElementById('sell-modal').classList.add('hidden');
+        }
+        async function confirmSellModal() {
+            const truckId = sellModalTruckId;
+            if (!truckId) return closeSellModal();
+            const harga = Math.round(Number(document.getElementById('sell-modal-price').value));
+            const ok = await postTruckToBursa(truckId, harga);
+            if (ok) { closeSellModal(); switchTab('tab-bursa'); }
         }
 
         async function cancelBursaListing(id) {
@@ -2600,7 +3168,7 @@
         function applySave(sv) {
             sv = migrateLegacy(sv);
             companyCash = sv.cash; totalIncome = sv.income; totalExpense = sv.expense;
-            sv.refineries.forEach(r => { const k = refineryData.find(x => x.id === r.id); if (k) { k.is_unlocked = r.u; k.stok_current = r.s; if (r.mid !== undefined) k.mekanikId = r.mid; } });
+            sv.refineries.forEach(r => { const k = refineryData.find(x => x.id === r.id); if (k) { k.is_unlocked = r.u; k.stok_current = r.s; if (r.mid !== undefined) k.mekanikId = r.mid; if (r.kap) k.kap = r.kap; } });
             companyFleet = sv.fleet; companyCrew = sv.crew; crewIdCounter = sv.crewCounter; suratJalanCounter = sv.sj; { const saved = sv.spbu || [], m = new Map(saved.map(s => [s.kode, s]));
               loadedSpbuList = loadedSpbuList.map(s => m.get(s.kode) || s);
               const have = new Set(loadedSpbuList.map(s => s.kode)); saved.forEach(s => { if (!have.has(s.kode)) loadedSpbuList.push(s); }); }
@@ -2622,7 +3190,11 @@
         }
 
         // Leaderboard: hanya pemain nyata (koleksi Firestore 'leaderboard'); centang biru dari koleksi 'verified'
-        let boardRows = [], verMap = {}, boardUnsub = null;
+        // Listener leaderboard di-broadcast ke SEMUA pemain online tiap kali ada yang publish skor - paling
+        // boros kuota baca gratis Firestore. Sengaja hanya menyala selagi tab Peringkat dibuka (lihat switchTab),
+        // bukan sepanjang sesi login. Listener 'verified' jauh lebih kecil (cuma pemain centang biru) & dipakai
+        // juga di modal Top Up, jadi tetap dibiarkan menyala sepanjang sesi - dampaknya ke kuota kecil.
+        let boardRows = [], verMap = {}, verifiedUnsub = null, leaderboardUnsub = null;
         const vbadge = until => until > Date.now() ? ` <i class="fa-solid fa-circle-check text-sky-400 align-middle" title="Terverifikasi sampai ${new Date(until).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}"></i>` : '';
         const boardOpen = () => !document.getElementById('tab-leaderboard').classList.contains('hidden');
         function publishBoard() {
@@ -2630,11 +3202,16 @@
             const st = liveStats();
             fb.publishStats(currentAccount.id, { company: currentAccount.company, owner: currentAccount.owner, cash: Math.round(st.cash), units: st.units, kilang: st.kilang }).catch(e => console.warn('Leaderboard:', e));
         }
-        function startBoardListener() {
-            if (boardUnsub || !window.fb || !currentAccount) return;
-            boardUnsub = [fb.listenBoard(r => { boardRows = r; if (boardOpen()) renderLeaderboard(); }), fb.listenVerified(m => { verMap = m; renderVerified(); if (boardOpen()) renderLeaderboard(); })];
+        function startVerifiedListener() {
+            if (verifiedUnsub || !window.fb || !currentAccount) return;
+            verifiedUnsub = fb.listenVerified(m => { verMap = m; renderVerified(); if (boardOpen()) renderLeaderboard(); });
             publishBoard();
         }
+        function startLeaderboardListener() {
+            if (leaderboardUnsub || !window.fb || !currentAccount) return;
+            leaderboardUnsub = fb.listenBoard(r => { boardRows = r; if (boardOpen()) renderLeaderboard(); });
+        }
+        function stopLeaderboardListener() { if (leaderboardUnsub) { leaderboardUnsub(); leaderboardUnsub = null; } }
         function renderVerified() {
             if (!currentAccount) return;
             const u = verMap[currentAccount.id] || 0;
@@ -2683,18 +3260,19 @@
                 </div>`).join('');
         }
 
-        // ===== JAM GAME: 1 menit game = 0,5 detik nyata (kecepatan 120x) =====
-        const GAME_START = new Date(2026, 8, 25, 6, 0, 0).getTime(), GAME_SPEED = 120, ORDER_DELAY = 180000;
+        // ===== JAM GAME: 1 menit game = 0,536 detik nyata (kecepatan 112x, 1 minggu game = 1 jam 30 menit nyata) =====
+        const GAME_START = new Date(2026, 8, 25, 6, 0, 0).getTime(), GAME_SPEED = 112, ORDER_DELAY = 180000;
         let gameElapsed = 0;
         const gameNow = () => GAME_START + gameElapsed * GAME_SPEED;
         const fmtTime = ms => new Date(ms).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
         const fmtDate = ms => new Date(ms).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const gameStamp = () => new Date(gameNow()).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + fmtTime(gameNow());
         function renderClock() { document.getElementById('game-date').innerText = fmtDate(gameNow()); document.getElementById('game-time').innerText = fmtTime(gameNow()) + ' WIB'; }
-        setInterval(() => { if (currentAccount) gameElapsed += 1000; renderClock(); }, 1000);
+        setInterval(() => { if (currentAccount) gameElapsed += 500; renderClock(); }, 500);
         renderClock();
 
         // ===== STOK SPBU & PESANAN OTOMATIS =====
+        const busyIds = new Set();
         const FUELS = [
             { id: 'solar', label: 'Solar', cap: 64, color: 'text-amber-400 border-amber-500/40 bg-amber-500/10' },
             { id: 'pertalite', label: 'Pertalite', cap: 64, color: 'text-green-400 border-green-500/40 bg-green-500/10' },
@@ -2703,12 +3281,20 @@
             { id: 'lpg', label: 'LPG', cap: 40, lpg: true, unit: 'Ton', color: 'text-orange-400 border-orange-500/40 bg-orange-500/10' }
         ];
         let orders = [], ordHist = [], orderSeq = 1;
-        const ORDER_BATCH = 5, ORDER_TTL = 600000; // 10 menit nyata = 2 jam game
+        const ORDER_BATCH = { BBM: 5, LPG: 3 }, ORDER_TTL = 600000; // 10 menit nyata = 2 jam game
+        const LPG_FALLBACK_TON = [3, 5, 8, 10, 12, 15, 20]; // ukuran default pesanan LPG sebelum punya armada LPG sendiri
 
         const fuelsOf = s => FUELS.filter(f => !f.lpg || s.has_lpg);
         const capsOf = type => [...new Set(companyFleet.filter(t => t.type === type).map(t => t.cap))];
+        // Tingkat keramaian SPBU menentukan seberapa cepat BBM/LPG habis: rata-rata butuh beberapa hari,
+        // bukan hitungan jam. Ramai = kota besar/jalur utama, Sepi = daerah kecil, Sedang = di antaranya.
+        const TRAFFIC = { Ramai: { p: 0.25, mult: 1.4, label: 'Ramai' }, Sedang: { p: 0.5, mult: 1.0, label: 'Sedang' }, Sepi: { p: 0.25, mult: 0.6, label: 'Sepi' } };
+        function pickTraffic() { const r = Math.random(); return r < 0.25 ? 'Ramai' : r < 0.75 ? 'Sedang' : 'Sepi'; }
+        // Laju dasar per tick (1 tick tickStock = 12 menit game): tangki penuh SPBU "Sedang" habis rata-rata ~4 hari game.
+        const STOK_BASE_RATE = 1 / 480;
         function ensureStok(s) {
             s.stok = s.stok || {};
+            if (!s.traffic) s.traffic = pickTraffic();
             fuelsOf(s).forEach(f => { if (s.stok[f.id] == null) s.stok[f.id] = Math.round(f.cap * (0.5 + Math.random() * 0.5) * 10) / 10; });
         }
         function closeOrder(o, status) {
@@ -2728,24 +3314,30 @@
             loadedSpbuList.forEach(s => {
                 if (!isOp(s)) return;
                 ensureStok(s);
-                fuelsOf(s).forEach(f => { s.stok[f.id] = Math.max(0, Math.round((s.stok[f.id] - f.cap * (0.0015 + Math.random() * 0.006)) * 10) / 10); });
+                const mult = TRAFFIC[s.traffic || 'Sedang'].mult;
+                fuelsOf(s).forEach(f => { s.stok[f.id] = Math.max(0, Math.round((s.stok[f.id] - f.cap * STOK_BASE_RATE * mult * (0.7 + Math.random() * 0.6)) * 10) / 10); });
             });
             // Pesanan datang per gelombang: maksimal 5. Gelombang berikutnya baru muncul setelah kelima pesanan selesai/batal.
-            // SPBU baru masuk kandidat pesanan setelah stoknya turun mendekati/menembus SETENGAH kapasitas tangki timbun -
-            // jadi tidak ada lagi stok yang tiba-tiba "dipaksa habis" begitu saja saat gelombang baru dibuat.
-            const ORDER_TRIGGER_RATIO = 0.5;
+            // SPBU sudah masuk kandidat pesanan begitu stoknya turun ke 75% kapasitas tangki timbun (belum sampai
+            // separuh) - jadi SPBU minta pasokan lebih dini, sebelum stoknya benar-benar mepet.
+            const ORDER_TRIGGER_RATIO = 0.75;
             if (!orders.length && gameElapsed >= ORDER_DELAY) {
                 // Ukuran pesanan = kapasitas armada milik pemain (BBM: KL, LPG: Ton)
                 const cand = [];
                 loadedSpbuList.forEach(s => { if (isOp(s)) fuelsOf(s).forEach(f => {
                     ensureStok(s);
                     const ratio = (s.stok[f.id] || 0) / f.cap;
-                    if (ratio > ORDER_TRIGGER_RATIO) return; // belum separuh tangki, belum perlu pesan
-                    const sizes = capsOf(f.lpg ? 'LPG' : 'BBM').filter(c => c <= f.cap * 0.8);
+                    if (ratio > ORDER_TRIGGER_RATIO) return; // masih di atas 75%, belum perlu pesan
+                    let sizes = capsOf(f.lpg ? 'LPG' : 'BBM').filter(c => c <= f.cap * 0.8);
+                    if (!sizes.length && f.lpg) sizes = LPG_FALLBACK_TON.filter(c => c <= f.cap * 0.8); // belum punya armada LPG, tetap tawarkan pesanan LPG
                     if (sizes.length) cand.push({ s, f, sizes, r: ratio });
                 }); });
-                const used = new Set();
-                cand.sort((x, y) => x.r - y.r).filter(c => !used.has(c.s.kode) && used.add(c.s.kode)).slice(0, ORDER_BATCH).forEach(({ s, f, sizes }) => {
+                const used = new Set(), pickedBBM = orders.filter(o => o.fuel !== 'lpg').length, pickedLPG = orders.filter(o => o.fuel === 'lpg').length;
+                let slotBBM = Math.max(0, ORDER_BATCH.BBM - pickedBBM), slotLPG = Math.max(0, ORDER_BATCH.LPG - pickedLPG);
+                cand.sort((x, y) => x.r - y.r).filter(c => !used.has(c.s.kode + c.f.id) && used.add(c.s.kode + c.f.id)).filter(c => {
+                    if (c.f.lpg) { if (slotLPG <= 0) return false; slotLPG--; return true; }
+                    if (slotBBM <= 0) return false; slotBBM--; return true;
+                }).forEach(({ s, f, sizes }) => {
                     // Stok TIDAK dipaksa turun lagi - pesanan dibuat sesuai sisa stok riil saat itu (sudah <= 50%).
                     const kl = sizes[Math.floor(Math.random() * sizes.length)], unit = f.unit || 'KL';
                     orders.push({ id: orderSeq++, kode: s.kode, nama: s.nama, region: s.region, prov: s.provinsi || 'Jawa Timur', fuel: f.id, kl, unit, terkirim: 0, t: now, gt: gameNow(), status: 'open' });
@@ -2781,35 +3373,257 @@
             document.getElementById('delivery-fuel-type').value = fuelLabel(o.fuel);
             switchTab('tab-delivery');
         }
+        let ordFuelFilter = 'ALL';
+        function setOrdFuel(f) { ordFuelFilter = f; renderOrders(); }
         function renderOrders() {
             const badge = document.getElementById('ord-badge');
             badge.innerText = orders.length; badge.classList.toggle('hidden', !orders.length);
             const sel = document.getElementById('ord-prov');
             if (sel.options.length === 1) WILAYAH.forEach(w => sel.add(new Option(w[0], w[0])));
             if (document.getElementById('tab-orders').classList.contains('hidden')) return;
+            document.querySelectorAll('.ord-fuel-btn').forEach(b => { const on = b.dataset.f === ordFuelFilter; b.classList.toggle('bg-purple-600', on); b.classList.toggle('text-white', on); b.classList.toggle('text-gray-400', !on); });
             const pv = sel.value, now = Date.now();
             const live = o => { const s = loadedSpbuList.find(x => x.kode === o.kode); return s && s.stok ? s.stok[o.fuel] : 0; };
-            const open = orders.filter(o => pv === 'ALL' || o.prov === pv).sort((a, b) => live(a) - live(b));
+            const matchFuel = o => ordFuelFilter === 'ALL' || (ordFuelFilter === 'LPG' ? o.fuel === 'lpg' : o.fuel !== 'lpg');
+            const open = orders.filter(o => (pv === 'ALL' || o.prov === pv) && matchFuel(o)).sort((a, b) => live(a) - live(b));
             const kpi = (l, v, c) => `<div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800"><div class="text-[9px] text-gray-500">${l}</div><div class="font-mono font-black text-sm ${c}">${v}</div></div>`;
-            document.getElementById('ord-kpi').innerHTML = kpi('Pesanan Terbuka', orders.length, 'text-red-400') + kpi('Stok Habis', orders.filter(o => live(o) <= 0).length, 'text-amber-400') + kpi('Total Diminta', orders.filter(o => !o.unit || o.unit === 'KL').reduce((n, o) => n + o.kl - o.terkirim, 0) + ' KL' + (orders.some(o => o.unit === 'Ton') ? ' + ' + orders.filter(o => o.unit === 'Ton').reduce((n, o) => n + o.kl - o.terkirim, 0) + ' T' : ''), 'text-emerald-400');
+            document.getElementById('ord-kpi').innerHTML = kpi('Pesanan BBM', orders.filter(o => o.fuel !== 'lpg').length, 'text-blue-400') + kpi('Pesanan LPG', orders.filter(o => o.fuel === 'lpg').length, 'text-orange-400') + kpi('Stok Habis', orders.filter(o => live(o) <= 0).length, 'text-amber-400') + kpi('Total Diminta', orders.filter(o => !o.unit || o.unit === 'KL').reduce((n, o) => n + o.kl - o.terkirim, 0) + ' KL' + (orders.some(o => o.unit === 'Ton') ? ' + ' + orders.filter(o => o.unit === 'Ton').reduce((n, o) => n + o.kl - o.terkirim, 0) + ' T' : ''), 'text-emerald-400');
             document.getElementById('ord-list').innerHTML = open.length ? open.map(o => {
-                const f = FUELS.find(x => x.id === o.fuel), sisa = live(o), pct = Math.round(sisa / f.cap * 100), left = Math.max(0, Math.round((ORDER_TTL - (now - o.t)) / (60000 / GAME_SPEED))); // menit game
+                const f = FUELS.find(x => x.id === o.fuel), sisa = live(o), pct = Math.round(sisa / f.cap * 100), left = Math.max(0, Math.round((ORDER_TTL - (now - o.t)) / (60000 / GAME_SPEED))), sp = loadedSpbuList.find(x => x.kode === o.kode), trf = sp ? TRAFFIC[sp.traffic || 'Sedang'].label : 'Sedang'; // menit game
                 return `<div class="bg-gray-900 border ${sisa <= 0 ? 'border-red-500/60' : 'border-gray-800'} rounded-lg p-2.5 space-y-1.5">
-                  <div class="flex justify-between items-start gap-2"><div class="min-w-0"><div class="text-xs font-bold text-gray-100 truncate">${esc(o.nama)}</div><div class="text-[10px] text-gray-500">${esc(o.region)} &middot; ${esc(o.prov)} &middot; ${o.gt ? new Date(o.gt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + fmtTime(o.gt) : ''}</div></div>
+                  <div class="flex justify-between items-start gap-2"><div class="min-w-0"><div class="text-xs font-bold text-gray-100 truncate">${esc(o.nama)}</div><div class="text-[10px] text-gray-500">${esc(o.region)} &middot; ${esc(o.prov)} &middot; Keramaian ${trf} &middot; ${o.gt ? new Date(o.gt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + fmtTime(o.gt) : ''}</div></div>
                   <span class="text-[10px] font-bold border rounded px-1.5 py-0.5 shrink-0 ${f.color}">${f.label}</span></div>
                   <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden"><div class="${pct <= 0 ? 'bg-red-600' : 'bg-amber-500'} h-full" style="width:${pct}%"></div></div>
                   <div class="flex justify-between items-center text-[10px]"><span class="text-gray-400">${sisa <= 0 ? '<b class="text-red-400">HABIS</b>' : `Sisa <b class="text-amber-400">${sisa} ${f.unit || 'KL'}</b> / ${f.cap} ${f.unit || 'KL'}`} &middot; Pesan <b class="text-emerald-400">${o.kl - o.terkirim} ${o.unit || 'KL'}</b> &middot; ${Math.floor(left / 60)}j ${left % 60}m</span>
                   <button onclick="kirimPesanan(${o.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-bold">Kirim</button></div></div>`;
-            }).join('') : (companyFleet.length ? '<div class="text-xs text-gray-500 text-center py-4">Belum ada SPBU yang kehabisan stok. Pesanan akan muncul otomatis, ukurannya mengikuti kapasitas armada Anda.</div>' : '<div class="text-xs text-gray-500 text-center py-4">Belum punya armada. Beli truk dulu; pesanan menyesuaikan kapasitas armada Anda.</div>');
+            }).join('') : (companyFleet.length ? `<div class="text-xs text-gray-500 text-center py-4">Belum ada pesanan ${ordFuelFilter === 'ALL' ? '' : ordFuelFilter + ' '}yang cocok dengan filter ini. Pesanan muncul otomatis, ukurannya mengikuti kapasitas armada Anda${ordFuelFilter !== 'BBM' ? ' (LPG memakai ukuran umum sebelum Anda punya armada LPG sendiri)' : ''}.</div>` : '<div class="text-xs text-gray-500 text-center py-4">Belum punya armada. Beli truk dulu; pesanan menyesuaikan kapasitas armada Anda.</div>');
             document.getElementById('ord-hist').innerHTML = ordHist.map(o => `<div class="flex justify-between bg-gray-900 rounded px-2 py-1"><span class="truncate text-gray-300">${esc(o.nama)} &middot; ${fuelLabel(o.fuel)} ${o.kl} ${o.unit || 'KL'}</span><b class="${o.status === 'Selesai' ? 'text-emerald-400' : 'text-red-400'}">${o.status}</b></div>`).join('') || '<div class="text-gray-600">Belum ada riwayat.</div>';
         }
         setInterval(() => { if (currentAccount) tickStock(); }, 6000);
 
-        setInterval(saveGame, 5000);
-        setInterval(publishBoard, 300000);
+        setInterval(saveGame, 30000);
+        // Heartbeat leaderboard diperlambat jadi tiap 15 menit (dari 5 menit) - broadcast-nya ke semua pemain
+        // online lewat listener real-time, jadi ini pengungkit terbesar buat hemat kuota baca Firestore gratis.
+        setInterval(publishBoard, 900000);
         setInterval(renderVerified, 30000);
         setInterval(() => { if (currentAccount && !document.getElementById('tab-leaderboard').classList.contains('hidden')) renderLeaderboard(); }, 3000);
         window.addEventListener('beforeunload', saveGame);
+
+        // ============================================================
+        // DEALER: pemilih kategori armada, biar cuma satu kategori yang tampil
+        // (nggak perlu scroll panjang ngelewatin semua jenis truk/kapal).
+        // ============================================================
+        function selectDealerCat(cat) {
+            document.querySelectorAll('.dealer-cat-btn').forEach(b => b.classList.toggle('active', b.dataset.dcat === cat));
+            document.querySelectorAll('.dealer-cat-panel').forEach(p => p.classList.toggle('hidden', p.dataset.dcatPanel !== cat));
+            const strip = document.getElementById('dealer-cat-switch');
+            const activeBtn = strip && strip.querySelector('.dealer-cat-btn.active');
+            if (activeBtn) activeBtn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+
+        // ============================================================
+        // PICKER: ganti semua <select> jadi tombol + lembar pilihan (bottom sheet)
+        // <select> asli TETAP ada di DOM (disembunyikan) supaya semua logic lama
+        // (populate*, .value=, .selectedIndex=, onchange=...) tetap jalan apa adanya.
+        // ============================================================
+        (function () {
+            const VALUE_DESC = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+            const INDEX_DESC = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'selectedIndex');
+            let activeOverlay = null;
+
+            const ICONS = [
+                [/truck|kapal|armada/i, 'fa-truck'],
+                [/driver|nahkoda/i, 'fa-id-card'],
+                [/kernet|abk|mekanik/i, 'fa-user-gear'],
+                [/spbu|target|depot/i, 'fa-gas-pump'],
+                [/region|prov|wilayah/i, 'fa-map-location-dot'],
+                [/fuel|type|lpg-type|muatan/i, 'fa-droplet'],
+                [/pkg|paket/i, 'fa-box'],
+                [/ban-days|hari/i, 'fa-calendar-days'],
+            ];
+            function iconFor(sel) {
+                const key = sel.id || '';
+                for (const [re, ic] of ICONS) if (re.test(key)) return ic;
+                return 'fa-list-ul';
+            }
+            function titleFor(sel) {
+                const lbl = sel.parentElement && sel.parentElement.querySelector('label');
+                if (lbl) return lbl.textContent.replace(/:\s*$/, '').trim();
+                return sel.getAttribute('aria-label') || 'Pilih';
+            }
+            function currentLabel(sel) {
+                const opt = sel.options[sel.selectedIndex];
+                return opt ? opt.text : '-- Pilih --';
+            }
+            function isPlaceholderText(t) { return /^--.*--$/.test((t || '').trim()); }
+
+            function refreshBtn(sel) {
+                const btn = sel._pickerBtn;
+                if (!btn) return;
+                const span = btn.querySelector('.pb-label');
+                const txt = currentLabel(sel);
+                span.textContent = txt;
+                span.classList.toggle('pb-placeholder', isPlaceholderText(txt) || !sel.value);
+                btn.disabled = !sel.options.length;
+                btn.classList.toggle('opacity-60', !sel.options.length);
+            }
+
+            function closeOverlay() {
+                if (!activeOverlay) return;
+                const ov = activeOverlay, btn = ov._forBtn;
+                ov.classList.remove('show');
+                if (btn) btn.classList.remove('open');
+                setTimeout(() => ov.remove(), 160);
+                activeOverlay = null;
+                document.removeEventListener('keydown', onEsc);
+            }
+            function onEsc(e) { if (e.key === 'Escape') closeOverlay(); }
+
+            function openPicker(sel) {
+                closeOverlay();
+                const overlay = document.createElement('div');
+                overlay.className = 'picker-overlay';
+                overlay._forBtn = sel._pickerBtn;
+
+                const sheet = document.createElement('div');
+                sheet.className = 'picker-sheet';
+                overlay.appendChild(sheet);
+
+                const head = document.createElement('div');
+                head.className = 'picker-sheet-head';
+                head.innerHTML = `<div class="picker-sheet-title"><span><i class="fa-solid ${iconFor(sel)} mr-1.5 text-emerald-400"></i>${esc(titleFor(sel))}</span><span class="picker-sheet-close"><i class="fa-solid fa-xmark"></i></span></div>`;
+                head.querySelector('.picker-sheet-close').onclick = closeOverlay;
+                sheet.appendChild(head);
+
+                const leafCount = sel.querySelectorAll('option').length;
+                let searchInput = null;
+                if (leafCount > 7) {
+                    const sw = document.createElement('div');
+                    sw.className = 'picker-search';
+                    sw.innerHTML = `<i class="fa-solid fa-magnifying-glass"></i><input type="text" placeholder="Cari...">`;
+                    head.appendChild(sw);
+                    searchInput = sw.querySelector('input');
+                }
+
+                const body = document.createElement('div');
+                body.className = 'picker-sheet-body custom-scrollbar';
+                sheet.appendChild(body);
+
+                function makeItem(opt) {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.className = 'picker-item' + (opt.index === sel.selectedIndex ? ' active' : '');
+                    item.dataset.text = (opt.text || '').toLowerCase();
+                    if (opt.disabled) {
+                        item.disabled = true;
+                        item.innerHTML = `<span class="pi-check"></span><span>${esc(opt.text)}</span>`;
+                    } else {
+                        item.innerHTML = `<span class="pi-check"><i class="fa-solid fa-check"></i></span><span class="flex-1 min-w-0">${esc(opt.text)}</span>`;
+                        item.onclick = () => {
+                            VALUE_DESC.set.call(sel, opt.value);
+                            refreshBtn(sel);
+                            sel.dispatchEvent(new Event('change', { bubbles: true }));
+                            sel.dispatchEvent(new Event('input', { bubbles: true }));
+                            closeOverlay();
+                        };
+                    }
+                    return item;
+                }
+
+                function renderList() {
+                    body.innerHTML = '';
+                    let shown = 0;
+                    Array.from(sel.children).forEach(child => {
+                        if (child.tagName === 'OPTGROUP') {
+                            const opts = Array.from(child.children);
+                            const wrap = document.createElement('div');
+                            wrap.className = 'picker-group';
+                            const lbl = document.createElement('div');
+                            lbl.className = 'picker-group-label';
+                            lbl.textContent = child.label || '';
+                            wrap.appendChild(lbl);
+                            let groupShown = 0;
+                            opts.forEach(opt => {
+                                const t = (opt.text || '').toLowerCase();
+                                if (searchInput && searchInput._q && !t.includes(searchInput._q)) return;
+                                wrap.appendChild(makeItem(opt));
+                                groupShown++; shown++;
+                            });
+                            if (groupShown) body.appendChild(wrap);
+                        } else if (child.tagName === 'OPTION') {
+                            const t = (child.text || '').toLowerCase();
+                            if (searchInput && searchInput._q && !t.includes(searchInput._q)) return;
+                            body.appendChild(makeItem(child));
+                            shown++;
+                        }
+                    });
+                    if (!shown) body.innerHTML = '<div class="picker-empty">Tidak ada hasil.</div>';
+                }
+                renderList();
+
+                if (searchInput) {
+                    searchInput.addEventListener('input', () => {
+                        searchInput._q = searchInput.value.trim().toLowerCase();
+                        renderList();
+                    });
+                }
+
+                document.body.appendChild(overlay);
+                overlay.addEventListener('mousedown', e => { if (e.target === overlay) closeOverlay(); });
+                requestAnimationFrame(() => overlay.classList.add('show'));
+                if (sel._pickerBtn) sel._pickerBtn.classList.add('open');
+                activeOverlay = overlay;
+                document.addEventListener('keydown', onEsc);
+                if (searchInput && !('ontouchstart' in window)) setTimeout(() => searchInput.focus(), 180);
+            }
+
+            function enhanceSelect(sel) {
+                if (sel.dataset.pickerEnhanced || sel.multiple) return;
+                sel.dataset.pickerEnhanced = '1';
+
+                const wrap = document.createElement('div');
+                wrap.className = 'picker-wrap';
+                sel.parentNode.insertBefore(wrap, sel);
+                wrap.appendChild(sel);
+                sel.classList.add('picker-native');
+                sel.tabIndex = -1;
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = sel.className.replace('picker-native', '') + ' picker-btn';
+                btn.innerHTML = `<i class="fa-solid ${iconFor(sel)} pb-ico"></i><span class="pb-label"></span><i class="fa-solid fa-chevron-down pb-chev"></i>`;
+                btn.onclick = () => openPicker(sel);
+                wrap.appendChild(btn);
+                sel._pickerBtn = btn;
+
+                Object.defineProperty(sel, 'value', {
+                    configurable: true,
+                    get() { return VALUE_DESC.get.call(sel); },
+                    set(v) { VALUE_DESC.set.call(sel, v); refreshBtn(sel); }
+                });
+                Object.defineProperty(sel, 'selectedIndex', {
+                    configurable: true,
+                    get() { return INDEX_DESC.get.call(sel); },
+                    set(v) { INDEX_DESC.set.call(sel, v); refreshBtn(sel); }
+                });
+
+                sel.addEventListener('change', () => refreshBtn(sel));
+                new MutationObserver(() => refreshBtn(sel)).observe(sel, { childList: true, subtree: true });
+
+                refreshBtn(sel);
+            }
+
+            function scanAndEnhance(root) {
+                (root.matches && root.matches('select') ? [root] : Array.from(root.querySelectorAll ? root.querySelectorAll('select') : [])).forEach(enhanceSelect);
+            }
+
+            window.addEventListener('DOMContentLoaded', () => scanAndEnhance(document.body));
+            document.querySelectorAll('select').forEach(enhanceSelect);
+
+            new MutationObserver(muts => {
+                muts.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) scanAndEnhance(n); }));
+            }).observe(document.body, { childList: true, subtree: true });
+        })();
 
         updateCashDisplay();
         renderDealerCatalog();

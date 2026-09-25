@@ -52,3 +52,43 @@
         .toast-item.err i{color:#f87171}
         @keyframes toast-in{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
         @keyframes toast-out{from{opacity:1}to{opacity:0;transform:translateY(-6px)}}
+
+        /* ===== Picker: ganti <select> jadi tombol + lembar pilihan (bottom sheet) ===== */
+        select.picker-native{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;opacity:0!important;pointer-events:none!important}
+        .picker-wrap{position:relative}
+        .picker-btn{display:flex;align-items:center;gap:8px;cursor:pointer;text-align:left;transition:border-color .15s ease,background-color .15s ease}
+        .picker-btn:hover{border-color:#4b5563}
+        .picker-btn:active{transform:translateY(1px)}
+        .picker-btn .pb-ico{flex:none;width:16px;text-align:center;opacity:.85}
+        .picker-btn .pb-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .picker-btn .pb-label.pb-placeholder{color:#6b7280}
+        .picker-btn .pb-chev{flex:none;font-size:10px;opacity:.6;transition:transform .15s ease}
+        .picker-btn.open .pb-chev{transform:rotate(180deg)}
+        .picker-overlay{position:fixed;inset:0;background:rgba(3,7,18,.72);backdrop-filter:blur(1px);z-index:20500;display:flex;align-items:flex-end;justify-content:center;opacity:0;transition:opacity .18s ease}
+        .picker-overlay.show{opacity:1}
+        @media (min-width:640px){ .picker-overlay{align-items:center} }
+        .picker-sheet{background:#0b1120;border:1px solid #1f2937;width:100%;max-width:440px;max-height:78vh;display:flex;flex-direction:column;border-radius:1rem 1rem 0 0;box-shadow:0 -8px 30px rgba(0,0,0,.5);transform:translateY(16px);transition:transform .18s ease}
+        @media (min-width:640px){ .picker-sheet{border-radius:1rem;transform:translateY(8px);margin-bottom:0} }
+        .picker-overlay.show .picker-sheet{transform:translateY(0)}
+        .picker-sheet-head{flex:none;padding:12px 14px 10px;border-bottom:1px solid #1f2937}
+        .picker-sheet-title{font-size:12px;font-weight:800;color:#e5e7eb;text-transform:uppercase;letter-spacing:.03em;display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .picker-sheet-close{flex:none;color:#9ca3af;width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:9999px;cursor:pointer}
+        .picker-sheet-close:hover{background:#1f2937;color:#e5e7eb}
+        .picker-search{margin-top:8px;display:flex;align-items:center;gap:6px;background:#111827;border:1px solid #1f2937;border-radius:.6rem;padding:7px 10px}
+        .picker-search input{background:transparent;border:0;outline:0;color:#e5e7eb;font-size:12px;width:100%}
+        .picker-search i{color:#6b7280;font-size:11px}
+        .picker-sheet-body{overflow-y:auto;padding:6px}
+        .picker-group-label{font-size:10px;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px 3px}
+        .picker-item{width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:9px 10px;border-radius:.6rem;font-size:12px;color:#d1d5db;cursor:pointer;background:transparent;border:1px solid transparent}
+        .picker-item:hover{background:#111827}
+        .picker-item.active{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.4);color:#e5e7eb}
+        .picker-item .pi-check{flex:none;width:14px;color:#10b981;opacity:0}
+        .picker-item.active .pi-check{opacity:1}
+        .picker-item[disabled]{opacity:.5;cursor:default}
+        .picker-item[disabled]:hover{background:transparent}
+        .picker-empty{padding:18px 10px;text-align:center;color:#6b7280;font-size:11px}
+
+        /* ===== Dealer: chip pemilih kategori armada ===== */
+        .dealer-cat-btn{color:#9ca3af;background:#0b1120;border-color:#1f2937}
+        .dealer-cat-btn:hover{color:#e5e7eb;background:#111827}
+        .dealer-cat-btn.active{color:#fff;background:#4f46e5;border-color:#4f46e5;box-shadow:0 2px 10px rgba(79,70,229,.35)}
