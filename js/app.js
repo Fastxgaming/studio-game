@@ -812,16 +812,35 @@
                     fillOpacity: 0.9
                 }).addTo(map);
 
+                const coastal = isCoastal(kilang);
                 marker.bindPopup(`
                     <div class="text-gray-900 font-sans p-1">
                         <strong class="text-xs font-bold block text-teal-700">${kilang.nama}</strong>
                         <div class="text-[10px] text-gray-600">Status: <b>${kilang.is_unlocked ? 'Aktif' : 'Terkunci'}</b></div>
+                        <div class="text-[10px] text-gray-600">Akses: <b>${coastal ? '⚓ Pesisir (ada dermaga, bisa disandari kapal tanker)' : '🛣️ Darat saja (tidak ada dermaga)'}</b></div>
                         <div class="text-[10px] text-gray-600">Stok: <b>${kilang.stok_current.toLocaleString()} / ${kilang.stok_max.toLocaleString()} ${kilang.unit}</b></div>
                         <div class="text-[10px] text-gray-600">Mekanik: <b>${mekanikName(kilang) || 'Belum ada'}</b></div>
                     </div>
                 `);
 
                 kilangMarkers.push(marker);
+
+                // Bug fix: tandai di PETA (bukan cuma di daftar sidebar) depo/kilang mana yang punya akses
+                // pelabuhan (dermaga) - lencana jangkar kecil menempel di pojok marker depo tersebut.
+                if (coastal) {
+                    const dermagaBadge = L.marker([kilang.lat, kilang.lon], {
+                        icon: L.divIcon({
+                            className: '',
+                            iconSize: [16, 16],
+                            iconAnchor: [-6, 18],
+                            html: `<div style="width:16px;height:16px;border-radius:50%;background:#0891b2;border:2px solid #fff;display:flex;align-items:center;justify-content:center;color:#fff;font-size:8px;box-shadow:0 1px 4px rgba(0,0,0,.6)"><i class="fa-solid fa-anchor"></i></div>`
+                        }),
+                        zIndexOffset: 700,
+                        interactive: false
+                    }).addTo(map);
+                    dermagaBadge.bindTooltip(esc(`${kilang.nama} - Ada Dermaga`), { direction: 'top', offset: [0, -8], className: 'truck-tip' });
+                    kilangMarkers.push(dermagaBadge);
+                }
             });
 
             if (targetSelect.options.length === 0) {
@@ -2271,9 +2290,14 @@
         // ===== ANIMASI TRUK: hanya terlihat oleh pemain yang mengirim (tidak dibagikan ke pemain lain) =====
         const flying = new Set();
         let ownAnims = 0;
+        // Bug fix: sebelumnya truk/kapal yang sudah tiba kembali di depot langsung dihapus total dari peta (marker +
+        // bekas rute lenyap begitu saja). Sekarang truk milik sendiri "diparkir" sebagai titik kecil di lokasi
+        // terakhirnya (depot) sampai truk itu ditugaskan berangkat lagi, supaya tidak terasa tiba-tiba menghilang.
+        const parkedMarkers = new Map();
 
         function launchTruck(e, remote) {
             if (Date.now() - e.startAt >= e.dur || flying.size > 80) return null;
+            if (!remote && parkedMarkers.has(e.id)) { map.removeLayer(parkedMarkers.get(e.id)); parkedMarkers.delete(e.id); }
             const pts = e.pts, cum = [0];
             for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + distKm({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] }));
             const isFerry = e.vehicle === 'ferry';
@@ -2287,7 +2311,7 @@
                 zIndexOffset: remote ? 500 : 1000
             }).addTo(map);
             marker.bindTooltip(esc(remote ? `${e.owner} · ${e.plat}` : `${isFerry ? 'Ferry · ' + e.id : isKapal ? 'Kapal · ' + e.id : e.id} · ${e.plat}`), { permanent: true, direction: 'top', offset: [0, -16], className: 'truck-tip' });
-            const t = { e, pts, cum, total: cum[cum.length - 1] || 0.01, marker, line, trail, remote, lastTrail: 0, done: null };
+            const t = { e, pts, cum, total: cum[cum.length - 1] || 0.01, marker, line, trail, remote, color, lastTrail: 0, done: null };
             flying.add(t);
             if (flying.size === 1) requestAnimationFrame(flyLoop);
             return t;
@@ -2308,7 +2332,19 @@
                 if (el) { el.classList.add('done'); el.innerHTML = '<i class="fa-solid fa-circle-check"></i>'; }
                 if (t.done) t.done();
                 flying.delete(t);
-                setTimeout(() => [t.marker, t.line, t.trail].forEach(l => map.removeLayer(l)), 4000);
+                setTimeout(() => {
+                    [t.line, t.trail].forEach(l => map.removeLayer(l));
+                    map.removeLayer(t.marker);
+                    if (!t.remote) {
+                        // Parkir titik kecil di lokasi akhir (depot) alih-alih menghilang total.
+                        // Akan otomatis dibersihkan sendiri saat truk ini berangkat lagi (lihat launchTruck).
+                        if (parkedMarkers.has(t.e.id)) map.removeLayer(parkedMarkers.get(t.e.id));
+                        const finalLL = t.pts[t.pts.length - 1];
+                        const parked = L.circleMarker(finalLL, { radius: 5, color: '#fff', weight: 1.5, fillColor: t.color, fillOpacity: 0.9 }).addTo(map);
+                        parked.bindTooltip(esc(`${t.e.id} · terparkir`), { direction: 'top', offset: [0, -8], className: 'truck-tip' });
+                        parkedMarkers.set(t.e.id, parked);
+                    }
+                }, 4000);
             });
             if (flying.size) requestAnimationFrame(flyLoop);
         }
@@ -2398,11 +2434,15 @@
                 ownAnims = Math.max(0, ownAnims - 1);
                 setTimeout(async () => {
                     completeUnloading(d);
-                    // Animasi truk/kapal berjalan balik ke depot asal setelah bongkar muatan tuntas (lewat ferry lagi bila perlu)
+                    // Animasi truk/kapal berjalan balik ke depot asal setelah bongkar muatan tuntas (lewat ferry lagi bila perlu).
+                    // PENTING: truk/supir/kernet baru dibebaskan (busyIds) SETELAH benar-benar tiba di depot di bawah ini,
+                    // supaya tidak bisa ditugaskan ulang (dobel) selagi masih dalam perjalanan pulang.
                     try {
                         await journey(spbu, origin, meta, false);
                         addLog(`TIBA DI DEPOT: ${truck.id} [Supir: ${driver.name}] kembali ke ${origin.nama} setelah selesai bongkar muatan.`, 'info', 'truck');
                     } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi keuangan yang sudah cair */ }
+                    ids.forEach(x => busyIds.delete(x));
+                    populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
                 }, UNLOAD_SECONDS * 1000);
             } catch (err) {
                 ids.forEach(x => busyIds.delete(x));
@@ -2431,10 +2471,14 @@
                 ownAnims = Math.max(0, ownAnims - 1);
                 setTimeout(async () => {
                     completeKapalTransfer(d);
+                    // PENTING: sama seperti truk darat - busyIds baru dilepas SETELAH kapal benar-benar sandar
+                    // kembali di depot asal, supaya kapal tidak bisa dipakai lagi selagi masih berlayar pulang.
                     try {
                         await shipLeg(target, origin, meta, false);
                         addLog(`TIBA DI DEPOT: Kapal ${truck.id} [Nahkoda: ${driver.name}] kembali berlabuh di ${origin.nama} setelah selesai bongkar muatan.`, 'info', 'truck');
                     } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi stok yang sudah masuk */ }
+                    ids.forEach(x => busyIds.delete(x));
+                    populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
                 }, UNLOAD_SECONDS_KAPAL * 1000);
             } catch (err) {
                 ids.forEach(x => busyIds.delete(x));
@@ -2453,7 +2497,8 @@
                 companyCash -= result.fine; totalExpense += result.fine;
                 addFinanceLog(`Denda pelanggaran pelayaran kapal ${truck.id} (${target.nama})`, -result.fine);
             }
-            ids.forEach(i => busyIds.delete(i));
+            // busyIds TIDAK dilepas di sini lagi - baru dilepas setelah kapal benar-benar sandar kembali di depot
+            // asal (lihat animateKapalTransfer), supaya kapal tidak bisa ditugaskan dobel selagi masih berlayar pulang.
             addLog(`TRANSFER SELESAI ${nomorSJ || ''}: ${truck.cap.toLocaleString()} ${target.unit} pasokan curah diturunkan di ${target.nama}. Stok kini ${Math.round(target.stok_current).toLocaleString()}/${target.stok_max.toLocaleString()} ${target.unit}.`, 'success');
             notify(`${truck.id} selesai bongkar muatan di ${target.nama}.`, 'ok');
             updateCashDisplay();
@@ -2503,7 +2548,8 @@
             addLog(`BONGKAR SELESAI (SJ ${nomorSJ}): ${truck.id} [Supir: ${driver.name}] tuntas bongkar ${jenisMuatan} di ${spbu.nama}. Kotor ${formatRupiah(revenueKotor)} - biaya kirim ${formatRupiah(biayaKirim)} = bersih ${formatRupiah(revenueBersih)} cair ke kas. ${result.notes.join('; ')}. Menempuh ±${roundTripKm} km PP (total odometer ${truck.odometer.toLocaleString('id-ID')} km, sisa ban ${truck.banPct}%).${banNote}`, result.violated ? 'warning' : 'success', 'truck');
             notify(`Pendapatan ${formatRupiah(revenueBersih)} cair dari ${truck.id} setelah bongkar muatan di ${spbu.nama}.`, result.violated ? 'warn' : 'info');
 
-            ids.forEach(x => busyIds.delete(x));
+            // busyIds TIDAK dilepas di sini lagi - baru dilepas setelah truk benar-benar tiba kembali di depot asal
+            // (lihat animateDelivery), supaya truk tidak bisa ditugaskan dobel selagi masih dalam perjalanan pulang.
             populateTruckDropdowns(); populateCrewDropdowns();
         }
 

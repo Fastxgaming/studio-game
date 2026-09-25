@@ -1,8 +1,5 @@
-# Sistem / editor
 .DS_Store
-Thumbs.db
-.vscode/
-*.log
-
-# Node (jika nanti pakai tooling/bundler)
 node_modules/
+.vscode/*
+!.vscode/extensions.json
+*.log
