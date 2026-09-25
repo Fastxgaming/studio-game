@@ -89,37 +89,6 @@ Progres disimpan otomatis ke **cloud (Firebase)** lewat sistem akun, sehingga ga
 
 Seluruh logic game (ekonomi, stok, armada, pajak, dsb.) berjalan sepenuhnya di sisi klien (client-side), dengan Firebase hanya digunakan untuk akun, cloud save, dan leaderboard.
 
-## 🗂️ Struktur Proyek
-
-```
-.
-├── index.html              # Struktur halaman (markup saja)
-├── css/
-│   └── style.css           # Semua custom CSS (animasi, scrollbar, dsb.)
-├── js/
-│   ├── firebase.js         # Modul Firebase (Auth + Firestore) — dimuat sbg <script type="module">
-│   └── app.js               # Logic utama game (ekonomi, armada, peta, dsb.)
-├── asset/
-│   ├── qris.png             # QRIS asli merchant "Studio Game" untuk fitur Top Up Saldo
-│   └── README.md            # Panduan mengganti QRIS placeholder dengan QRIS asli
-└── .github/workflows/
-    └── deploy.yml           # GitHub Actions: auto-deploy ke GitHub Pages tiap push ke `main`
-```
-
-File sudah dipecah dari satu file HTML monolitik supaya lebih mudah dibuka & di-*edit* di VS Code (dengan syntax highlighting CSS/JS yang benar, IntelliSense, dsb.), tanpa mengubah perilaku aplikasi sama sekali.
-
-> **Penting — urutan pemuatan skrip tidak boleh diubah:** `js/firebase.js` dimuat lebih dulu sebagai `type="module"`, baru kemudian `js/app.js` sebagai skrip biasa. `app.js` bergantung pada `window.fb` yang di-*set* oleh `firebase.js`, dan sebaliknya `firebase.js` memanggil balik beberapa fungsi/variabel global (`authChecked`, `maybeFinish`) yang dideklarasikan di `app.js`. Karena skrip modul otomatis di-*defer*, urutan ini tetap aman selama kedua tag `<script>` di `index.html` tidak dipindah atau diberi atribut `defer`/`async` tambahan.
-
-## 🌐 Menjalankan di GitHub Pages
-
-Repo ini sudah dilengkapi workflow GitHub Actions (`.github/workflows/deploy.yml`) yang otomatis men-deploy isi repo ke GitHub Pages setiap kali ada push ke branch `main`. Langkah aktivasinya:
-
-1. Push seluruh isi folder ini (termasuk folder `.github`) ke repository GitHub-mu.
-2. Buka **Settings → Pages** di repo tersebut.
-3. Pada bagian **Build and deployment → Source**, pilih **GitHub Actions** (bukan "Deploy from a branch").
-4. Push apa pun ke `main` (atau jalankan manual lewat tab **Actions → Deploy to GitHub Pages → Run workflow**) — situs akan otomatis ter-build dan tayang di `https://<username>.github.io/<nama-repo>/`.
-5. Tambahkan domain `https://<username>.github.io` ke **Authorized domains** di Firebase Console (Authentication → Settings), agar fitur daftar/masuk akun tidak diblokir Firebase.
-
 ## 🤝 Kontribusi
 
 Kontribusi, laporan bug, dan ide fitur baru sangat terbuka lewat *Issues* atau *Pull Request* di repository ini.
