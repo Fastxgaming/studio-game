@@ -1,0 +1,54 @@
+        #map { height: 100%; width: 100%; border-radius: 0.75rem; }
+        /* Saat tab selain Peta/Dealer dibuka, panel konten sidebar kiri dipindah ke panel kanan,
+           jadi wadah aside disusutkan supaya tidak menyisakan kotak hitam kosong */
+        #left-aside.nav-only { max-height: none; }
+        @media (min-width: 1024px) {
+            #left-aside.nav-only { width: 144px; }
+        }
+.truck-ico{width:30px;height:30px;border-radius:50%;border:2px solid #fff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.55)}
+        .truck-ico .tf{display:inline-block}
+        .truck-ico i{animation:truck-bob .35s ease-in-out infinite alternate}
+        .truck-ico.done{animation:truck-pulse 1s ease-out 2}
+        .truck-ico.done i{animation:none}
+        @keyframes truck-bob{to{transform:translateY(-1.5px)}}
+        @keyframes truck-pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.8)}100%{box-shadow:0 0 0 20px rgba(16,185,129,0)}}
+        .truck-tip{background:#111827;color:#e5e7eb;border:1px solid #374151;font-size:10px;font-weight:700;padding:1px 5px;box-shadow:none}
+        .truck-tip:before{display:none}
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #111827; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; scroll-snap-type: x proximity; }
+        .no-scrollbar > * { scroll-snap-align: start; }
+        /* Fade halus di tepi kiri/kanan strip yang bisa digeser (HP & tablet), penanda ada konten lain di sampingnya */
+        .scroll-fade-x { -webkit-mask-image: linear-gradient(to right, transparent 0, black 18px, black calc(100% - 18px), transparent 100%); mask-image: linear-gradient(to right, transparent 0, black 18px, black calc(100% - 18px), transparent 100%); }
+        @media (min-width: 1024px) { .scroll-fade-x { -webkit-mask-image: none; mask-image: none; } }
+        .loading-bg{background-image:radial-gradient(circle at 15% 10%,rgba(13,148,136,.32),transparent 45%),radial-gradient(circle at 90% 85%,rgba(99,102,241,.22),transparent 45%);background-color:#030712}
+        @keyframes pulse-glow{0%,100%{opacity:.25;transform:scale(.94)}50%{opacity:.6;transform:scale(1.08)}}
+        .glow-logo{animation:pulse-glow 1.8s ease-in-out infinite}
+        @keyframes fuel-drip{0%,100%{transform:translateY(0)}50%{transform:translateY(2px)}}
+        .fuel-drip{display:inline-block;animation:fuel-drip 1s ease-in-out infinite}
+        @keyframes shimmer-sweep{0%{transform:translateX(-120%)}100%{transform:translateX(220%)}}
+        .loading-shimmer{background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);width:40%;animation:shimmer-sweep 1.1s linear infinite}
+        @keyframes truck-wiggle{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-2px) rotate(-2deg)}}
+        #loading-truck i{display:inline-block;animation:truck-wiggle .4s ease-in-out infinite}
+        @keyframes dots-blink{0%,100%{opacity:.25}50%{opacity:1}}
+        .loading-dot{animation:dots-blink 1.2s ease-in-out infinite}
+        .loading-dot:nth-child(2){animation-delay:.15s}
+        .loading-dot:nth-child(3){animation-delay:.3s}
+        /* Spinner bulat berputar di tengah layar loading, dengan ikon pompa bensin di dalamnya */
+        @keyframes spin-ring{to{transform:rotate(360deg)}}
+        .spin-ring{animation:spin-ring 1.1s linear infinite}
+        @keyframes spin-ring-rev{to{transform:rotate(-360deg)}}
+        .spin-ring-rev{animation:spin-ring-rev 1.6s linear infinite}
+        /* Transisi halus loading -> layar Main Sekarang (splash) */
+        #loading-overlay{transition:opacity .45s ease}
+        #splash-overlay{transition:opacity .45s ease}
+        #toast-wrap{position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:20000;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+        .toast-item{pointer-events:auto;display:flex;align-items:center;gap:8px;background:#111827;border:1px solid #374151;color:#e5e7eb;font-size:12px;font-weight:600;padding:8px 14px;border-radius:9999px;box-shadow:0 8px 24px rgba(0,0,0,.45);animation:toast-in .18s ease-out, toast-out .25s ease-in 1.75s forwards}
+        .toast-item.ok{border-color:rgba(16,185,129,.5)}
+        .toast-item.ok i{color:#34d399}
+        .toast-item.err{border-color:rgba(248,113,113,.5)}
+        .toast-item.err i{color:#f87171}
+        @keyframes toast-in{from{opacity:0;transform:translateY(-8px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+        @keyframes toast-out{from{opacity:1}to{opacity:0;transform:translateY(-6px)}}
