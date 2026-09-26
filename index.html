@@ -18,7 +18,9 @@
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- Stylesheet lokal (sebelumnya inline <style>) -->
     <link rel="stylesheet" href="css/style.css">
+</head>
 </head>
 <body class="bg-gray-950 text-gray-100 font-sans h-screen flex flex-col overflow-hidden">
 
@@ -619,15 +621,30 @@
                             </div>
                             <div>
                                 <label class="text-gray-400 block mb-1">Target SPBU Tujuan:</label>
-                                <select id="delivery-spbu-select" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
+                                <select id="delivery-spbu-select" onchange="updateRouteEstimate('delivery')" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
                                     <option value="">-- Memuat daftar SPBU... --</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="text-gray-400 block mb-1">Pilih Unit Armada Truk BBM:</label>
-                                <select id="delivery-truck-select" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
+                                <select id="delivery-truck-select" onchange="updateRouteEstimate('delivery')" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
                                     <!-- Populated via JS -->
                                 </select>
+                            </div>
+
+                            <div>
+                                <label class="text-gray-400 block mb-1">Pilih Rute Pengiriman:</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="route-opt cursor-pointer flex flex-col gap-0.5 bg-gray-900 border border-emerald-600/60 rounded-lg p-2 text-[11px]" data-prefix="delivery" data-mode="tol">
+                                        <span class="flex items-center gap-1 font-bold text-gray-200"><input type="radio" name="delivery-route-mode" value="tol" checked onchange="updateRouteEstimate('delivery')" class="accent-emerald-500"><i class="fa-solid fa-road text-emerald-400"></i> Rute Tol</span>
+                                        <span class="text-gray-500">Cepat &middot; kena tarif tol</span>
+                                    </label>
+                                    <label class="route-opt cursor-pointer flex flex-col gap-0.5 bg-gray-900 border border-gray-800 rounded-lg p-2 text-[11px]" data-prefix="delivery" data-mode="nontol">
+                                        <span class="flex items-center gap-1 font-bold text-gray-200"><input type="radio" name="delivery-route-mode" value="nontol" onchange="updateRouteEstimate('delivery')" class="accent-emerald-500"><i class="fa-solid fa-signs-post text-gray-400"></i> Rute Non-Tol</span>
+                                        <span class="text-gray-500">Gratis tol &middot; lebih jauh &amp; lambat</span>
+                                    </label>
+                                </div>
+                                <div id="delivery-route-estimate" class="mt-2 bg-gray-900 border border-gray-800 rounded-lg p-2 text-[10px] text-gray-400 leading-relaxed">Pilih SPBU &amp; armada untuk melihat estimasi jarak, BBM &amp; tol.</div>
                             </div>
 
                             <!-- SELEKSI DRIVER & KERNET KHUSUS DISPATCH -->
@@ -672,15 +689,30 @@
                         <div class="space-y-3 text-xs">
                             <div>
                                 <label class="text-gray-400 block mb-1">Target SPBU Layanan LPG:</label>
-                                <select id="lpg-spbu-select" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
+                                <select id="lpg-spbu-select" onchange="updateRouteEstimate('lpg')" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
                                     <option value="">-- Memuat SPBU LPG... --</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="text-gray-400 block mb-1">Pilih Unit Armada Truk LPG:</label>
-                                <select id="lpg-truck-select" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
+                                <select id="lpg-truck-select" onchange="updateRouteEstimate('lpg')" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-gray-200">
                                     <!-- Populated via JS -->
                                 </select>
+                            </div>
+
+                            <div>
+                                <label class="text-gray-400 block mb-1">Pilih Rute Pengiriman:</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="route-opt cursor-pointer flex flex-col gap-0.5 bg-gray-900 border border-amber-600/60 rounded-lg p-2 text-[11px]" data-prefix="lpg" data-mode="tol">
+                                        <span class="flex items-center gap-1 font-bold text-gray-200"><input type="radio" name="lpg-route-mode" value="tol" checked onchange="updateRouteEstimate('lpg')" class="accent-amber-500"><i class="fa-solid fa-road text-amber-400"></i> Rute Tol</span>
+                                        <span class="text-gray-500">Cepat &middot; kena tarif tol</span>
+                                    </label>
+                                    <label class="route-opt cursor-pointer flex flex-col gap-0.5 bg-gray-900 border border-gray-800 rounded-lg p-2 text-[11px]" data-prefix="lpg" data-mode="nontol">
+                                        <span class="flex items-center gap-1 font-bold text-gray-200"><input type="radio" name="lpg-route-mode" value="nontol" onchange="updateRouteEstimate('lpg')" class="accent-amber-500"><i class="fa-solid fa-signs-post text-gray-400"></i> Rute Non-Tol</span>
+                                        <span class="text-gray-500">Gratis tol &middot; lebih jauh &amp; lambat</span>
+                                    </label>
+                                </div>
+                                <div id="lpg-route-estimate" class="mt-2 bg-gray-900 border border-gray-800 rounded-lg p-2 text-[10px] text-gray-400 leading-relaxed">Pilih SPBU &amp; armada untuk melihat estimasi jarak, BBM &amp; tol.</div>
                             </div>
 
                             <!-- SELEKSI DRIVER & KERNET LPG -->
@@ -1156,7 +1188,11 @@
     </div>
 
     <!-- JavaScript Logic Simulation -->
+
+    <!-- Firebase (auth & cloud save) - module script -->
     <script type="module" src="js/firebase.js"></script>
-    <script src="js/app.js"></script>
+
+    <!-- Logika utama game -->
+    <script src="js/script.js"></script>
 </body>
 </html>
