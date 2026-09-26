@@ -101,7 +101,7 @@
 
         // ===== TUTORIAL DALAM GAME (untuk pemain baru) =====
         const TUTORIAL_STEPS = [
-            { icon: 'fa-gas-pump', title: 'Selamat Datang di Pertama Manager ID!', desc: 'Kamu jadi bos perusahaan distribusi BBM & LPG. Modal awal Rp 650 Juta, Kilang Tuban sudah aktif dengan stok 750.000 Bbl. Tutorial singkat ini menunjukkan langkah pertama supaya kamu tidak bingung.' },
+            { icon: 'fa-gas-pump', title: 'Selamat Datang di Migas Manager ID!', desc: 'Kamu jadi bos perusahaan distribusi BBM & LPG. Modal awal Rp 650 Juta, Kilang Tuban sudah aktif dengan stok 750.000 Bbl. Tutorial singkat ini menunjukkan langkah pertama supaya kamu tidak bingung.' },
             { icon: 'fa-store', title: '1. Beli Armada di Dealer', desc: 'Buka tab Dealer untuk beli truk tangki BBM atau LPG. Setiap pembelian sudah termasuk biaya Uji KIR, STNK, dan plat nomor, jadi truk langsung siap jalan.' },
             { icon: 'fa-user-shield', title: '2. Rekrut Supir & Kernet', desc: 'Buka tab SDM Driver untuk merekrut supir dan kernet. Truk butuh keduanya sebelum bisa dikirim ke SPBU, jadi rekrut secukupnya sesuai jumlah armada.' },
             { icon: 'fa-gas-pump', title: '3. Kirim BBM / LPG ke SPBU', desc: 'Buka tab POM BBM atau LPG, pilih truk + supir + kernet, lalu tanda tangani Surat Jalan. Pendapatan cair otomatis setelah truk tiba dan selesai bongkar muatan.' },

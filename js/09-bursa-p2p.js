@@ -96,7 +96,7 @@
             if (!p || !currentAccount) return;
             if (!topupRegistered || !topupSender) return topupMsg('Registrasi pembayaran (isi nama pengirim) dulu sebelum konfirmasi ke WhatsApp.', false);
             if (/X{4}/.test(TOPUP_ADMIN.wa)) return topupMsg('Nomor WhatsApp admin belum diisi di index.html (TOPUP_ADMIN.wa).', false);
-            const msg = `Halo Admin *Pertama Manager ID* 👋\nSaya ingin konfirmasi pembayaran Top Up Saldo.\n\n🏢 *Detail Perusahaan*\nPerusahaan: ${currentAccount.company}\nEmail: ${currentAccount.email || '-'}\nUID: ${currentAccount.id}\n\n💳 *Detail Pembayaran*\nNama Pengirim: ${topupSender}\nPaket: *${p.label}* (${rpFmt(p.price)})\nBonus: Centang biru ${p.days} hari\n\n📎 Bukti pembayaran (screenshot QRIS + struk/notifikasi pembayaran) saya lampirkan di chat ini.\n\nMohon segera diproses ya, terima kasih 🙏`;
+            const msg = `Halo Admin *Migas Manager ID* 👋\nSaya ingin konfirmasi pembayaran Top Up Saldo.\n\n🏢 *Detail Perusahaan*\nPerusahaan: ${currentAccount.company}\nEmail: ${currentAccount.email || '-'}\nUID: ${currentAccount.id}\n\n💳 *Detail Pembayaran*\nNama Pengirim: ${topupSender}\nPaket: *${p.label}* (${rpFmt(p.price)})\nBonus: Centang biru ${p.days} hari\n\n📎 Bukti pembayaran (screenshot QRIS + struk/notifikasi pembayaran) saya lampirkan di chat ini.\n\nMohon segera diproses ya, terima kasih 🙏`;
             window.open('https://wa.me/' + TOPUP_ADMIN.wa + '?text=' + encodeURIComponent(msg), '_blank');
             topupMsg('WhatsApp dibuka. Lampirkan bukti bayar. Setelah admin mengonfirmasi, tekan Klaim di kotak Notifikasi Top Up.');
         }

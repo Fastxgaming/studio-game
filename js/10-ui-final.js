@@ -517,7 +517,12 @@
         setInterval(saveGame, 30000);
         // Heartbeat leaderboard diperlambat jadi tiap 15 menit (dari 5 menit) - broadcast-nya ke semua pemain
         // online lewat listener real-time, jadi ini pengungkit terbesar buat hemat kuota baca Firestore gratis.
-        setInterval(publishBoard, 900000);
+        // Auto-publish skor ke leaderboard: sengaja dijarangkan (bukan tiap 15 menit lagi) supaya hemat
+        // kuota gratis Firestore - tiap publish ditulis 1x, lalu dikirim ke SEMUA pemain yang tab
+        // Peringkat-nya sedang terbuka, jadi makin sering publish = makin boros. Mau ganti jadi tiap
+        // berapa jam? Tinggal ubah angka jam di bawah ini (LEADERBOARD_UPDATE_HOURS).
+        const LEADERBOARD_UPDATE_HOURS = 3;
+        setInterval(publishBoard, LEADERBOARD_UPDATE_HOURS * 60 * 60 * 1000);
         setInterval(renderVerified, 30000);
         setInterval(() => { if (currentAccount && !document.getElementById('tab-leaderboard').classList.contains('hidden')) renderLeaderboard(); }, 3000);
         window.addEventListener('beforeunload', saveGame);
