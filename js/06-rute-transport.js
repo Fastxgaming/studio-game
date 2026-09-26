@@ -304,22 +304,33 @@
             for (let i = 1; i < pts.length; i++) total += distKm({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] });
             return { total, sinuosity: total / (straightKm > 0.05 ? straightKm : total || 1) };
         }
-        // Kecepatan truk mengikuti karakter jalan sesungguhnya: start 45 km/j untuk jalan berkelok-kelok (banyak
-        // tikungan, khas pegunungan/perkotaan), naik sampai 60-80 km/j untuk jalan renggang & jarang berkelok
-        // (jalan nasional lurus/tol). Rute Tol dijamin minimal 60 km/j (jalan bebas hambatan), Rute Non-Tol
-        // dibatasi maksimal 65 km/j walau jalurnya lurus (tetap lewat kota, ada lampu merah/pasar/persimpangan).
+        // Kecepatan truk mengikuti karakter jalan sesungguhnya (sinuosity = rasio panjang jalur riil vs garis
+        // lurus, makin besar makin berkelok) DAN mode rute yang dipilih - masing-masing mode punya rentang
+        // kecepatan sendiri, jadi keduanya tidak overlap:
+        //  - Rute Tol (jalan bebas hambatan): 80-100 km/j. Tol sesungguhnya bisa juga sedikit berkelok
+        //    (naik-turun kontur/interchange), jadi tetap diskalakan dari sinuosity, hanya rentangnya jauh
+        //    lebih tinggi dari jalan biasa.
+        //  - Rute Non-Tol (jalan nasional/arteri, lewat kota/kampung): 55-80 km/j, makin berkelok jalurnya
+        //    (banyak tikungan/persimpangan) makin pelan.
         function roadSpeedKmh(sinuosity, real, routeKey) {
-            let speed;
-            if (!real) speed = 45; // rute perkiraan (OSRM gagal dimuat) sengaja dibuat berkelok, anggap jalan kecil
-            else if (sinuosity >= 1.35) speed = 45;      // sangat berkelok-kelok
-            else if (sinuosity >= 1.22) speed = 52;      // cukup berkelok
-            else if (sinuosity >= 1.12) speed = 60;      // sedikit berkelok
-            else if (sinuosity >= 1.05) speed = 70;      // relatif lurus
-            else speed = 80;                              // nyaris lurus & renggang, jarang ada belokan
             const rm = ROUTE_MODE[routeKey] || ROUTE_MODE.tol;
-            if (rm.key === 'tol') speed = Math.max(speed, 60);
-            else speed = Math.min(speed, 65);
-            return Math.max(38, Math.min(80, speed));
+            if (rm.key === 'tol') {
+                let speed;
+                if (!real) speed = 90; // rute perkiraan (OSRM gagal dimuat) - anggap tol lancar rata-rata
+                else if (sinuosity >= 1.15) speed = 80;      // ada kelokan cukup berarti (interchange/kontur)
+                else if (sinuosity >= 1.08) speed = 88;
+                else if (sinuosity >= 1.03) speed = 95;
+                else speed = 100;                             // lurus & renggang, khas ruas tol utama
+                return Math.max(80, Math.min(100, speed));
+            }
+            let speed;
+            if (!real) speed = 55; // rute perkiraan (OSRM gagal dimuat) sengaja dibuat berkelok, anggap jalan kecil
+            else if (sinuosity >= 1.35) speed = 55;      // sangat berkelok-kelok
+            else if (sinuosity >= 1.22) speed = 60;      // cukup berkelok
+            else if (sinuosity >= 1.12) speed = 68;      // sedikit berkelok
+            else if (sinuosity >= 1.05) speed = 74;      // relatif lurus
+            else speed = 80;                              // nyaris lurus & renggang, jarang ada belokan
+            return Math.max(55, Math.min(80, speed));
         }
         // Estimasi biaya sekali jalan (one-way) untuk preview sebelum truk berangkat.
         function estimasiBiayaRute(kmEfektif, speedKmh, truck, routeKey) {
@@ -380,7 +391,7 @@
             const mySeq = ++routeEstimateSeq;
             box.innerHTML = '<span class="text-gray-500">Menghitung rute...</span>';
             const straightKm = distKm(origin, spbu);
-            const { pts, real } = await fetchRoute(origin, spbu);
+            const { pts, real } = await fetchRoute(origin, spbu, routeKey);
             if (mySeq !== routeEstimateSeq) return; // sudah ada permintaan estimasi lain yang lebih baru, buang hasil ini
 
             const { total, sinuosity } = sinuosityOf(pts, straightKm);
@@ -663,12 +674,20 @@
             return out;
         }
 
-        async function fetchRoute(o, d) {
-            const key = `${o.lat},${o.lon}|${d.lat},${d.lon}`;
+        async function fetchRoute(o, d, routeKey) {
+            // routeKey ('tol'/'nontol') WAJIB ikut jadi bagian cache key & query OSRM - sebelumnya rute yang
+            // digambar/dianimasikan di peta SELALU sama untuk kedua mode (cache cuma berdasar lat/lon), jadi
+            // walau pemain pilih "Rute Tol", jalur yang benar-benar dilalui truk di peta tetap rute default
+            // OSRM apa adanya (kadang justru rute non-tol kalau OSRM anggap itu yang tercepat/tersedia).
+            // Sekarang mode Non-Tol memaksa OSRM menghindari jalan tol (exclude=motorway,toll - didukung
+            // bawaan oleh profil car.lua OSRM), supaya jalur di peta benar-benar konsisten dengan pilihan.
+            const rk = routeKey === 'nontol' ? 'nontol' : 'tol';
+            const key = `${rk}|${o.lat},${o.lon}|${d.lat},${d.lon}`;
             if (routeCache.has(key)) return routeCache.get(key);
             try {
                 const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 7000);
-                const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson`, { signal: ctl.signal });
+                const excludeParam = rk === 'nontol' ? '&exclude=motorway,toll' : '';
+                const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${o.lon},${o.lat};${d.lon},${d.lat}?overview=full&geometries=geojson${excludeParam}`, { signal: ctl.signal });
                 clearTimeout(t);
                 const j = await r.json();
                 if (j.code === 'Ok' && j.routes && j.routes[0]) {

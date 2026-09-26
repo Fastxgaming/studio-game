@@ -108,11 +108,11 @@
             });
         }
         async function driveLeg(from, to, meta, fit) {
-            const { pts, real } = await fetchRoute(from, to);
+            const { pts, real } = await fetchRoute(from, to, meta.routeMode);
             const straightKm = distKm(from, to);
             const { total: rawTotal, sinuosity } = sinuosityOf(pts, straightKm);
-            // Kecepatan mengikuti karakter jalan sesungguhnya (lihat roadSpeedKmh): 45 km/j untuk jalan berkelok-kelok,
-            // naik sampai 60-80 km/j untuk jalan renggang & jarang belokan.
+            // Kecepatan mengikuti karakter jalan sesungguhnya & mode rute (lihat roadSpeedKmh):
+            // Rute Tol 80-100 km/j, Rute Non-Tol 55-80 km/j, makin berkelok jalurnya makin pelan.
             const speedKmh = roadSpeedKmh(sinuosity, real, meta.routeMode);
             // Rute Non-Tol lewat jalan nasional/arteri: jarak tempuh riil lebih jauh dari rute Tol.
             const rm = ROUTE_MODE[meta.routeMode] || ROUTE_MODE.tol;
