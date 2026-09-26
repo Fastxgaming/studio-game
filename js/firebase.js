@@ -36,7 +36,7 @@
         login: (email, pw) => signInWithEmailAndPassword(auth, email, pw),
         out: () => signOut(auth),
         publishStats: (uid, d) => setDoc(doc(db, 'leaderboard', uid), { ...d, updated: serverTimestamp() }),
-        listenBoard: cb => onSnapshot(collection(db, 'leaderboard'), sn => cb(sn.docs.map(x => ({ uid: x.id, ...x.data() }))), e => console.warn('Listener leaderboard:', e)),
+        listenBoard: cb => onSnapshot(query(collection(db, 'leaderboard'), orderBy('cash', 'desc'), limit(50)), sn => cb(sn.docs.map(x => ({ uid: x.id, ...x.data() }))), e => console.warn('Listener leaderboard:', e)),
         listenVerified: cb => onSnapshot(collection(db, 'verified'), sn => { const m = {}; sn.docs.forEach(x => { m[x.id] = x.data().until || 0; }); cb(m); }, e => console.warn('Listener verified:', e)),
         // Top up manual: pemain kirim bukti bayar via WhatsApp, admin mengirim saldo memakai UID pemain
         listenTopups: (uid, cb) => onSnapshot(query(collection(db, 'topups'), where('uid', '==', uid), where('status', '==', 'paid'), where('claimed', '==', false)),
@@ -48,14 +48,33 @@
         lookupPlayer: uid => getDoc(doc(db, 'leaderboard', uid)).then(x => x.exists() ? x.data() : null),
         recentGrants: () => getDocs(query(collection(db, 'topups'), orderBy('created', 'desc'), limit(10))).then(sn => sn.docs.map(d => ({ id: d.id, ...d.data() }))),
         async adminGrant(adminUid, uid, pkg, note) {
-            const vref = doc(db, 'verified', uid), v = await getDoc(vref);
-            const base = Math.max(Date.now(), v.exists() ? (v.data().until || 0) : 0), id = 'ADM-' + Date.now() + '-' + uid.slice(0, 6);
+            const id = 'ADM-' + Date.now() + '-' + uid.slice(0, 6);
             const b = writeBatch(db);   // atomik: saldo + centang biru berhasil bersamaan atau tidak sama sekali
             b.set(doc(db, 'topups', id), { uid, pkgId: pkg.id, cash: pkg.cash, price: pkg.price, days: pkg.days, status: 'paid', claimed: false, created: serverTimestamp(), paidAt: serverTimestamp(), by: adminUid, note: note || '' });
-            b.set(vref, { until: base + pkg.days * 86400000, updated: serverTimestamp() });
+            // Kalau days = 0 (mode "hanya saldo"), dokumen centang biru TIDAK disentuh sama sekali -
+            // centang biru pemain tidak ikut diperpanjang/diaktifkan lewat kiriman ini.
+            if (pkg.days > 0) {
+                const vref = doc(db, 'verified', uid), v = await getDoc(vref);
+                const base = Math.max(Date.now(), v.exists() ? (v.data().until || 0) : 0);
+                b.set(vref, { until: base + pkg.days * 86400000, updated: serverTimestamp() });
+            }
             await b.commit(); return id;
         },
         markClaimed: id => updateDoc(doc(db, 'topups', id), { claimed: true, claimedAt: serverTimestamp() }),
+        // ===== BROADCAST: notifikasi admin ke semua pemain, tersimpan permanen di Firestore =====
+        // Kenapa bukan push notification (FCM)? Proyek ini belum menyiapkan service worker/VAPID key.
+        // Solusinya: setiap dokumen broadcast disimpan permanen, lalu tiap klien mengambil broadcast yang
+        // ID/waktunya lebih baru dari "terakhir dilihat" (disimpan di localStorage per akun) begitu mereka
+        // login/refresh - jadi pemain yang sedang offline tetap otomatis menerimanya nanti, kapan pun mereka
+        // login berikutnya, tanpa perlu online saat admin mengirim.
+        sendBroadcast: (adminUid, message, level) => setDoc(doc(collection(db, 'broadcasts')), { message, level: level || 'info', by: adminUid, created: serverTimestamp() }),
+        recentBroadcasts: () => getDocs(query(collection(db, 'broadcasts'), orderBy('created', 'desc'), limit(5))).then(sn => sn.docs.map(d => ({ id: d.id, ...d.data() }))),
+        // Dipanggil sekali per sesi (bukan realtime) - cukup ambil status saat login/refresh, tidak perlu
+        // listener terus-menerus untuk pengumuman yang sifatnya tidak mendesak seperti ini.
+        fetchNewBroadcasts: () => getDocs(query(collection(db, 'broadcasts'), orderBy('created', 'desc'), limit(20))).then(sn => sn.docs.map(d => ({ id: d.id, ...d.data() }))),
+        // "Terakhir dilihat" disimpan di Firestore (dokumen users/{uid}), BUKAN localStorage, supaya kalau
+        // pemain login dari HP lalu dari laptop, status "sudah dilihat"-nya tersinkron - tidak dobel per perangkat.
+        markBroadcastSeen: (uid, ts) => setDoc(doc(db, 'users', uid), { lastBroadcastSeen: ts }, { merge: true }),
         // ===== Bursa P2P: jual-beli unit truk bekas antar pemain nyata =====
         listenBursaListings: cb => onSnapshot(query(collection(db, 'bursa'), where('status', '==', 'open'), orderBy('created', 'desc'), limit(200)),
             sn => cb(sn.docs.map(d => ({ id: d.id, ...d.data() }))), e => console.warn('Listener bursa:', e)),

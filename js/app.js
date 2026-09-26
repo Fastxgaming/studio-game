@@ -1,4 +1,11 @@
         // ===== LAYAR LOADING & PLAY GAME (sebelum Daftar/Masuk) =====
+        // Satu-satunya tempat untuk update nomor versi - otomatis tampil di layar loading & layar "Main Sekarang".
+        const APP_VERSION = '1.0.4';
+        (function showAppVersion() {
+            const label = 'v' + APP_VERSION;
+            const a = document.getElementById('app-version-loading'); if (a) a.textContent = label;
+            const b = document.getElementById('app-version-splash'); if (b) b.textContent = label;
+        })();
         let loadingAnimDone = false, authChecked = false, loadingHidden = false;
         function hideLoadingOverlay() {
             if (loadingHidden) return;
@@ -26,21 +33,35 @@
         // Fallback: kalau Firebase gagal merespons (mis. offline), jangan biarkan pemain terjebak di layar loading
         setTimeout(() => { if (!authChecked) { authChecked = true; maybeFinish(); } }, 8000);
         (function loadingSequence() {
+            // Bar mengisi TERUS-MENERUS lewat requestAnimationFrame (bukan loncat per tahap seperti sebelumnya) -
+            // label & persen di bawahnya cuma "menumpang" progres asli, jadi visualnya selalu mulus walau
+            // teksnya berubah bertahap. Total durasi sengaja dibuat agak lama (±10 detik) biar tidak terburu-buru.
             const steps = [[15, 'Menyiapkan aset game'], [35, 'Memuat peta Nusantara'], [55, 'Menyiapkan armada & kilang'], [75, 'Menyinkronkan data SPBU'], [90, 'Menghubungkan ke server'], [100, 'Siap main!']];
             const bar = document.getElementById('loading-bar'), txt = document.getElementById('loading-text');
             const truck = document.getElementById('loading-truck'), pct = document.getElementById('loading-pct');
-            let i = 0;
-            (function tick() {
-                if (i < steps.length) {
-                    const [p, label] = steps[i];
-                    bar.style.width = p + '%';
-                    txt.innerHTML = label + (p < 100 ? '<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>' : '');
-                    if (truck) truck.style.left = 'calc(' + p + '% - ' + (p >= 100 ? 16 : 8) + 'px)';
-                    if (pct) pct.textContent = p + '%';
-                    i++; setTimeout(tick, 1100);
-                }
+            const TOTAL_MS = 10000;
+            const easeInOutQuad = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+            let start = null, shownIdx = -1;
+            function setLabel(idx) {
+                if (idx === shownIdx) return;
+                shownIdx = idx;
+                const [, label] = steps[idx];
+                txt.innerHTML = label + (idx < steps.length - 1 ? '<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>' : '');
+            }
+            function frame(now) {
+                if (start === null) start = now;
+                const t = Math.min((now - start) / TOTAL_MS, 1);
+                const p = easeInOutQuad(t) * 100;
+                bar.style.width = p + '%';
+                if (truck) truck.style.left = 'calc(' + p + '% - ' + (p >= 99.5 ? 16 : 8) + 'px)';
+                if (pct) pct.textContent = Math.round(p) + '%';
+                let idx = 0;
+                for (let i = 0; i < steps.length; i++) { if (p + 0.5 >= steps[i][0]) idx = i; }
+                setLabel(idx);
+                if (t < 1) requestAnimationFrame(frame);
                 else { loadingAnimDone = true; setTimeout(maybeFinish, 400); }
-            })();
+            }
+            requestAnimationFrame(frame);
         })();
         // Overlay transisi halus (fade) supaya perpindahan layar tidak terasa "tiba-tiba"
         function coverScreen(afterCovered) {
@@ -132,7 +153,7 @@
                 lat: -6.812400,
                 lon: 111.962100,
                 is_unlocked: true,
-                stok_current: 750000,
+                stok_current: 1000000,
                 stok_max: 1000000,
                 unit: 'Bbl',
                 harga_beli: 0,
@@ -147,7 +168,7 @@
                 is_unlocked: false,
                 stok_current: 0,
                 stok_max: 100000,
-                unit: 'KL',
+                unit: 'Bbl',
                 harga_beli: 30000000000,
                 mekanikId: null
             },
@@ -255,19 +276,24 @@
 
         // Depo/TBBM regional (dibeli pemain, jadi titik berangkat truk terdekat)
         refineryData.push(...[['TBBM Plumpang Jakarta',-6.1216,106.8967,25e9],['TBBM Tanjung Emas Semarang',-6.949,110.426,18e9],['TBBM Padalarang Bandung',-6.84,107.48,15e9],['TBBM Manggis Bali',-8.5,115.52,18e9],['TBBM Bitung Sulut',1.45,125.19,16e9],['TBBM Donggala Sulteng',-0.66,119.74,15e9],['Depo Mamuju Sulbar',-2.67,118.89,12e9],['TBBM Balikpapan Kaltim',-1.27,116.8,22e9],['TBBM Banjarmasin Kalsel',-3.29,114.57,15e9],['TBBM Pontianak Kalbar',-0.04,109.32,15e9],['Depo Palangka Raya Kalteng',-2.25,113.9,12e9],['Depo Tarakan Kaltara',3.31,117.62,14e9],['TBBM Makassar Sulsel',-5.14,119.43,20e9]]
-            .map((d, i) => ({ id: 'KILANG-' + String(4 + i).padStart(2, '0'), nama: d[0], tipe: 'Depo Cabang BBM', lat: d[1], lon: d[2], is_unlocked: false, stok_current: 0, stok_max: 100000, unit: 'KL', harga_beli: d[3] * 2, mekanikId: null })));
+            .map((d, i) => ({ id: 'KILANG-' + String(4 + i).padStart(2, '0'), nama: d[0], tipe: 'Depo Cabang BBM', lat: d[1], lon: d[2], is_unlocked: false, stok_current: 0, stok_max: 100000, unit: 'Bbl', harga_beli: d[3] * 2, mekanikId: null })));
 
         // ===== KAPASITAS DEPO PER JENIS PRODUK (Pusat & Cabang) =====
         // Setiap Kilang/Depo kini punya tangki terpisah per jenis BBM & LPG, masing-masing bisa di-upgrade sendiri.
+        // refineRatio = jumlah Bbl bahan mentah yang dibutuhkan untuk mengolah 1 unit produk ini (BBM pakai rasio Bbl->KL yang sama dengan ECO.bblPerKl, LPG disamakan 1:1 seperti konvensi transfer kapal/darat).
+        // refineRate  = sisa dari desain lama, tidak dipakai lagi untuk kecepatan; BBL->BBM sekarang diproses manual lewat tombol Konversi (lihat convertBblKeProduk & BBL_CONVERT_STEP).
         const PRODUCT_META = {
-            pertalite:      { label: 'Pertalite',      unit: 'KL',  icon: 'fa-gas-pump',       color: '#22c55e', step: 3000, baseCost: 900e6,  buyPrice: 10500000 },
-            pertamax:       { label: 'Pertamax',       unit: 'KL',  icon: 'fa-gas-pump',       color: '#3b82f6', step: 2500, baseCost: 950e6,  buyPrice: 13500000 },
-            pertamax_turbo: { label: 'Pertamax Turbo', unit: 'KL',  icon: 'fa-bolt',           color: '#a855f7', step: 1500, baseCost: 1100e6, buyPrice: 16000000 },
-            solar:          { label: 'Solar',          unit: 'KL',  icon: 'fa-oil-can',        color: '#f59e0b', step: 3000, baseCost: 850e6,  buyPrice: 9800000 },
-            dexlite:        { label: 'Dexlite',        unit: 'KL',  icon: 'fa-oil-can',        color: '#06b6d4', step: 2000, baseCost: 1000e6, buyPrice: 13200000 },
+            pertalite:      { label: 'Pertalite',      unit: 'KL',  icon: 'fa-gas-pump',       color: '#22c55e', step: 3000, baseCost: 900e6,  buyPrice: 10500000, refineRatio: ECO.bblPerKl, refineRate: 40 },
+            pertamax:       { label: 'Pertamax',       unit: 'KL',  icon: 'fa-gas-pump',       color: '#3b82f6', step: 2500, baseCost: 950e6,  buyPrice: 13500000, refineRatio: ECO.bblPerKl, refineRate: 30 },
+            pertamax_turbo: { label: 'Pertamax Turbo', unit: 'KL',  icon: 'fa-bolt',           color: '#a855f7', step: 1500, baseCost: 1100e6, buyPrice: 16000000, refineRatio: ECO.bblPerKl, refineRate: 18 },
+            solar:          { label: 'Solar',          unit: 'KL',  icon: 'fa-oil-can',        color: '#f59e0b', step: 3000, baseCost: 850e6,  buyPrice: 9800000,  refineRatio: ECO.bblPerKl, refineRate: 40 },
+            dexlite:        { label: 'Dexlite',        unit: 'KL',  icon: 'fa-oil-can',        color: '#06b6d4', step: 2000, baseCost: 1000e6, buyPrice: 13200000, refineRatio: ECO.bblPerKl, refineRate: 22 },
             lpg_curah:      { label: 'LPG Curah',      unit: 'Ton', icon: 'fa-truck-ramp-box', color: '#f97316', step: 1500, baseCost: 1200e6, buyPrice: 9500000 },
             lpg_tabung:     { label: 'LPG Tabung',     unit: 'Ton', icon: 'fa-dolly',          color: '#ef4444', step: 1200, baseCost: 1050e6 }
         };
+        // Ukuran sekali klik tombol "Konversi BBL -> BBM" (BBL diolah manual lewat tombol, bukan otomatis lagi).
+        const BBL_CONVERT_STEP = { pertalite: 5000, pertamax: 4000, pertamax_turbo: 2000, solar: 5000, dexlite: 3000 };
+        const REFINE_TICK_MS = 2000; // dipakai untuk durasi kedip animasi "Diolah" saat tombol konversi diklik
         const KAP_GROUP = {
             'Pusat Utama': Object.keys(PRODUCT_META),
             'Depo Cabang BBM': ['pertalite', 'pertamax', 'pertamax_turbo', 'solar', 'dexlite'],
@@ -284,12 +310,8 @@
                     k.kap[key] = { max: startMax, cur: 0, level: 0 };
                 });
                 if (k.id === 'KILANG-01') {
-                    if (k.kap.pertalite) k.kap.pertalite.cur = Math.round(k.kap.pertalite.max * 0.4);
-                    if (k.kap.pertamax) k.kap.pertamax.cur = Math.round(k.kap.pertamax.max * 0.35);
-                    if (k.kap.pertamax_turbo) k.kap.pertamax_turbo.cur = Math.round(k.kap.pertamax_turbo.max * 0.25);
-                    if (k.kap.solar) k.kap.solar.cur = Math.round(k.kap.solar.max * 0.45);
-                    if (k.kap.dexlite) k.kap.dexlite.cur = Math.round(k.kap.dexlite.max * 0.3);
-                    if (k.kap.lpg_curah) k.kap.lpg_curah.cur = Math.round(k.kap.lpg_curah.max * 0.5);
+                    // Awal main: semua stok produk Kilang Tuban penuh (100%), bukan sebagian.
+                    Object.values(k.kap).forEach(s => { s.cur = s.max; });
                 }
             });
         }
@@ -297,7 +319,52 @@
 
         // ===== KOTAK NOTIFIKASI (sistem + klaim top up) =====
         let notifs = [], notifUnread = 0, pendingTopups = [];
+        // ===== EFEK SUARA (Web Audio API, nada sintetis - tanpa file audio eksternal, ringan & offline) =====
+        let audioCtx = null, soundEnabled = true;
+        try { const sv = localStorage.getItem('pmid_sound'); if (sv !== null) soundEnabled = sv === '1'; } catch (e) { /* localStorage tidak tersedia, default nyala */ }
+        function getAudioCtx() {
+            if (!audioCtx) { try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+            if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+            return audioCtx;
+        }
+        // Buka/kunci AudioContext sedini mungkin lewat interaksi pertama pengguna (kebijakan autoplay browser).
+        document.addEventListener('click', () => getAudioCtx(), { once: true });
+        function beep(freq, durMs, type, startDelay, vol) {
+            if (!soundEnabled) return;
+            const ctx = getAudioCtx();
+            if (!ctx) return;
+            const t0 = ctx.currentTime + (startDelay || 0);
+            const osc = ctx.createOscillator(), gain = ctx.createGain();
+            osc.type = type || 'sine';
+            osc.frequency.setValueAtTime(freq, t0);
+            gain.gain.setValueAtTime(0, t0);
+            gain.gain.linearRampToValueAtTime(vol || 0.15, t0 + 0.015);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + durMs / 1000);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(t0); osc.stop(t0 + durMs / 1000 + 0.03);
+        }
+        // Notifikasi/alert: nada lembut naik utk info, nada dua-ketuk lebih tegas utk peringatan (warn).
+        function playSoundNotif(level) {
+            if (level === 'warn') { beep(660, 150, 'square', 0, 0.12); beep(440, 220, 'square', 0.16, 0.12); }
+            else { beep(880, 130, 'sine', 0, 0.11); beep(1180, 150, 'sine', 0.08, 0.11); }
+        }
+        // Truk/kapal berangkat: nada rendah naik pendek. Truk/kapal tiba: nada tiga-ketuk naik (lebih ceria).
+        function playSoundDepart() { beep(392, 90, 'triangle', 0, 0.13); beep(523, 140, 'triangle', 0.08, 0.13); }
+        function playSoundArrive() { beep(659, 100, 'sine', 0, 0.13); beep(784, 100, 'sine', 0.09, 0.13); beep(988, 180, 'sine', 0.18, 0.13); }
+        function renderSoundBtn() {
+            const b = document.getElementById('sound-toggle-btn');
+            if (b) b.innerHTML = soundEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark"></i>';
+        }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            try { localStorage.setItem('pmid_sound', soundEnabled ? '1' : '0'); } catch (e) { /* abaikan kalau localStorage diblokir */ }
+            renderSoundBtn();
+            if (soundEnabled) playSoundNotif('info');
+        }
+        renderSoundBtn();
+
         function notify(text, level) {
+            playSoundNotif(level);
             notifs.unshift({ text, level: level || 'info', t: gameStamp() });
             if (notifs.length > 30) notifs.pop();
             notifUnread++; renderNotif();
@@ -332,6 +399,10 @@
         // cat: 'general' (default, semua aktivitas non-truk) atau 'truck' (khusus log berangkat/tiba/bongkar muatan)
         function addLog(msg, type = 'info', cat = 'general') {
             if (type === 'warning' || /^(PERINGATAN|PAJAK|CLOUD|PEMBELIAN BBM)/.test(msg)) notify(msg, type === 'warning' ? 'warn' : 'info');
+            if (cat === 'truck') {
+                if (/^BERANGKAT/.test(msg)) playSoundDepart();
+                else if (/^(TIBA:|TIBA DI DEPOT|SANDAR)/.test(msg)) playSoundArrive();
+            }
             const container = document.getElementById(cat === 'truck' ? 'truck-log' : 'activity-log');
             const div = document.createElement('div');
             const now = gameStamp();
@@ -384,6 +455,31 @@
 
         function closeModal() {
             document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        // ===== Konfirmasi kustom (pengganti confirm() bawaan browser) =====
+        const CONFIRM_THEMES = {
+            amber: { bg: 'w-14 h-14 bg-amber-600/20 text-amber-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl border border-amber-500/30', btn: 'bg-amber-600 hover:bg-amber-700' },
+            red: { bg: 'w-14 h-14 bg-red-600/20 text-red-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl border border-red-500/30', btn: 'bg-red-600 hover:bg-red-700' },
+            blue: { bg: 'w-14 h-14 bg-blue-600/20 text-blue-400 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl border border-blue-500/30', btn: 'bg-blue-600 hover:bg-blue-700' }
+        };
+        let _confirmResolve = null;
+        function showConfirm(message, opts = {}) {
+            const { title = 'Konfirmasi', iconClass = 'fa-triangle-exclamation', theme = 'amber', okLabel = 'OK', cancelLabel = 'Batal' } = opts;
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            document.getElementById('confirm-ok-btn').textContent = okLabel;
+            document.getElementById('confirm-cancel-btn').textContent = cancelLabel;
+            document.getElementById('confirm-icon').className = `fa-solid ${iconClass}`;
+            const t = CONFIRM_THEMES[theme] || CONFIRM_THEMES.amber;
+            document.getElementById('confirm-icon-bg').className = t.bg;
+            document.getElementById('confirm-ok-btn').className = 'flex-1 text-white font-bold py-2.5 rounded-lg text-xs transition shadow-lg ' + t.btn;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            return new Promise(resolve => { _confirmResolve = resolve; });
+        }
+        function _confirmDone(v) {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            if (_confirmResolve) { const r = _confirmResolve; _confirmResolve = null; r(v); }
         }
 
         // ===== KATALOG DEALER ARMADA =====
@@ -631,7 +727,7 @@
         }
 
         // Tab yang tampil menggantikan peta (Peta & Dealer tetap tampil inline di sidebar)
-        const POPUP_TABS = ['tab-dealer', 'tab-delivery', 'tab-lpg', 'tab-fleet', 'tab-bursa', 'tab-drivers', 'tab-partnership', 'tab-finance', 'tab-orders', 'tab-leaderboard'];
+        const POPUP_TABS = ['tab-kilang', 'tab-dealer', 'tab-delivery', 'tab-lpg', 'tab-kapal', 'tab-fleet', 'tab-bursa', 'tab-drivers', 'tab-partnership', 'tab-finance', 'tab-orders', 'tab-leaderboard'];
 
         let currentTabId = 'tab-map-view';
         function switchTab(tabId) {
@@ -658,6 +754,7 @@
             if (tabId === 'tab-leaderboard') { startLeaderboardListener(); renderLeaderboard(); }
             if (tabId === 'tab-orders') renderOrders();
             if (tabId === 'tab-delivery' || tabId === 'tab-lpg') populateSpbuDropdowns(document.getElementById('delivery-region-filter') ? document.getElementById('delivery-region-filter').value : 'ALL');
+            if (tabId === 'tab-kapal') populateTransferKapal();
             if (tabId === 'tab-bursa') { startBursaListingsListener(); renderBursa(); }
             const activeBtn = document.getElementById('btn-' + tabId);
             activeBtn.classList.add('text-blue-400', 'border-l-4', 'border-blue-500', 'bg-gray-900');
@@ -698,16 +795,8 @@
         }).addTo(map);
 
         function initSpbuDatabase() {
-            const regionFilter = document.getElementById('delivery-region-filter');
-
             rawSpbuData.forEach((region, rIndex) => {
-                const regOpt = document.createElement('option');
-                regOpt.value = region.kabupaten_kota;
-                regOpt.innerText = `${region.kabupaten_kota}`;
                 const pv = region.provinsi || 'Jawa Timur';
-                if (!window._pg) window._pg = {};
-                if (!_pg[pv]) { _pg[pv] = document.createElement('optgroup'); _pg[pv].label = pv; regionFilter.appendChild(_pg[pv]); }
-                _pg[pv].appendChild(regOpt);
 
                 region.list_spbu.forEach((item, sIndex) => {
                     const isLpgAvailable = ((rIndex + sIndex) % 2 === 0);
@@ -727,6 +816,7 @@
                 });
             });
 
+            recomputeWilayah();
             renderRefineries();
             renderSpbuOnMap();
             populateSpbuDropdowns();
@@ -737,15 +827,77 @@
             renderDriversDashboard();
         }
 
+        // ===== WILAYAH OTOMATIS: tiap SPBU di-assign ke Kilang/Depo AKTIF TERDEKAT berdasarkan radius jarak =====
+        // Menggantikan wilayah kabupaten/kota manual - dipanggil ulang tiap kali ada kilang/depo baru dibuka,
+        // supaya SPBU yang tadinya "jauh" bisa otomatis pindah wilayah begitu ada depo cabang lebih dekat.
+        // Kilang/Depo terdekat yang BENAR-BENAR bisa mensuplai jenis produk ini (Pusat Utama selalu bisa;
+        // Depo Cabang cuma bisa kalau tipenya cocok - mis. Depo LPG Gresik cuma bisa disebut wilayah LPG,
+        // bukan wilayah BBM, walau jaraknya paling dekat). Logika filter tipe disamakan dengan pickOrigin().
+        // Radius layanan realistis (km) per jenis produk - di luar radius ini, sebuah kilang/depo (termasuk
+        // Pusat Utama) TIDAK dianggap bisa mensuplai SPBU tsb, walau tidak ada kandidat lain yang lebih dekat.
+        // LPG dibatasi karena curah LPG cuma diproduksi/disimpan di 1-2 titik (Tuban & Gresik) - beda dari BBM
+        // yang punya banyak TBBM cabang di seluruh provinsi begitu dibuka, jadi BBM tetap dilayani nasional
+        // dari Pusat Utama sampai TBBM cabang terdekat dibuka.
+        const MAX_SERVICE_KM = { LPG: 300 };
+        function nearestActiveKilang(spbu, type) {
+            const cap = MAX_SERVICE_KM[type] || Infinity;
+            return refineryData.filter(k => k.is_unlocked && (k.tipe.includes('Pusat') || k.tipe.includes(type)) && distKm(k, spbu) <= cap)
+                .reduce((best, k) => (!best || distKm(k, spbu) < distKm(best, spbu)) ? k : best, null);
+        }
+        function recomputeWilayah() {
+            loadedSpbuList.forEach(s => {
+                const bbm = nearestActiveKilang(s, 'BBM');
+                if (bbm) { s.wilayahBbmId = bbm.id; s.wilayahBbmNama = bbm.nama; s.wilayahBbmJarak = Math.round(distKm(bbm, s) * 10) / 10; }
+                else { s.wilayahBbmId = null; s.wilayahBbmNama = '-'; s.wilayahBbmJarak = null; }
+                if (s.has_lpg) {
+                    const lpg = nearestActiveKilang(s, 'LPG');
+                    if (lpg) { s.wilayahLpgId = lpg.id; s.wilayahLpgNama = lpg.nama; s.wilayahLpgJarak = Math.round(distKm(lpg, s) * 10) / 10; }
+                    else { s.wilayahLpgId = null; s.wilayahLpgNama = '-'; s.wilayahLpgJarak = null; }
+                } else { s.wilayahLpgId = null; s.wilayahLpgNama = null; s.wilayahLpgJarak = null; }
+                // Alias wilayah utama = wilayah BBM (dipakai buat dropdown filter & tampilan umum, karena semua SPBU jual BBM).
+                s.wilayahId = s.wilayahBbmId; s.wilayahNama = s.wilayahBbmNama; s.wilayahJarak = s.wilayahBbmJarak;
+            });
+            rebuildRegionFilterOptions();
+        }
+        // Bangun ulang opsi dropdown "Pilih Wilayah" berdasarkan Kilang/Depo yang aktif saat ini,
+        // dikelompokkan otomatis (bukan lagi daftar kabupaten/kota statis).
+        function rebuildRegionFilterOptions() {
+            const sel = document.getElementById('delivery-region-filter');
+            if (!sel) return;
+            const prev = sel.value;
+            const counts = {};
+            loadedSpbuList.forEach(s => { if (s.wilayahId) counts[s.wilayahId] = (counts[s.wilayahId] || 0) + 1; });
+            sel.innerHTML = '<option value="ALL">-- Semua Wilayah Nusantara --</option>';
+            refineryData.filter(k => k.is_unlocked).forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k.id;
+                opt.innerText = `${k.nama} (${counts[k.id] || 0} SPBU)`;
+                sel.appendChild(opt);
+            });
+            if (prev && sel.querySelector(`option[value="${prev}"]`)) sel.value = prev; else sel.value = 'ALL';
+        }
+
+        let kilangFilter = 'ALL';
+        function setKilangFilter(key) { kilangFilter = key; renderRefineries(); }
         function renderRefineries() {
             kilangMarkers.forEach(km => map.removeLayer(km));
             kilangMarkers = [];
 
             const listContainer = document.getElementById('kilang-list-container');
             const targetSelect = document.getElementById('transfer-target-select');
-            
+            const tabsEl = document.getElementById('kilang-filter-tabs');
+
             listContainer.innerHTML = '';
             targetSelect.innerHTML = '';
+
+            if (tabsEl) {
+                // Dropdown, bukan deretan chip - daftar kilang/depo terus bertambah seiring ekspansi (bisa sampai
+                // belasan), jadi kalau dijejer horizontal pasti ada saatnya kepotong berapa pun lebar layarnya.
+                const opts = [{ key: 'ALL', label: 'Semua Kilang' }, ...refineryData.map(k => ({ key: k.id, label: k.nama + (k.is_unlocked ? '' : ' (Terkunci)') }))];
+                tabsEl.innerHTML = `<select onchange="setKilangFilter(this.value)" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-2.5 py-1.5 text-xs font-bold text-gray-200 focus:outline-none focus:border-teal-500">
+                    ${opts.map(c => `<option value="${c.key}" ${kilangFilter === c.key ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}
+                </select>`;
+            }
 
             refineryData.forEach(kilang => {
                 const pct = Math.round((kilang.stok_current / kilang.stok_max) * 100);
@@ -764,16 +916,18 @@
                                 ? `<div class="flex gap-1"><select id="mekanik-sel-${kilang.id}" class="flex-1 bg-gray-950 border border-gray-700 rounded px-1 py-0.5 text-gray-200">${freeMekanik.map(c => `<option value="${c.id}">${c.name} (Rep ${Math.round(c.reputation)})</option>`).join('')}</select><button onclick="assignMekanik('${kilang.id}')" class="bg-blue-700 hover:bg-blue-600 text-white px-2 py-0.5 rounded font-bold">Tugaskan</button></div>`
                                 : `<button onclick="openRecruitModal('Mekanik')" class="w-full bg-blue-700 hover:bg-blue-600 text-white px-2 py-0.5 rounded font-bold">Rekrut Mekanik di Bursa Kerja</button>`}
                           </div>`;
+                    const anyRefining = kilang.kap ? Object.values(kilang.kap).some(s => s.refining) : false;
                     card.innerHTML = `
                         <div class="flex justify-between text-xs">
-                            <span class="text-gray-200 font-bold">${kilang.nama} <span class="text-[10px] text-blue-400 font-normal">(${kilang.tipe})</span> ${isCoastal(kilang) ? '<span class="text-[9px] text-cyan-400 font-normal" title="Punya akses pelabuhan, bisa dilayani kapal tanker"><i class="fa-solid fa-anchor"></i> Pesisir</span>' : '<span class="text-[9px] text-gray-500 font-normal" title="Tidak ada akses pelabuhan, hanya bisa dilayani truk"><i class="fa-solid fa-road"></i> Darat</span>'}</span>
-                            <span class="font-bold text-gray-200 font-mono">${kilang.stok_current.toLocaleString()} / ${kilang.stok_max.toLocaleString()} ${kilang.unit}</span>
+                            <span class="text-gray-200 font-bold">${kilang.nama} <span class="text-[10px] text-blue-400 font-normal">(${kilang.tipe})</span> ${isCoastal(kilang) ? '<span class="text-[9px] text-cyan-400 font-normal" title="Punya akses pelabuhan, bisa dilayani kapal tanker"><i class="fa-solid fa-anchor"></i> Pesisir</span>' : '<span class="text-[9px] text-gray-500 font-normal" title="Tidak ada akses pelabuhan, hanya bisa dilayani truk"><i class="fa-solid fa-road"></i> Darat</span>'}${kilang.id === 'KILANG-01' ? `<span id="refine-indicator-${kilang.id}" class="${anyRefining ? '' : 'hidden'} text-[9px] text-amber-400 font-normal ml-1"><i class="fa-solid fa-gear fa-spin mr-0.5"></i>Mengolah...</span>` : ''}</span>
+                            <span id="crude-text-${kilang.id}" class="font-bold text-gray-200 font-mono">${kilang.stok_current.toLocaleString()} / ${kilang.stok_max.toLocaleString()} ${kilang.unit}</span>
                         </div>
                         <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
-                            <div class="bg-emerald-500 h-full" style="width: ${pct}%"></div>
+                            <div id="crude-bar-${kilang.id}" class="${anyRefining ? 'refine-flow' : ''} bg-emerald-500 h-full transition-all duration-500" style="width: ${pct}%"></div>
                         </div>
                         ${mekanikBlock}
-                        ${kilang.id === 'KILANG-01' ? fuelBuyHtml(pct) : ''}
+                        ${kilang.id === 'KILANG-01' ? fuelBuyHtml(kilang) : ''}
+                        ${kilang.id === 'KILANG-01' ? lpgCurahBuyHtml(kilang) : ''}
                         ${renderKapPanel(kilang)}
                     `;
 
@@ -797,7 +951,7 @@
                     `;
                 }
 
-                listContainer.appendChild(card);
+                if (kilangFilter === 'ALL' || kilangFilter === kilang.id) listContainer.appendChild(card);
 
                 let colorMarker = '#6b7280';
                 if (kilang.is_unlocked) {
@@ -899,12 +1053,35 @@
 
         // ===== BELI BAHAN BAKAR KILANG UTAMA =====
         const BBL_PRICE = 1100000; let bbmWarned = false, bbmSpent = 0;
-        function fuelBuyHtml(pct) {
+        // Batas atas kapasitas tangki (upgrade tidak bisa lewat ini): BBL mentah & LPG Curah sama-sama 10 Juta.
+        const KAP_UPGRADE_CAPS = { lpg_curah: 10000000 };
+        const BBL_KAP_MAX = 10000000, BBL_KAP_STEP = 200000, BBL_KAP_BASE_COST = 1500e6;
+        const bblUpgradeCost = kilang => Math.round(BBL_KAP_BASE_COST * Math.pow(1.32, kilang.stokUpgradeLevel || 0));
+        function upgradeBblTangki(kilangId) {
+            const kilang = refineryData.find(k => k.id === kilangId);
+            if (!kilang || !kilang.is_unlocked) return;
+            if (kilang.stok_max >= BBL_KAP_MAX) return showModal('Kapasitas Maksimum', `Tangki BBL mentah ${kilang.nama} sudah mencapai batas maksimum ${BBL_KAP_MAX.toLocaleString('id-ID')} Bbl.`, 'fa-circle-info', 'blue');
+            const cost = bblUpgradeCost(kilang);
+            if (companyCash < cost) return showModal('Kas Tidak Cukup', `Upgrade kapasitas tangki BBL mentah di ${kilang.nama} butuh ${formatRupiah(cost)}.`, 'fa-triangle-exclamation', 'red');
+            companyCash -= cost; totalExpense += cost;
+            kilang.stok_max = Math.min(BBL_KAP_MAX, kilang.stok_max + BBL_KAP_STEP);
+            kilang.stokUpgradeLevel = (kilang.stokUpgradeLevel || 0) + 1;
+            addFinanceLog(`Upgrade Kapasitas Tangki BBL Mentah - ${kilang.nama}`, -cost);
+            updateCashDisplay();
+            addLog(`KAPASITAS DITINGKATKAN: Tangki BBL mentah ${kilang.nama} kini menampung ${kilang.stok_max.toLocaleString('id-ID')} Bbl.`, 'success');
+            renderRefineries();
+        }
+        function fuelBuyHtml(kilang) {
+            const pct = Math.round((kilang.stok_current / kilang.stok_max) * 100);
+            const atMax = kilang.stok_max >= BBL_KAP_MAX;
             const b = (n, l) => `<button onclick="buyFuel(${n})" class="bg-teal-700 hover:bg-teal-600 text-white rounded px-2 py-1 font-bold">${l}</button>`;
             return `<div class="pt-1.5 border-t border-gray-800 space-y-1.5">
                 ${pct <= 25 ? '<div class="text-[10px] text-red-300 bg-red-500/10 border border-red-500/30 rounded px-2 py-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Stok bahan bakar menipis! Segera beli pasokan.</div>' : ''}
-                <div class="text-[10px] text-gray-400"><i class="fa-solid fa-gas-pump text-amber-400 mr-1"></i>Beli bahan bakar &middot; ${formatRupiah(BBL_PRICE)}/Bbl</div>
-                <div class="flex flex-wrap gap-1 text-[10px]">${b(10000, '+10.000 Bbl')}${b(50000, '+50.000 Bbl')}${b(100000, '+100.000 Bbl')}${b(0, 'Isi Penuh')}</div></div>`;
+                <div class="text-[10px] text-gray-400"><i class="fa-solid fa-gas-pump text-amber-400 mr-1"></i>Beli bahan bakar mentah &middot; ${formatRupiah(BBL_PRICE)}/Bbl</div>
+                <div class="flex flex-wrap gap-1 text-[10px]">${b(10000, '+10.000 Bbl')}${b(50000, '+50.000 Bbl')}${b(100000, '+100.000 Bbl')}${b(500000, '+500.000 Bbl')}${b(1000000, '+1 Juta Bbl')}${b(0, 'Isi Penuh')}
+                    ${atMax ? '' : `<button onclick="upgradeBblTangki('${kilang.id}')" class="bg-emerald-700 hover:bg-emerald-600 text-white rounded px-2 py-1 font-bold"><i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Tangki (${formatRupiah(bblUpgradeCost(kilang))})</button>`}
+                </div>
+                <div class="text-[9px] text-gray-500"><i class="fa-solid fa-circle-info mr-1"></i>Stok mentah ini diolah jadi Pertalite, Pertamax, dst lewat tombol Konversi di panel Kapasitas Depo di bawah - tidak jalan sendiri.${atMax ? ' Kapasitas tangki sudah maksimum (10 Juta Bbl).' : ' Kapasitas tangki bisa di-upgrade sampai maksimum 10 Juta Bbl.'}</div></div>`;
         }
         function buyFuel(n) {
             const k = refineryData[0], room = k.stok_max - k.stok_current, qty = Math.min(n || room, room);
@@ -918,6 +1095,49 @@
                 updateCashDisplay(); renderRefineries();
                 addLog(`PEMBELIAN BBM: ${qty.toLocaleString('id-ID')} Bbl masuk Kilang Tuban seharga ${formatRupiah(cost)} (ditandatangani).`, 'success');
                 showModal('Pembelian Berhasil', `${qty.toLocaleString('id-ID')} Bbl bahan bakar masuk Kilang Tuban. Bukti pembelian sudah ditandatangani.`, 'fa-gas-pump', 'blue');
+            });
+        }
+
+        // ===== LPG CURAH: diperlakukan sama seperti bahan mentah (Bbl) - beli manual, bukan diolah otomatis dari crude =====
+        function lpgCurahBuyHtml(kilang) {
+            const meta = PRODUCT_META.lpg_curah, slot = kilang.kap && kilang.kap.lpg_curah;
+            if (!slot) return '';
+            const pct = slot.max ? Math.round((slot.cur / slot.max) * 100) : 0;
+            const upCost = kapUpgradeCost(meta, slot.level);
+            const capMax = KAP_UPGRADE_CAPS.lpg_curah;
+            const atMax = capMax && slot.max >= capMax;
+            const b = (n, l) => `<button onclick="buyLpgCurah('${kilang.id}',${n})" class="bg-orange-700 hover:bg-orange-600 text-white rounded px-2 py-1 font-bold">${l}</button>`;
+            return `<div class="pt-1.5 border-t border-gray-800 space-y-1.5">
+                <div class="flex justify-between text-xs">
+                    <span class="text-gray-200 font-bold"><i class="fa-solid fa-fire-flame-simple text-orange-400 mr-1"></i>LPG Curah <span class="text-[10px] text-gray-500 font-normal">(Bahan Mentah)</span></span>
+                    <span id="lpgcurah-text-${kilang.id}" class="font-bold text-gray-200 font-mono">${slot.cur.toLocaleString('id-ID', { maximumFractionDigits: 1 })} / ${slot.max.toLocaleString('id-ID')} Ton</span>
+                </div>
+                <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                    <div id="lpgcurah-bar-${kilang.id}" class="bg-orange-500 h-full transition-all duration-500" style="width: ${pct}%"></div>
+                </div>
+                ${pct <= 25 ? '<div class="text-[10px] text-red-300 bg-red-500/10 border border-red-500/30 rounded px-2 py-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Stok LPG Curah menipis! Segera beli pasokan.</div>' : ''}
+                <div class="text-[10px] text-gray-400"><i class="fa-solid fa-fire-flame-simple text-orange-400 mr-1"></i>Beli LPG Curah &middot; ${formatRupiah(meta.buyPrice)}/Ton</div>
+                <div class="flex flex-wrap gap-1 text-[10px]">${b(200, '+200 Ton')}${b(1000, '+1.000 Ton')}${b(2000, '+2.000 Ton')}${b(0, 'Isi Penuh')}
+                    ${atMax ? '' : `<button onclick="upgradeKapasitas('${kilang.id}','lpg_curah')" class="bg-emerald-700 hover:bg-emerald-600 text-white rounded px-2 py-1 font-bold"><i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Tangki (${formatRupiah(upCost)})</button>`}
+                </div>
+                <div class="text-[9px] text-gray-500"><i class="fa-solid fa-circle-info mr-1"></i>Bahan baku LPG Tabung - konversi di panel Kapasitas Depo di bawah.${atMax ? ' Kapasitas tangki sudah maksimum (10 Juta Ton).' : ' Kapasitas tangki bisa di-upgrade sampai maksimum 10 Juta Ton.'}</div>
+            </div>`;
+        }
+        function buyLpgCurah(kilangId, n) {
+            const k = refineryData.find(x => x.id === kilangId) || refineryData[0];
+            const meta = PRODUCT_META.lpg_curah;
+            if (!k || !k.kap || !k.kap.lpg_curah) return;
+            const slot = k.kap.lpg_curah, room = slot.max - slot.cur, qty = Math.min(n || room, room);
+            if (qty <= 0) return showModal('Tangki Penuh', `Tangki LPG Curah di ${k.nama} sudah penuh.`, 'fa-circle-info', 'blue');
+            const cost = Math.round(qty * meta.buyPrice);
+            if (companyCash < cost) return showModal('Kas Tidak Cukup', `Butuh ${formatRupiah(cost)} untuk ${qty.toLocaleString('id-ID')} Ton LPG Curah.`, 'fa-triangle-exclamation', 'red');
+            openSignature(`Konfirmasi pembelian ${qty.toLocaleString('id-ID')} Ton LPG Curah untuk ${k.nama} seharga ${formatRupiah(cost)}. Tanda tangani kotak di bawah untuk menyetujui pembelian.`, () => {
+                companyCash -= cost; totalExpense += cost; bbmSpent += cost;
+                slot.cur = Math.min(slot.max, Math.round((slot.cur + qty) * 100) / 100);
+                addFinanceLog(`Pembelian LPG Curah ${qty.toLocaleString('id-ID')} Ton (${k.nama})`, -cost);
+                updateCashDisplay(); renderRefineries();
+                addLog(`PEMBELIAN LPG CURAH: ${qty.toLocaleString('id-ID')} Ton masuk ${k.nama} seharga ${formatRupiah(cost)} (ditandatangani).`, 'success');
+                showModal('Pembelian Berhasil', `${qty.toLocaleString('id-ID')} Ton LPG Curah masuk ${k.nama}. Bukti pembelian sudah ditandatangani.`, 'fa-fire-flame-simple', 'blue');
             });
         }
 
@@ -985,6 +1205,8 @@
             addFinanceLog(`Pembelian Aset ${kilang.nama}`, -kilang.harga_beli);
             updateCashDisplay();
             renderRefineries();
+            recomputeWilayah();
+            renderSpbuOnMap();
 
             addLog(`KILANG BARU DIBUKA: ${kilang.nama} telah dibeli. Stok awal 0!`, 'success');
             showModal('Kilang Berhasil Dibeli', `${kilang.nama} telah dibuka! Silakan lakukan transfer pasokan BBM dari Kilang Pusat (Tuban).`, 'fa-building-circle-check', 'blue');
@@ -997,13 +1219,19 @@
             const kilang = refineryData.find(k => k.id === kilangId);
             if (!kilang || !kilang.is_unlocked || !kilang.kap || !kilang.kap[key]) return;
             const meta = PRODUCT_META[key], slot = kilang.kap[key];
+            const capMax = KAP_UPGRADE_CAPS[key];
+            if (capMax && slot.max >= capMax) {
+                showModal('Kapasitas Maksimum', `Tangki ${meta.label} di ${kilang.nama} sudah mencapai batas maksimum ${capMax.toLocaleString('id-ID')} ${meta.unit}.`, 'fa-circle-info', 'blue');
+                return;
+            }
             const cost = kapUpgradeCost(meta, slot.level);
             if (companyCash < cost) {
                 showModal('Kas Tidak Cukup', `Upgrade kapasitas tangki ${meta.label} di ${kilang.nama} butuh ${formatRupiah(cost)}.`, 'fa-triangle-exclamation', 'red');
                 return;
             }
             companyCash -= cost; totalExpense += cost;
-            slot.max += meta.step; slot.level = (slot.level || 0) + 1;
+            slot.max = capMax ? Math.min(capMax, slot.max + meta.step) : slot.max + meta.step;
+            slot.level = (slot.level || 0) + 1;
             addFinanceLog(`Upgrade Kapasitas ${meta.label} - ${kilang.nama}`, -cost);
             updateCashDisplay();
             addLog(`KAPASITAS DITINGKATKAN: Tangki ${meta.label} di ${kilang.nama} kini menampung ${slot.max.toLocaleString('id-ID')} ${meta.unit}.`, 'success');
@@ -1026,10 +1254,17 @@
             addLog(`PEMBELIAN ${meta.label.toUpperCase()}: ${qty.toLocaleString('id-ID')} ${meta.unit} masuk ${kilang.nama}.`, 'success');
         }
 
+        // Lama proses olah (ms), makin besar jumlah yang dikonversi makin lama animasinya berjalan (dibatasi min/max biar tetap enak dimainkan).
+        function refineDurationMs(amount, scale) {
+            const s = scale || amount || 1;
+            return Math.min(6000, Math.max(1200, Math.round((amount / s) * 1800)));
+        }
+
         function convertLpgCurah(kilangId) {
             const kilang = refineryData.find(k => k.id === kilangId);
             if (!kilang || !kilang.kap || !kilang.kap.lpg_curah || !kilang.kap.lpg_tabung) return;
             const curah = kilang.kap.lpg_curah, tabung = kilang.kap.lpg_tabung, RATIO = 0.92;
+            if (tabung.refining) return; // sedang diolah, tombol seharusnya sudah disembunyikan/nonaktif
             const room = tabung.max - tabung.cur;
             const amount = Math.min(curah.cur, room / RATIO);
             if (amount <= 0) {
@@ -1037,11 +1272,50 @@
                 return;
             }
             const hasil = Math.round(amount * RATIO * 100) / 100;
+            const durasi = refineDurationMs(amount, 1500);
+            // Bahan mentah LPG Curah langsung terpakai begitu proses dimulai; hasil LPG Tabung baru masuk tangki setelah durasi olah selesai.
             curah.cur = Math.round((curah.cur - amount) * 100) / 100;
-            tabung.cur = Math.min(tabung.max, Math.round((tabung.cur + hasil) * 100) / 100);
-            addLog(`KONVERSI LPG: ${kilang.nama} mengonversi ${amount.toLocaleString('id-ID')} Ton LPG Curah menjadi ${hasil.toLocaleString('id-ID')} Ton LPG Tabung siap distribusi.`, 'purple');
-            showModal('Konversi Berhasil', `${amount.toLocaleString('id-ID')} Ton LPG Curah dikonversi menjadi ${hasil.toLocaleString('id-ID')} Ton LPG Tabung di ${kilang.nama}. (Susut proses pengisian tabung 8%)`, 'fa-fire-flame-simple', 'blue');
+            tabung.refining = true;
+            addLog(`KONVERSI LPG: ${kilang.nama} mulai mengolah ${amount.toLocaleString('id-ID')} Ton LPG Curah menjadi LPG Tabung (&plusmn;${Math.round(durasi / 1000)} detik).`, 'info');
             renderRefineries();
+            setTimeout(() => {
+                tabung.cur = Math.min(tabung.max, Math.round((tabung.cur + hasil) * 100) / 100);
+                tabung.refining = false;
+                addLog(`KONVERSI SELESAI: ${hasil.toLocaleString('id-ID')} Ton LPG Tabung siap distribusi di ${kilang.nama}.`, 'success');
+                showModal('Konversi Selesai', `${amount.toLocaleString('id-ID')} Ton LPG Curah berhasil diolah menjadi ${hasil.toLocaleString('id-ID')} Ton LPG Tabung di ${kilang.nama}. (Susut proses pengisian tabung 8%)`, 'fa-fire-flame-simple', 'blue');
+                renderRefineries();
+            }, durasi);
+        }
+
+        // ===== KONVERSI BBL -> BBM: manual lewat tombol, prosesnya berjalan sesuai durasi (tidak instan, tidak otomatis lagi) =====
+        // n = jumlah produk (KL) yang mau dihasilkan sekali klik; n=0/kosong artinya "isi penuh sebisa mungkin".
+        function convertBblKeProduk(kilangId, key, n) {
+            const kilang = refineryData.find(k => k.id === kilangId);
+            if (!kilang || !kilang.kap || !kilang.kap[key]) return;
+            const meta = PRODUCT_META[key], slot = kilang.kap[key];
+            if (!meta || !meta.refineRatio) return;
+            if (slot.refining) return; // sedang diolah, tombol seharusnya sudah disembunyikan/nonaktif
+            const room = slot.max - slot.cur;
+            const maxByBbl = kilang.stok_current / meta.refineRatio;
+            const amount = Math.min(n || room, room, maxByBbl);
+            if (amount <= 0) {
+                showModal('Tidak Bisa Konversi', kilang.stok_current <= 0 ? `Stok BBL mentah di ${kilang.nama} kosong.` : `Tangki ${meta.label} di ${kilang.nama} sudah penuh.`, 'fa-circle-exclamation', 'amber');
+                return;
+            }
+            const bblUsed = Math.round(amount * meta.refineRatio * 100) / 100;
+            const durasi = refineDurationMs(amount, BBL_CONVERT_STEP[key]);
+            // BBL mentah langsung terpakai/terkunci begitu proses dimulai; hasil BBM baru masuk tangki setelah durasi olah selesai.
+            kilang.stok_current = Math.max(0, Math.round((kilang.stok_current - bblUsed) * 100) / 100);
+            slot.refining = true;
+            addLog(`KONVERSI BBL: ${kilang.nama} mulai mengolah ${bblUsed.toLocaleString('id-ID')} Bbl mentah menjadi ${meta.label} (&plusmn;${Math.round(durasi / 1000)} detik).`, 'info');
+            renderRefineries();
+            setTimeout(() => {
+                slot.cur = Math.min(slot.max, Math.round((slot.cur + amount) * 100) / 100);
+                slot.refining = false;
+                addLog(`KONVERSI SELESAI: ${amount.toLocaleString('id-ID')} ${meta.unit} ${meta.label} siap di ${kilang.nama}.`, 'success');
+                showModal('Konversi Selesai', `${bblUsed.toLocaleString('id-ID')} Bbl BBL mentah berhasil diolah menjadi ${amount.toLocaleString('id-ID')} ${meta.unit} ${meta.label} di ${kilang.nama}.`, meta.icon, 'blue');
+                renderRefineries();
+            }, durasi);
         }
 
         const KAP_KIRIM_STEP = { pertalite: 3000, pertamax: 2500, pertamax_turbo: 1200, solar: 3000, dexlite: 1800, lpg_curah: 500 };
@@ -1063,11 +1337,33 @@
             renderRefineries();
         }
 
+        const BBL_KIRIM_STEP = 8000;
+        function kirimBblKeDepo() {
+            const sel = document.getElementById('kap-kirim-target-bbl');
+            if (!sel || !sel.value) return showModal('Pilih Tujuan', 'Pilih dulu Depo Cabang tujuan pengiriman.', 'fa-circle-exclamation', 'amber');
+            const pusat = refineryData[0], target = refineryData.find(k => k.id === sel.value);
+            if (!pusat || !target) return;
+            const room = target.stok_max - target.stok_current;
+            const amount = Math.min(BBL_KIRIM_STEP, pusat.stok_current, room);
+            if (amount <= 0) {
+                showModal('Tidak Bisa Kirim', pusat.stok_current <= 0 ? 'Stok BBL mentah di Kilang Tuban kosong.' : `Tangki BBL mentah di ${target.nama} sudah penuh.`, 'fa-circle-exclamation', 'amber');
+                return;
+            }
+            pusat.stok_current = Math.max(0, Math.round((pusat.stok_current - amount) * 100) / 100);
+            target.stok_current = Math.min(target.stok_max, Math.round((target.stok_current + amount) * 100) / 100);
+            addLog(`KIRIM OTOMATIS: ${amount.toLocaleString('id-ID')} Bbl BBL mentah dikirim dari Kilang Tuban ke ${target.nama} (siap diolah jadi BBM di sana lewat tombol Konversi).`, 'purple');
+            showModal('Pengiriman Terkirim', `${amount.toLocaleString('id-ID')} Bbl BBL mentah berhasil dikirim otomatis ke ${target.nama}. Olah sendiri jadi BBM di panel Kapasitas Depo cabang tersebut.`, 'fa-gas-pump', 'blue');
+            renderRefineries();
+        }
+
+        const openKapPanels = new Set(); // id kilang yang panel "Kapasitas Depo"-nya sedang dibuka user - dipakai supaya tidak ikut nutup tiap renderRefineries()
         function toggleKapPanel(id) {
             const el = document.getElementById('kap-panel-' + id), btn = document.getElementById('kap-toggle-' + id);
             if (!el) return;
             el.classList.toggle('hidden');
-            if (btn) { const ic = btn.querySelector('.kap-chev'); if (ic) ic.classList.toggle('rotate-180'); }
+            const nowOpen = !el.classList.contains('hidden');
+            if (nowOpen) openKapPanels.add(id); else openKapPanels.delete(id);
+            if (btn) { const ic = btn.querySelector('.kap-chev'); if (ic) ic.classList.toggle('rotate-180', nowOpen); }
         }
 
         function renderKapPanel(kilang) {
@@ -1075,37 +1371,80 @@
             const keys = Object.keys(kilang.kap);
             if (!keys.length) return '';
             const isPusat = kilang.id === 'KILANG-01';
-            const rows = keys.map(key => {
+            // LPG Curah sudah tampil sebagai gauge bahan mentah sendiri (lpgCurahBuyHtml, sejajar BBL mentah) di Kilang
+            // Pusat, jadi tidak perlu dobel muncul lagi di daftar kecil "Kapasitas Depo" ini.
+            const visibleKeys = isPusat ? keys.filter(k => k !== 'lpg_curah') : keys;
+            const rows = visibleKeys.map(key => {
                 const meta = PRODUCT_META[key], slot = kilang.kap[key];
                 const pct = slot.max ? Math.round((slot.cur / slot.max) * 100) : 0;
                 const cost = kapUpgradeCost(meta, slot.level);
-                const restockBtn = (isPusat && meta.buyPrice)
+                // BBL (bahan mentah) diolah jadi BBM (Pertalite/Pertamax/dst) lewat tombol Konversi manual - tidak lagi otomatis.
+                // Berlaku di Kilang Pusat MAUPUN Depo Cabang BBM: cabang mengolah sendiri stok BBL mentah yang dikirim dari pusat.
+                const isBbmRefine = meta.refineRatio && key !== 'lpg_curah' && key !== 'lpg_tabung';
+                // Badge "Diolah" dipakai untuk animasi selama proses konversi berjalan (BBL->BBM maupun LPG Curah->Tabung).
+                const showsRefineBadge = isBbmRefine || key === 'lpg_tabung';
+                const restockBtn = (isPusat && meta.buyPrice && !meta.refineRate)
                     ? `<button onclick="isiUlangProduk('${kilang.id}','${key}',${meta.step})" class="text-[9px] bg-gray-800 hover:bg-gray-700 text-gray-200 rounded px-1.5 py-0.5 font-semibold"><i class="fa-solid fa-plus"></i> Isi ${meta.step.toLocaleString('id-ID')} ${meta.unit}</button>`
                     : '';
+                const refineBadge = showsRefineBadge
+                    ? `<span id="kap-refine-${kilang.id}-${key}" class="${slot.refining ? '' : 'hidden'} text-[8px] text-amber-300 font-semibold shrink-0 ml-1"><i class="fa-solid fa-industry fa-fade mr-0.5"></i>Diolah</span>`
+                    : '';
+                const refineInfo = isBbmRefine
+                    ? `<div class="text-[9px] text-gray-500 mb-1"><i class="fa-solid fa-arrows-turn-right mr-1 text-amber-500"></i>Diolah dari stok BBL mentah lewat tombol Konversi &middot; butuh ${meta.refineRatio.toLocaleString('id-ID', { maximumFractionDigits: 2 })} Bbl mentah / ${meta.unit}</div>`
+                    : '';
+                const convStep = BBL_CONVERT_STEP[key] || 0;
+                const convertBblRow = isBbmRefine
+                    ? (slot.refining
+                        ? `<div class="mb-1"><button disabled class="w-full text-[9px] bg-amber-900/60 text-amber-200 rounded px-1.5 py-1 font-bold cursor-not-allowed"><i class="fa-solid fa-industry fa-fade mr-1"></i>Sedang Diolah Jadi ${meta.label}...</button></div>`
+                        : `<div class="flex gap-1 flex-wrap mb-1">
+                        <button onclick="convertBblKeProduk('${kilang.id}','${key}',${Math.max(1, Math.round(convStep / 4))})" class="text-[9px] bg-amber-800 hover:bg-amber-700 text-white rounded px-1.5 py-0.5 font-semibold">+${Math.max(1, Math.round(convStep / 4)).toLocaleString('id-ID')} ${meta.unit}</button>
+                        <button onclick="convertBblKeProduk('${kilang.id}','${key}',${convStep})" class="text-[9px] bg-amber-800 hover:bg-amber-700 text-white rounded px-1.5 py-0.5 font-semibold">+${convStep.toLocaleString('id-ID')} ${meta.unit}</button>
+                        <button onclick="convertBblKeProduk('${kilang.id}','${key}',0)" class="text-[9px] bg-amber-700 hover:bg-amber-600 text-white rounded px-1.5 py-0.5 font-bold"><i class="fa-solid fa-arrows-turn-to-dots mr-1"></i>Konversi BBL &rarr; ${meta.label} (Isi Penuh)</button>
+                    </div>`)
+                    : '';
+                const capMax = KAP_UPGRADE_CAPS[key];
+                const atCap = capMax && slot.max >= capMax;
+                const upgradeBtn = atCap
+                    ? `<span class="text-[9px] text-gray-500 px-1.5 py-0.5"><i class="fa-solid fa-circle-check mr-1"></i>Kapasitas maksimum</span>`
+                    : `<button onclick="upgradeKapasitas('${kilang.id}','${key}')" class="text-[9px] bg-emerald-700 hover:bg-emerald-600 text-white rounded px-1.5 py-0.5 font-semibold"><i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Tangki (${formatRupiah(cost)})</button>`;
                 return `<div class="text-[10px]">
                     <div class="flex justify-between items-center mb-0.5 gap-1">
-                        <span class="text-gray-300 font-semibold truncate"><i class="fa-solid ${meta.icon} mr-1" style="color:${meta.color}"></i>${meta.label}</span>
-                        <span class="font-mono text-gray-400 shrink-0">${slot.cur.toLocaleString('id-ID', { maximumFractionDigits: 1 })}/${slot.max.toLocaleString('id-ID')} ${meta.unit}</span>
+                        <span class="text-gray-300 font-semibold truncate flex items-center"><i class="fa-solid ${meta.icon} mr-1" style="color:${meta.color}"></i>${meta.label}${refineBadge}</span>
+                        <span id="kap-text-${kilang.id}-${key}" class="font-mono text-gray-400 shrink-0">${slot.cur.toLocaleString('id-ID', { maximumFractionDigits: 1 })}/${slot.max.toLocaleString('id-ID')} ${meta.unit}</span>
                     </div>
                     <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mb-1">
-                        <div class="h-full" style="width:${pct}%;background:${meta.color}"></div>
+                        <div id="kap-bar-${kilang.id}-${key}" class="${slot.refining ? 'refine-flow' : ''} h-full transition-all duration-500" style="width:${pct}%;background:${meta.color}"></div>
                     </div>
+                    ${refineInfo}
+                    ${convertBblRow}
                     <div class="flex gap-1 flex-wrap">
                         ${restockBtn}
-                        <button onclick="upgradeKapasitas('${kilang.id}','${key}')" class="text-[9px] bg-emerald-700 hover:bg-emerald-600 text-white rounded px-1.5 py-0.5 font-semibold"><i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Tangki (${formatRupiah(cost)})</button>
+                        ${upgradeBtn}
                     </div>
                 </div>`;
             }).join('<div class="border-t border-gray-800/70"></div>');
 
             const convertBtn = (kilang.kap.lpg_curah && kilang.kap.lpg_tabung)
-                ? `<button onclick="convertLpgCurah('${kilang.id}')" class="w-full mt-1.5 bg-amber-700 hover:bg-amber-600 text-white text-[10px] font-bold py-1.5 rounded"><i class="fa-solid fa-arrows-turn-to-dots mr-1"></i> Konversi LPG Curah &rarr; Tabung</button>`
+                ? (kilang.kap.lpg_tabung.refining
+                    ? `<button disabled class="w-full mt-1.5 bg-amber-900/60 text-amber-200 text-[10px] font-bold py-1.5 rounded cursor-not-allowed"><i class="fa-solid fa-industry fa-fade mr-1"></i> Sedang Diolah Jadi Tabung...</button>`
+                    : `<button onclick="convertLpgCurah('${kilang.id}')" class="w-full mt-1.5 bg-amber-700 hover:bg-amber-600 text-white text-[10px] font-bold py-1.5 rounded"><i class="fa-solid fa-arrows-turn-to-dots mr-1"></i> Konversi LPG Curah &rarr; Tabung</button>`)
                 : '';
 
             let kirimForm = '';
             if (isPusat) {
+                // Kilang Pusat HANYA mengirim bahan mentah (BBL & LPG Curah) ke Depo Cabang - BBM/LPG Tabung jadi
+                // tidak lagi dikirim jadi dari sini, tiap cabang wajib mengolah sendiri stok mentah yang diterima
+                // lewat tombol Konversi di panelnya masing-masing.
+                const bblOpts = refineryData.filter(d => d.is_unlocked && d.id !== 'KILANG-01' && d.unit === 'Bbl')
+                    .map(d => `<option value="${d.id}">${d.nama}</option>`).join('');
+                const bblRow = bblOpts ? `<div class="flex gap-1 items-center">
+                        <span class="text-[9px] text-gray-400 w-16 shrink-0 truncate">BBL Mentah</span>
+                        <select id="kap-kirim-target-bbl" class="flex-1 bg-gray-900 border border-gray-800 rounded text-[9px] px-1 py-0.5 text-gray-200 min-w-0"><option value="">-- Tujuan Depo --</option>${bblOpts}</select>
+                        <button onclick="kirimBblKeDepo()" class="text-[9px] bg-blue-700 hover:bg-blue-600 text-white rounded px-1.5 py-0.5 font-bold shrink-0">Kirim</button>
+                    </div>` : '';
                 const cabangOpts = k2 => refineryData.filter(d => d.is_unlocked && d.id !== 'KILANG-01' && d.kap && d.kap[k2])
                     .map(d => `<option value="${d.id}">${d.nama}</option>`).join('');
-                const rows2 = keys.filter(k2 => k2 !== 'lpg_tabung').map(k2 => {
+                const rows2 = keys.filter(k2 => k2 === 'lpg_curah').map(k2 => {
                     const opts = cabangOpts(k2);
                     if (!opts) return '';
                     return `<div class="flex gap-1 items-center">
@@ -1114,23 +1453,79 @@
                         <button onclick="kirimProdukKeDepo('${k2}')" class="text-[9px] bg-blue-700 hover:bg-blue-600 text-white rounded px-1.5 py-0.5 font-bold shrink-0">Kirim</button>
                     </div>`;
                 }).join('');
-                if (rows2) kirimForm = `<div class="mt-2 pt-2 border-t border-gray-800 space-y-1">
-                    <div class="text-[9px] text-gray-500 uppercase font-bold">Kirim Otomatis ke Depo Cabang</div>
-                    ${rows2}
+                if (bblRow || rows2) kirimForm = `<div class="mt-2 pt-2 border-t border-gray-800 space-y-1">
+                    <div class="text-[9px] text-gray-500 uppercase font-bold">Kirim Bahan Mentah ke Depo Cabang</div>
+                    ${bblRow}${rows2}
                 </div>`;
             }
 
+            const isOpen = openKapPanels.has(kilang.id);
             return `<div class="pt-1.5 border-t border-gray-800">
                 <button id="kap-toggle-${kilang.id}" onclick="toggleKapPanel('${kilang.id}')" class="w-full flex items-center justify-between text-[10px] font-bold text-teal-400 uppercase tracking-wide py-1">
-                    <span><i class="fa-solid fa-warehouse mr-1"></i> Kapasitas Depo (${keys.length} Jenis)</span>
-                    <i class="fa-solid fa-chevron-down kap-chev text-[9px] transition-transform"></i>
+                    <span><i class="fa-solid fa-warehouse mr-1"></i> Kapasitas Depo (${visibleKeys.length} Jenis)</span>
+                    <i class="fa-solid fa-chevron-down kap-chev text-[9px] transition-transform${isOpen ? ' rotate-180' : ''}"></i>
                 </button>
-                <div id="kap-panel-${kilang.id}" class="hidden space-y-1.5 mt-1">
+                <div id="kap-panel-${kilang.id}" class="${isOpen ? '' : 'hidden'} space-y-1.5 mt-1">
                     ${rows}
                     ${convertBtn}
                     ${kirimForm}
                 </div>
             </div>`;
+        }
+
+        // ===== PENGOLAHAN BBL: sekarang manual lewat tombol Konversi (lihat convertBblKeProduk) =====
+        // Update tampilan bar stok mentah & tiap tangki produk tanpa render ulang seluruh kartu (biar panel yg lagi
+        // dibuka pemain, misal Kapasitas Depo, tidak ikut ke-collapse tiap kali proses olah berdenyut).
+        function updateKilangLiveBars(kilang) {
+            if (!kilang) return;
+            const pct = kilang.stok_max ? Math.round((kilang.stok_current / kilang.stok_max) * 100) : 0;
+            const crudeBar = document.getElementById('crude-bar-' + kilang.id);
+            const crudeTxt = document.getElementById('crude-text-' + kilang.id);
+            const anyRefining = kilang.kap ? Object.values(kilang.kap).some(s => s.refining) : false;
+            if (crudeTxt) crudeTxt.innerText = `${Math.round(kilang.stok_current).toLocaleString('id-ID')} / ${kilang.stok_max.toLocaleString('id-ID')} ${kilang.unit}`;
+            if (crudeBar) {
+                crudeBar.style.width = pct + '%';
+                crudeBar.classList.toggle('bg-red-500', pct <= 15);
+                crudeBar.classList.toggle('bg-emerald-500', pct > 15);
+                crudeBar.classList.toggle('refine-flow', anyRefining);
+            }
+            const indicator = document.getElementById('refine-indicator-' + kilang.id);
+            if (indicator) indicator.classList.toggle('hidden', !anyRefining);
+
+            const lpgSlot = kilang.kap && kilang.kap.lpg_curah;
+            if (lpgSlot) {
+                const lpgBar = document.getElementById('lpgcurah-bar-' + kilang.id);
+                const lpgTxt = document.getElementById('lpgcurah-text-' + kilang.id);
+                const lpgPct = lpgSlot.max ? Math.round((lpgSlot.cur / lpgSlot.max) * 100) : 0;
+                if (lpgTxt) lpgTxt.innerText = `${lpgSlot.cur.toLocaleString('id-ID', { maximumFractionDigits: 1 })} / ${lpgSlot.max.toLocaleString('id-ID')} Ton`;
+                if (lpgBar) lpgBar.style.width = lpgPct + '%';
+            }
+
+            Object.keys(kilang.kap || {}).forEach(key => {
+                const meta = PRODUCT_META[key], slot = kilang.kap[key];
+                const kBar = document.getElementById(`kap-bar-${kilang.id}-${key}`);
+                const kTxt = document.getElementById(`kap-text-${kilang.id}-${key}`);
+                const kBadge = document.getElementById(`kap-refine-${kilang.id}-${key}`);
+                const kpct = slot.max ? Math.round((slot.cur / slot.max) * 100) : 0;
+                if (kTxt) kTxt.innerText = `${slot.cur.toLocaleString('id-ID', { maximumFractionDigits: 1 })}/${slot.max.toLocaleString('id-ID')} ${meta.unit}`;
+                if (kBar) { kBar.style.width = kpct + '%'; kBar.classList.toggle('refine-flow', !!slot.refining); }
+                if (kBadge) kBadge.classList.toggle('hidden', !slot.refining);
+            });
+        }
+
+        // Kredit hasil pengiriman Kilang Pusat -> Depo Cabang (rute kapal/darat). Untuk Depo Cabang LPG, muatan
+        // "LPG Curah" masuk ke tangki kap.lpg_curah (yang benar-benar dipakai tombol Konversi LPG Curah -> Tabung),
+        // bukan ke gauge atas yang terpisah, supaya LPG curah yang dikirim beneran bisa diolah cabang.
+        // Untuk Depo Cabang BBM, BBL mentah tetap masuk ke gauge atas (stok_current), sama seperti dipakai
+        // convertBblKeProduk. Mengembalikan info tangki yang dikredit, untuk ditampilkan di log.
+        function creditKlgDelivery(target, amount) {
+            if (target.kap && target.kap.lpg_curah && target.tipe.includes('LPG')) {
+                const slot = target.kap.lpg_curah;
+                slot.cur = Math.min(slot.max, Math.round((slot.cur + amount) * 100) / 100);
+                return { cur: slot.cur, max: slot.max, unit: 'Ton' };
+            }
+            target.stok_current = Math.min(target.stok_max, Math.round((target.stok_current + amount) * 10) / 10);
+            return { cur: target.stok_current, max: target.stok_max, unit: target.unit };
         }
 
         // Info rute transfer Kilang Pusat -> Depo tujuan: jenis muatan yg dibutuhkan & apakah dua-duanya Pesisir
@@ -1242,7 +1637,7 @@
                         return;
                     }
                     pusat.stok_current -= bblUse;
-                    target.stok_current += amount;
+                    creditKlgDelivery(target, amount);
 
                     renderRefineries();
                     document.getElementById('transfer-amount-input').value = '';
@@ -1255,7 +1650,7 @@
         function filterSpbuByRegion() {
             const selectedRegion = document.getElementById('delivery-region-filter').value;
             populateSpbuDropdowns(selectedRegion);
-            const l = loadedSpbuList.filter(s => isOp(s) && (selectedRegion === 'ALL' || s.region === selectedRegion));
+            const l = loadedSpbuList.filter(s => isOp(s) && (selectedRegion === 'ALL' || s.wilayahId === selectedRegion));
             if (l.length) map.flyToBounds(L.latLngBounds(l.map(s => [s.lat, s.lon])), { maxZoom: 11, padding: [30, 30] });
         }
 
@@ -1285,7 +1680,9 @@
                     <div class="text-gray-900 font-sans p-1">
                         <div class="text-[10px] font-bold text-blue-700">${spbu.kode}</div>
                         <strong class="text-xs font-bold block">${spbu.nama}</strong>
-                        <div class="text-[10px] text-gray-600">Wilayah: ${spbu.region}</div>
+                        <div class="text-[10px] text-gray-600">Kab/Kota: ${spbu.region}</div>
+                        <div class="text-[10px] text-gray-600">Wilayah BBM Terdekat: <b>${spbu.wilayahBbmNama || '-'}</b>${spbu.wilayahBbmJarak != null ? ` (&plusmn;${spbu.wilayahBbmJarak} km)` : ''}</div>
+                        ${spbu.has_lpg ? `<div class="text-[10px] text-gray-600">Wilayah LPG Terdekat: <b>${spbu.wilayahLpgNama || '-'}</b>${spbu.wilayahLpgJarak != null ? ` (&plusmn;${spbu.wilayahLpgJarak} km)` : ''}</div>` : ''}
                         <div class="text-[10px] text-gray-600">Keramaian: <b>${TRAFFIC[spbu.traffic || (spbu.traffic = pickTraffic())].label}</b> &middot; konsumsi BBM/LPG ${TRAFFIC[spbu.traffic].mult}x</div>
                         <div class="text-[10px] text-gray-600">${spbu.tipe === 'COCO' ? 'Milik perusahaan (dikelola swasta)' : 'Mitra: ' + esc(spbu.mitra ? spbu.mitra.nama : '-')}${spbu.has_lpg ? ' &middot; + LPG' : ''}</div>
                         ${spbu.blocked ? '<div class="text-[10px] font-bold text-red-600">DIBLOKIR - operasional off</div>' : ''}
@@ -1306,7 +1703,7 @@
             deliverySelect.innerHTML = '';
             lpgSelect.innerHTML = '';
 
-            const filteredList = loadedSpbuList.filter(s => isOp(s) && (filterRegion === 'ALL' || s.region === filterRegion));
+            const filteredList = loadedSpbuList.filter(s => isOp(s) && (filterRegion === 'ALL' || s.wilayahId === filterRegion));
             // Dropdown target dispatch SEKARANG cuma nampilin SPBU yang lagi punya pesanan terbuka -
             // dispatch bebas ke SPBU yang stoknya masih aman dimatikan supaya nggak dobel/bentrok
             // sama alur Pesanan SPBU. Transfer antar Kilang/Depo (tab Kilang) TIDAK kena filter ini.
@@ -1458,9 +1855,9 @@
             addFinanceLog(`Iuran bulanan ${m.nama} - ${x.nama}${late ? ' (terlambat)' : ''}`, m.bulanan);
             m.telat = false; m.due = (late ? gameNow() : m.due) + MITRA_CFG.cycleDays * DAY_MS; updateCashDisplay();
         }
-        function takeOverSpbu(kode) {
+        async function takeOverSpbu(kode) {
             const x = loadedSpbuList.find(v => v.kode === kode); if (!x || !x.blocked) return;
-            if (!confirm(`Ambil alih ${x.nama}? Tunggakan mitra dihapus, SPBU menjadi milik perusahaan dan dikelola swasta.`)) return;
+            if (!(await showConfirm(`Ambil alih ${x.nama}? Tunggakan mitra dihapus, SPBU menjadi milik perusahaan dan dikelola swasta.`, { title: 'Ambil Alih SPBU', iconClass: 'fa-hand-holding-dollar', theme: 'blue', okLabel: 'Ambil Alih' }))) return;
             x.mitraLama = x.mitra && x.mitra.nama; delete x.mitra; x.blocked = false; x.tipe = 'COCO'; x.taken = true;
             addLog(`AMBIL ALIH: ${x.nama} kini milik perusahaan & dikelola swasta.`, 'success');
             renderSpbuOnMap(); populateSpbuDropdowns(); renderInvestorTab();
@@ -1509,20 +1906,13 @@
         setInterval(() => { if (currentAccount) tickMitra(); }, 3000);
 
         // DASHBOARD 1: TAB KHUSUS FISIK ARMADA
-        function renderFleetDashboard() {
-            const container = document.getElementById('fleet-list-container');
-            container.innerHTML = '';
-            if (!companyFleet.length) { container.innerHTML = '<div class="text-xs text-gray-500 text-center py-4">Belum punya armada. Beli truk di tab Dealer Armada (biaya KIR, STNK &amp; plat ikut dibayar).</div>'; return; }
-
-            companyFleet.forEach(trk => {
-                const card = document.createElement('div');
-                card.className = 'bg-gray-900 border border-gray-800 rounded-xl p-3 space-y-2.5';
-                
+        // Susun satu kartu armada (dipakai di dalam kelompok jenis+pangkalan pada renderFleetDashboard)
+        function fleetCardHtml(trk) {
                 const depot = refineryData.find(k => k.id === trk.depotId) || refineryData[0];
                 const depotOptions = refineryData.filter(k => k.is_unlocked && k.mekanikId)
                     .map(k => `<option value="${k.id}" ${k.id === trk.depotId ? 'selected' : ''}>${k.nama}</option>`).join('');
 
-                card.innerHTML = `
+                return `<div class="bg-gray-900 border border-gray-800 rounded-xl p-3 space-y-2.5">
                     <div class="flex justify-between items-center border-b border-gray-800 pb-2">
                         <div>
                             <span class="text-[10px] font-mono bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded border border-blue-800">${trk.id}</span>
@@ -1533,12 +1923,21 @@
 
                     <div class="grid grid-cols-2 gap-2 text-[10px]">
                         <div class="bg-gray-950 p-2 rounded border border-gray-800 col-span-2">
+                            ${trk.kelas === 'kapal' ? `
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-400"><i class="fa-solid fa-route mr-1 text-gray-500"></i>Jarak Tempuh: <b class="text-gray-200 font-mono">${trk.odometer.toLocaleString('id-ID')} km</b></span>
+                                <span class="text-gray-400"><i class="fa-solid fa-gauge-high mr-1 text-gray-500"></i>Kondisi Mesin: <b class="${banCls(trk.banPct)} font-mono">${trk.banPct}%</b></span>
+                            </div>
+                            <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mt-1"><div class="${banBar(trk.banPct)} h-full" style="width:${trk.banPct}%"></div></div>
+                            <div class="text-[9px] text-gray-500 mt-0.5">Kapal tidak pakai ban - ini kondisi mesin &amp; lambung, diservis otomatis begitu sandar di depot kalau sudah menipis.</div>
+                            ` : `
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-400"><i class="fa-solid fa-road mr-1 text-gray-500"></i>Odometer: <b class="text-gray-200 font-mono">${trk.odometer.toLocaleString('id-ID')} km</b></span>
                                 <span class="text-gray-400"><i class="fa-solid fa-circle-dot mr-1 text-gray-500"></i>Ban: <b class="${banCls(trk.banPct)} font-mono">${trk.banPct}%</b></span>
                             </div>
                             <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mt-1"><div class="${banBar(trk.banPct)} h-full" style="width:${trk.banPct}%"></div></div>
                             <div class="text-[9px] text-gray-500 mt-0.5">Ban otomatis diganti kru bengkel begitu tiba di depot kalau sisa &le;${TIRE_REPLACE_THRESHOLD}%.</div>
+                            `}
                         </div>
                         <div class="bg-gray-950 p-2 rounded border border-gray-800">
                             <span class="text-gray-400 block">Masa Uji KIR:</span>
@@ -1570,9 +1969,79 @@
                             ? `<button disabled class="w-full bg-gray-800/60 text-gray-500 font-semibold py-1.5 rounded-lg text-[11px] cursor-not-allowed"><i class="fa-solid fa-truck-fast mr-1.5"></i>Sedang Bertugas &mdash; Tidak Bisa Dijual</button>`
                             : `<button onclick="openSellModal('${trk.id}')" class="w-full bg-orange-600/90 hover:bg-orange-600 text-white font-semibold py-1.5 rounded-lg text-[11px] transition"><i class="fa-solid fa-right-left mr-1.5"></i>Jual ke Bursa P2P</button>`}
                     </div>
-                `;
-                container.appendChild(card);
+                </div>`;
+        }
+
+        const FLEET_CATS = [
+            { key: 'truk-bbm', label: 'Truk BBM', icon: 'fa-truck', match: t => t.kelas !== 'kapal' && t.type === 'BBM' },
+            { key: 'truk-lpg', label: 'Truk LPG', icon: 'fa-truck-ramp-box', match: t => t.kelas !== 'kapal' && t.type === 'LPG' },
+            { key: 'kapal', label: 'Kapal', icon: 'fa-ship', match: t => t.kelas === 'kapal' }
+        ];
+        let fleetCatFilter = 'ALL', fleetDepotFilter = 'ALL';
+        function setFleetCat(key) { fleetCatFilter = key; fleetDepotFilter = 'ALL'; renderFleetDashboard(); }
+        function setFleetDepot(key) { fleetDepotFilter = key; renderFleetDashboard(); }
+        function renderFleetDashboard() {
+            const container = document.getElementById('fleet-list-container');
+            container.innerHTML = '';
+            if (!companyFleet.length) {
+                document.getElementById('fleet-cat-tabs').innerHTML = '';
+                document.getElementById('fleet-depot-tabs').innerHTML = '';
+                container.innerHTML = '<div class="text-xs text-gray-500 text-center py-4">Belum punya armada. Beli truk di tab Dealer Armada (biaya KIR, STNK &amp; plat ikut dibayar).</div>'; return;
+            }
+
+            // Chip kategori: klik "Kapal" supaya cuma kapal yang tampil, dst. Klik langsung judul kelompoknya juga sama efeknya.
+            document.getElementById('fleet-cat-tabs').innerHTML = [{ key: 'ALL', label: 'Semua', icon: 'fa-layer-group' }, ...FLEET_CATS].map(c =>
+                `<button onclick="setFleetCat('${c.key}')" class="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] font-bold border transition ${fleetCatFilter === c.key ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-gray-200'}"><i class="fa-solid ${c.icon}"></i>${c.label}</button>`
+            ).join('');
+
+            const catsToShow = fleetCatFilter === 'ALL' ? FLEET_CATS : FLEET_CATS.filter(c => c.key === fleetCatFilter);
+            const refOrderIdx = refineryData.map(k => k.id);
+
+            // Chip pangkalan: cuma menampilkan depo yang benar-benar punya unit di kategori yang sedang dipilih.
+            // Klik nama kilang (mis. "Kilang Tuban") supaya cuma armada berpangkalan di sana yang muncul.
+            const scope = catsToShow.flatMap(cat => companyFleet.filter(cat.match));
+            const depotSeen = new Map();
+            scope.forEach(trk => {
+                const depot = refineryData.find(k => k.id === trk.depotId && k.is_unlocked);
+                const key = depot ? depot.id : 'IDLE';
+                if (!depotSeen.has(key)) depotSeen.set(key, depot);
             });
+            const depotKeysAll = [...depotSeen.keys()].sort((a, b) => (a === 'IDLE' ? 1 : b === 'IDLE' ? -1 : refOrderIdx.indexOf(a) - refOrderIdx.indexOf(b)));
+            document.getElementById('fleet-depot-tabs').innerHTML = [{ key: 'ALL', label: 'Semua Pangkalan' }, ...depotKeysAll.map(k => ({ key: k, label: k === 'IDLE' ? 'Idle' : depotSeen.get(k).nama }))].map(c =>
+                `<button onclick="setFleetDepot('${c.key}')" class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${fleetDepotFilter === c.key ? 'bg-teal-600 border-teal-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-gray-200'}">${esc(c.label)}</button>`
+            ).join('');
+
+            const html = catsToShow.map(cat => {
+                const list = companyFleet.filter(cat.match);
+                if (!list.length) return '';
+                const byDepot = new Map(); // id kilang (atau 'IDLE') -> { depot, trucks: [] }
+                list.forEach(trk => {
+                    const depot = refineryData.find(k => k.id === trk.depotId && k.is_unlocked);
+                    const key = depot ? depot.id : 'IDLE';
+                    if (!byDepot.has(key)) byDepot.set(key, { depot, trucks: [] });
+                    byDepot.get(key).trucks.push(trk);
+                });
+                const depotKeys = [...byDepot.keys()].filter(dk => fleetDepotFilter === 'ALL' || dk === fleetDepotFilter)
+                    .sort((a, b) => (a === 'IDLE' ? 1 : b === 'IDLE' ? -1 : refOrderIdx.indexOf(a) - refOrderIdx.indexOf(b)));
+                if (!depotKeys.length) return '';
+                return `<div class="space-y-2.5">
+                  <div onclick="setFleetCat('${cat.key}')" class="flex items-center gap-1.5 text-xs font-black uppercase tracking-wide text-gray-200 border-b border-gray-700 pb-1.5 cursor-pointer select-none" title="Klik untuk hanya tampilkan kategori ini">
+                    <i class="fa-solid ${cat.icon} text-cyan-400"></i><span>${cat.label}</span><span class="ml-auto font-mono text-[10px] bg-gray-900 border border-gray-800 rounded-full px-2 py-0.5 normal-case text-gray-400">${list.length} unit</span>
+                  </div>
+                  ${depotKeys.map(dk => {
+                      const grp = byDepot.get(dk), d = grp.depot;
+                      return `<div class="pl-1 space-y-2">
+                        <div onclick="setFleetDepot('${dk}')" class="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide ${d ? 'text-teal-400' : 'text-amber-400'} cursor-pointer select-none" title="Klik untuk hanya tampilkan pangkalan ini">
+                          <i class="fa-solid ${d ? (d.id === 'KILANG-01' ? 'fa-industry' : 'fa-warehouse') : 'fa-triangle-exclamation'}"></i>
+                          <span>${d ? esc(d.nama) : 'Idle &middot; Belum Ada Pangkalan Valid'}</span>
+                          <span class="ml-auto font-mono text-[9px] text-gray-500 normal-case">${grp.trucks.length} unit</span>
+                        </div>
+                        <div class="space-y-2.5">${grp.trucks.map(fleetCardHtml).join('')}</div>
+                      </div>`;
+                  }).join('')}
+                </div>`;
+            }).join('');
+            container.innerHTML = html || '<div class="text-xs text-gray-500 text-center py-4">Tidak ada armada yang cocok dengan filter ini.</div>';
         }
 
         // ===== SISTEM REPUTASI KRU =====
@@ -2234,13 +2703,48 @@
         const FERRY_QUEUE_SEC = 15; // waktu nyata (detik) antre naik/turun kapal di pelabuhan
         const AVG_SHIP_SPEED_KMH = 22; // kecepatan rata-rata kapal tanker niaga (kargo curah) - lebih pelan dari ferry RoRo
         const UNLOAD_SECONDS_KAPAL = 90; // waktu nyata (detik) bongkar-muat curah kapal tanker di pelabuhan, lebih lama dari truk
-        const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+        // ===== JEDA OTOMATIS SEMUA PERJALANAN SAAT TAB/WINDOW TIDAK AKTIF =====
+        // vNow() adalah "jam virtual" yang dipakai khusus untuk animasi jalan truk/kapal (posisi di peta).
+        // Berhenti bertambah selagi tab disembunyikan, lalu lanjut normal (bukan mengejar) saat tab aktif lagi.
+        let hiddenAccum = 0, hideStartedAt = document.hidden ? Date.now() : null;
+        function vNow() { return (hideStartedAt || Date.now()) - hiddenAccum; }
+        // travelTimers: daftar timer "antre pelabuhan" & "bongkar-muat" yang sedang berjalan, supaya ikut
+        // dijeda/dilanjutkan manual (setTimeout biasa tidak otomatis berhenti saat tab disembunyikan).
+        const travelTimers = new Set();
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (!hideStartedAt) hideStartedAt = Date.now();
+                travelTimers.forEach(tm => tm.pause());
+            } else if (hideStartedAt) {
+                hiddenAccum += Date.now() - hideStartedAt;
+                hideStartedAt = null;
+                travelTimers.forEach(tm => tm.resume());
+            }
+        });
+        // Pengganti setTimeout yang bisa dijeda - dipakai untuk antre pelabuhan & waktu bongkar-muat.
+        function pausableDelay(ms) {
+            return new Promise(resolve => {
+                let remaining = ms, handle = null, lastStart = null;
+                const timer = {
+                    pause() { if (handle) { clearTimeout(handle); remaining -= Date.now() - lastStart; handle = null; } },
+                    resume() { if (!handle) { lastStart = Date.now(); handle = setTimeout(() => { travelTimers.delete(timer); resolve(); }, Math.max(0, remaining)); } }
+                };
+                travelTimers.add(timer);
+                if (!document.hidden) timer.resume();
+            });
+        }
+        const sleep = ms => pausableDelay(ms);
 
         // Truk berangkat dari kilang/depo aktif terdekat yang cocok dengan jenis muatan
         const stokNeed = (k, cap) => k.unit === 'Bbl' ? Math.ceil(cap * ECO.bblPerKl) : cap;
         function pickOrigin(type, spbu, cap, truck) {
             const ok = refineryData.filter(k => k.is_unlocked && (k.tipe.includes('Pusat') || k.tipe.includes(type)) && (!cap || type !== 'BBM' || k.stok_current >= stokNeed(k, cap)));
-            // Utamakan depo pangkalan (home base) truk itu sendiri jika masih memenuhi syarat, sesuai konsep pindah depot
+            // Utamakan kilang/depo yang jadi "wilayah" (radius terdekat) SPBU ini UNTUK JENIS PRODUK INI -
+            // lihat recomputeWilayah(). Dipisah per jenis (BBM/LPG) karena depo cabang bisa cuma khusus salah satunya.
+            const wilayahId = type === 'LPG' ? spbu.wilayahLpgId : spbu.wilayahBbmId;
+            if (wilayahId) { const near = ok.find(k => k.id === wilayahId); if (near) return near; }
+            // Kalau depo wilayah tidak memenuhi syarat (mis. stok kurang), baru coba depo pangkalan (home base) truk itu sendiri.
             if (truck && truck.depotId) { const home = ok.find(k => k.id === truck.depotId); if (home) return home; }
             return ok.reduce((best, k) => (!best || distKm(k, spbu) < distKm(best, spbu)) ? k : best, null);
         }
@@ -2296,7 +2800,7 @@
         const parkedMarkers = new Map();
 
         function launchTruck(e, remote) {
-            if (Date.now() - e.startAt >= e.dur || flying.size > 80) return null;
+            if (vNow() - e.startAt >= e.dur || flying.size > 80) return null;
             if (!remote && parkedMarkers.has(e.id)) { map.removeLayer(parkedMarkers.get(e.id)); parkedMarkers.delete(e.id); }
             const pts = e.pts, cum = [0];
             for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + distKm({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] }));
@@ -2307,18 +2811,18 @@
             const line = L.polyline(pts, { color, weight: remote ? 2 : 3, opacity: isBoat ? 0.45 : 0.3, dashArray: isBoat ? '2 10' : '6 8' }).addTo(map);
             const trail = L.polyline([pts[0]], { color, weight: remote ? 3 : 4, opacity: 0.85 }).addTo(map);
             const marker = L.marker(pts[0], {
-                icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="truck-ico" style="background:${color};${remote ? 'opacity:.85' : ''}"><span class="tf"><i class="fa-solid fa-${isBoat ? 'ship' : 'truck'}"></i></span></div>` }),
+                icon: L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 15], html: `<div class="truck-ico ${isBoat ? 'boat' : ''}" style="background:${color};${remote ? 'opacity:.85' : ''}"><span class="tf"><i class="fa-solid fa-${isBoat ? 'ship' : 'truck'}"></i></span></div>` }),
                 zIndexOffset: remote ? 500 : 1000
             }).addTo(map);
             marker.bindTooltip(esc(remote ? `${e.owner} · ${e.plat}` : `${isFerry ? 'Ferry · ' + e.id : isKapal ? 'Kapal · ' + e.id : e.id} · ${e.plat}`), { permanent: true, direction: 'top', offset: [0, -16], className: 'truck-tip' });
-            const t = { e, pts, cum, total: cum[cum.length - 1] || 0.01, marker, line, trail, remote, color, lastTrail: 0, done: null };
+            const t = { e, pts, cum, total: cum[cum.length - 1] || 0.01, marker, line, trail, remote, color, isBoat, lastTrail: 0, done: null };
             flying.add(t);
             if (flying.size === 1) requestAnimationFrame(flyLoop);
             return t;
         }
 
         function flyLoop() {
-            const now = Date.now();
+            const now = vNow();
             flying.forEach(t => {
                 const f = Math.min(1, (now - t.e.startAt) / t.e.dur);
                 const { i, ll } = posAt(t.pts, t.cum, f * t.total);
@@ -2336,12 +2840,17 @@
                     [t.line, t.trail].forEach(l => map.removeLayer(l));
                     map.removeLayer(t.marker);
                     if (!t.remote) {
-                        // Parkir titik kecil di lokasi akhir (depot) alih-alih menghilang total.
-                        // Akan otomatis dibersihkan sendiri saat truk ini berangkat lagi (lihat launchTruck).
+                        // Truk/kapal TIDAK dihapus total dari peta - diganti jadi ikon "terparkir" (redup) di lokasi
+                        // terakhirnya. Ini berlaku baik saat baru tiba di tujuan (SPBU/depo, masih bongkar muatan)
+                        // MAUPUN saat sudah kembali ke depot asal. Otomatis dibersihkan sendiri saat truk ini
+                        // ditugaskan berangkat lagi (lihat launchTruck).
                         if (parkedMarkers.has(t.e.id)) map.removeLayer(parkedMarkers.get(t.e.id));
                         const finalLL = t.pts[t.pts.length - 1];
-                        const parked = L.circleMarker(finalLL, { radius: 5, color: '#fff', weight: 1.5, fillColor: t.color, fillOpacity: 0.9 }).addTo(map);
-                        parked.bindTooltip(esc(`${t.e.id} · terparkir`), { direction: 'top', offset: [0, -8], className: 'truck-tip' });
+                        const parked = L.marker(finalLL, {
+                            icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div class="truck-ico ${t.isBoat ? 'boat' : ''}" style="background:${t.color};opacity:.6;width:26px;height:26px"><span class="tf"><i class="fa-solid fa-${t.isBoat ? 'ship' : 'truck'}"></i></span></div>` }),
+                            zIndexOffset: 300
+                        }).addTo(map);
+                        parked.bindTooltip(esc(`${t.e.id} · terparkir/bongkar muatan`), { direction: 'top', offset: [0, -14], className: 'truck-tip' });
                         parkedMarkers.set(t.e.id, parked);
                     }
                 }, 4000);
@@ -2358,7 +2867,7 @@
         // Jalankan satu ruas perjalanan (darat via OSRM ATAU laut/ferry garis lurus) dan tunggu sampai tiba.
         function runVehicleLeg(pts, dur, meta, fit) {
             return new Promise(resolve => {
-                const e = { ...meta, pts, dur, startAt: Date.now() };
+                const e = { ...meta, pts, dur, startAt: vNow() };
                 const t = launchTruck(e, false);
                 if (!t) { resolve(); return; }
                 if (fit) map.fitBounds(t.line.getBounds(), { padding: [50, 50], maxZoom: 11 });
@@ -2369,14 +2878,14 @@
             const { pts, real } = await fetchRoute(from, to);
             let total = 0;
             for (let i = 1; i < pts.length; i++) total += distKm({ lat: pts[i - 1][0], lon: pts[i - 1][1] }, { lat: pts[i][0], lon: pts[i][1] });
-            const dur = Math.min(900000, Math.max(6000, (total / AVG_TRUCK_SPEED_KMH) * (3600000 / GAME_SPEED)));
+            const dur = (total / AVG_TRUCK_SPEED_KMH) * (3600000 / GAME_SPEED);
             await runVehicleLeg(pts, dur, { ...meta, vehicle: 'truck' }, fit);
             return { km: total, dur, real };
         }
         async function ferryLeg(from, to, meta, fit) {
             const pts = [[from.lat, from.lon], [to.lat, to.lon]];
             const total = distKm(from, to);
-            const dur = Math.min(900000, Math.max(6000, (total / AVG_FERRY_SPEED_KMH) * (3600000 / GAME_SPEED)));
+            const dur = (total / AVG_FERRY_SPEED_KMH) * (3600000 / GAME_SPEED);
             await runVehicleLeg(pts, dur, { ...meta, vehicle: 'ferry' }, fit);
             return { km: total, dur };
         }
@@ -2385,7 +2894,7 @@
         async function shipLeg(from, to, meta, fit) {
             const pts = [[from.lat, from.lon], [to.lat, to.lon]];
             const total = distKm(from, to);
-            const dur = Math.min(1800000, Math.max(10000, (total / AVG_SHIP_SPEED_KMH) * (3600000 / GAME_SPEED)));
+            const dur = (total / AVG_SHIP_SPEED_KMH) * (3600000 / GAME_SPEED);
             await runVehicleLeg(pts, dur, { ...meta, vehicle: 'kapal' }, fit);
             return { km: total, dur };
         }
@@ -2432,7 +2941,8 @@
                 addLog(`TIBA: ${truck.id} [Supir: ${driver.name}] sampai di ${spbu.nama}. Kru bersiap bongkar muatan (±${UNLOAD_SECONDS} detik)...`, 'info', 'truck');
                 notify(`${truck.id} tiba di ${spbu.nama}, sedang bongkar muatan...`, 'info');
                 ownAnims = Math.max(0, ownAnims - 1);
-                setTimeout(async () => {
+                await pausableDelay(UNLOAD_SECONDS * 1000);
+                {
                     completeUnloading(d);
                     // Animasi truk/kapal berjalan balik ke depot asal setelah bongkar muatan tuntas (lewat ferry lagi bila perlu).
                     // PENTING: truk/supir/kernet baru dibebaskan (busyIds) SETELAH benar-benar tiba di depot di bawah ini,
@@ -2443,7 +2953,7 @@
                     } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi keuangan yang sudah cair */ }
                     ids.forEach(x => busyIds.delete(x));
                     populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
-                }, UNLOAD_SECONDS * 1000);
+                }
             } catch (err) {
                 ids.forEach(x => busyIds.delete(x));
                 populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
@@ -2469,7 +2979,8 @@
                 addLog(`SANDAR: Kapal ${truck.id} tiba &amp; sandar di ${target.nama}, kru bongkar muatan curah (±${UNLOAD_SECONDS_KAPAL} detik)...`, 'info', 'truck');
                 notify(`${truck.id} sandar di ${target.nama}, sedang bongkar muatan curah...`, 'info');
                 ownAnims = Math.max(0, ownAnims - 1);
-                setTimeout(async () => {
+                await pausableDelay(UNLOAD_SECONDS_KAPAL * 1000);
+                {
                     completeKapalTransfer(d);
                     // PENTING: sama seperti truk darat - busyIds baru dilepas SETELAH kapal benar-benar sandar
                     // kembali di depot asal, supaya kapal tidak bisa dipakai lagi selagi masih berlayar pulang.
@@ -2479,7 +2990,7 @@
                     } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi stok yang sudah masuk */ }
                     ids.forEach(x => busyIds.delete(x));
                     populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
-                }, UNLOAD_SECONDS_KAPAL * 1000);
+                }
             } catch (err) {
                 ids.forEach(x => busyIds.delete(x));
                 populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
@@ -2491,7 +3002,7 @@
         function completeKapalTransfer(d) {
             const { spbu: target, truck, driver, kernet, nomorSJ } = d;
             const ids = [truck.id, driver.id, kernet.id];
-            target.stok_current = Math.min(target.stok_max, Math.round((target.stok_current + truck.cap) * 10) / 10);
+            const info = creditKlgDelivery(target, truck.cap);
             const result = settleCrewResult(driver, kernet);
             if (result.fine) {
                 companyCash -= result.fine; totalExpense += result.fine;
@@ -2499,7 +3010,7 @@
             }
             // busyIds TIDAK dilepas di sini lagi - baru dilepas setelah kapal benar-benar sandar kembali di depot
             // asal (lihat animateKapalTransfer), supaya kapal tidak bisa ditugaskan dobel selagi masih berlayar pulang.
-            addLog(`TRANSFER SELESAI ${nomorSJ || ''}: ${truck.cap.toLocaleString()} ${target.unit} pasokan curah diturunkan di ${target.nama}. Stok kini ${Math.round(target.stok_current).toLocaleString()}/${target.stok_max.toLocaleString()} ${target.unit}.`, 'success');
+            addLog(`TRANSFER SELESAI ${nomorSJ || ''}: ${truck.cap.toLocaleString()} ${target.unit} pasokan curah diturunkan di ${target.nama}. Stok kini ${Math.round(info.cur).toLocaleString()}/${info.max.toLocaleString()} ${info.unit}.`, 'success');
             notify(`${truck.id} selesai bongkar muatan di ${target.nama}.`, 'ok');
             updateCashDisplay();
             renderRefineries();
@@ -2624,7 +3135,9 @@
             const accs = store.get('pml_accounts', []);
             let acc = accs.find(a => a.id === user.uid);
             if (!acc) { acc = { id: user.uid, stats: liveStats() }; accs.push(acc); }
-            Object.assign(acc, { email: user.email, company: prof.company, owner: prof.owner });
+            // lastBroadcastSeen datang dari dokumen users/{uid} di Firestore (fb.markBroadcastSeen), jadi
+            // status "sudah dilihat" ikut akun, bukan ikut perangkat/browser.
+            Object.assign(acc, { email: user.email, company: prof.company, owner: prof.owner, lastBroadcastSeen: prof.lastBroadcastSeen || 0 });
             store.set('pml_accounts', accs);
             try {
                 const cloud = await fb.loadSave(user.uid), key = 'pml_save_' + user.uid, local = store.get(key, null);
@@ -2659,6 +3172,7 @@
                 startVerifiedListener();
                 startBursaSalesListener();
                 checkAdmin();
+                checkNewBroadcasts();
                 map.invalidateSize();
                 addLog(`LOGIN: ${acc.owner} masuk sebagai pemilik ${acc.company}.`, 'success');
                 // Kalau splash "Main Sekarang" sudah dilewati (alur daftar/masuk manual), tampilkan tutorial/welcome sekarang.
@@ -2694,8 +3208,44 @@
             document.getElementById('acct-tab-reset').className = 'py-2 rounded-lg font-bold transition ' + (m === 'reset' ? on : off);
             document.getElementById('acct-tab-delete').className = 'py-2 rounded-lg font-bold transition ' + (m === 'delete' ? on : off);
             document.getElementById('acct-desc').innerText = ACCT_TXT[m][0];
-            const b = document.getElementById('acct-confirm'); b.innerText = ACCT_TXT[m][1]; b.className = 'flex-1 text-white font-bold py-2.5 rounded-lg ' + ACCT_TXT[m][2];
+            const b = document.getElementById('acct-confirm'); b.innerText = ACCT_TXT[m][1]; b.className = 'flex-1 text-white font-bold py-2.5 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed ' + ACCT_TXT[m][2];
             document.getElementById('acct-error').classList.add('hidden');
+            // Mode Hapus Akun: kunci tombol konfirmasi sampai nama perusahaan diketik ulang persis - pengaman
+            // ekstra karena aksi ini PERMANEN (hapus akun Firebase Auth + semua data cloud, tidak bisa dibatalkan).
+            const typedWrap = document.getElementById('acct-delete-typed-wrap'), typedInput = document.getElementById('acct-delete-typed');
+            typedInput.value = '';
+            if (m === 'delete') {
+                typedWrap.classList.remove('hidden');
+                document.getElementById('acct-delete-typed-target').innerText = currentAccount ? currentAccount.company : '';
+                b.disabled = true;
+            } else {
+                typedWrap.classList.add('hidden');
+                b.disabled = false;
+            }
+        }
+        function checkDeleteTyped() {
+            if (acctMode !== 'delete') return;
+            const target = (currentAccount ? currentAccount.company : '').trim();
+            document.getElementById('acct-confirm').disabled = document.getElementById('acct-delete-typed').value.trim() !== target;
+        }
+        async function sendAcctResetPw() {
+            const btn = document.getElementById('acct-reset-pw-btn');
+            if (!btn || btn.disabled || !currentAccount) return;
+            const ok = await showConfirm(`Email link reset password akan dikirim ke ${currentAccount.email}. Lanjutkan?`,
+                { title: 'Reset Password', iconClass: 'fa-key', theme: 'blue', okLabel: 'Ya, Kirim', cancelLabel: 'Batal' });
+            if (!ok) return;
+            const original = btn.innerHTML;
+            btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Mengirim...</span>';
+            try {
+                await fb.resetPassword(currentAccount.email);
+                showMsg('acct-error', 'Email reset password dikirim ke ' + currentAccount.email + '. Cek inbox/spam.', true);
+                btn.innerHTML = '<i class="fa-solid fa-check"></i><span>Email terkirim, cek inbox</span>';
+                // Jeda 20 detik sebelum tombol bisa dipakai lagi - cegah spam kirim email reset berkali-kali.
+                setTimeout(() => { btn.innerHTML = original; btn.disabled = false; }, 20000);
+            } catch (err) {
+                showMsg('acct-error', fbErr(err), false);
+                btn.innerHTML = original; btn.disabled = false;
+            }
         }
         function openAccountModal() {
             if (!currentAccount) return;
@@ -2709,6 +3259,9 @@
         function closeAccountModal() { document.getElementById('account-modal').classList.add('hidden'); }
         async function confirmAccountAction() {
             const pw = document.getElementById('acct-pass').value, id = currentAccount.id;
+            if (acctMode === 'delete' && document.getElementById('acct-delete-typed').value.trim() !== currentAccount.company.trim()) {
+                return showMsg('acct-error', 'Nama perusahaan yang diketik belum cocok.', false);
+            }
             try {
                 await fb.reauth(pw);            // verifikasi password ke Firebase
                 skipSave = true;
@@ -2726,7 +3279,7 @@
         }
 
         async function logoutAccount() {
-            if (cloudBusy && !confirm('Penyimpanan cloud sedang berjalan. Jika keluar sekarang, penyimpanan dibatalkan. Lanjutkan keluar?')) return;
+            if (cloudBusy && !(await showConfirm('Penyimpanan cloud sedang berjalan. Jika keluar sekarang, penyimpanan dibatalkan. Lanjutkan keluar?', { title: 'Keluar Akun', iconClass: 'fa-right-from-bracket', theme: 'red', okLabel: 'Keluar' }))) return;
             try { saveGame(); } catch (e) {} skipSave = true; try { await fb.out(); } catch (e) {} location.reload(); }
 
         function liveStats() { return { cash: companyCash, units: companyFleet.length, kilang: refineryData.filter(k => k.is_unlocked).length }; }
@@ -2735,9 +3288,9 @@
         function buildSave() {
             return {
                 cash: companyCash, income: totalIncome, expense: totalExpense,
-                refineries: refineryData.map(k => ({ id: k.id, u: k.is_unlocked, s: k.stok_current, mid: k.mekanikId, kap: k.kap })),
+                refineries: refineryData.map(k => ({ id: k.id, u: k.is_unlocked, s: k.stok_current, m: k.stok_max, lvl: k.stokUpgradeLevel, mid: k.mekanikId, kap: k.kap })),
                 fleet: companyFleet, crew: companyCrew, crewCounter: crewIdCounter, sj: suratJalanCounter,
-                spbu: loadedSpbuList, fin: financeEntries, orders, ordHist, setor: lastSetor, izin: izinLog, clock: gameElapsed, topups: appliedTopups, pph: pphPaid, bbm: bbmSpent, tsetor: topupTotal, ts: Date.now()
+                spbu: loadedSpbuList, fin: financeEntries, orders, ordHist, nextOrderGt, setor: lastSetor, izin: izinLog, clock: gameElapsed, topups: appliedTopups, pph: pphPaid, bbm: bbmSpent, tsetor: topupTotal, ts: Date.now()
             };
         }
 
@@ -2766,6 +3319,7 @@
 
         async function manualCloudSave() {
             if (!currentAccount || cloudBusy) return;
+            document.getElementById('btn-cloud-save')?.classList.remove('cloud-remind');
             if (!window.fb) return addLog('CLOUD: Firebase belum siap. Periksa koneksi lalu muat ulang halaman.', 'warning');
             const uid = currentAccount.id, btn = document.getElementById('btn-cloud-save'),
                   lbl = document.getElementById('cloud-label'), bar = document.getElementById('cloud-bar'), ico = document.getElementById('cloud-ico');
@@ -2812,6 +3366,18 @@
             { id: 'p50m', label: 'Rp 50 Miliar', cash: 50e9, price: 70000, days: 30, tag: 'Hemat' },
             { id: 'p100m', label: 'Rp 100 Miliar', cash: 100e9, price: 100000, days: 30, tag: 'Terbaik' }
         ];
+        // Paket khusus panel admin: tidak melalui pembayaran, jadi tanpa harga (price) dan boleh sampai 1 Triliun
+        const ADMIN_PKGS = [
+            { id: 'a500j', label: 'Rp 500 Juta', cash: 500e6, price: 0, days: 5 },
+            { id: 'a1m', label: 'Rp 1 Miliar', cash: 1e9, price: 0, days: 10 },
+            { id: 'a5m', label: 'Rp 5 Miliar', cash: 5e9, price: 0, days: 25 },
+            { id: 'a10m', label: 'Rp 10 Miliar', cash: 10e9, price: 0, days: 30 },
+            { id: 'a50m', label: 'Rp 50 Miliar', cash: 50e9, price: 0, days: 30 },
+            { id: 'a100m', label: 'Rp 100 Miliar', cash: 100e9, price: 0, days: 30 },
+            { id: 'a500m', label: 'Rp 500 Miliar', cash: 500e9, price: 0, days: 30 },
+            { id: 'a1t', label: 'Rp 1 Triliun', cash: 1e12, price: 0, days: 30 }
+        ];
+        const ADMIN_CASH_MAX = 1e12; // batas atas nominal khusus admin: 1 Triliun
         let appliedTopups = [], selTopup = null, topupBusy = false, topupUnsub = null, topupChain = Promise.resolve();
         const topupInflight = new Set();
         // Registrasi nama pengirim (dipakai utk alur QRIS): wajib diisi sebelum tombol WhatsApp aktif
@@ -2907,11 +3473,45 @@
         }
         function openAdmin() {
             if (!isAdminUser) return;
-            document.getElementById('adm-pkg').innerHTML = TOPUP_PKGS.map(p => `<option value="${p.id}">${p.label} - ${rpFmt(p.price)} - centang ${p.days} hari</option>`).join('');
+            document.getElementById('adm-pkg').innerHTML = ADMIN_PKGS.map(p => `<option value="${p.id}">${p.label} - centang ${p.days} hari</option>`).join('');
             document.getElementById('adm-player').textContent = ''; admMsg('');
-            document.getElementById('admin-modal').classList.remove('hidden'); renderGrants();
+            document.getElementById('adm-only-check').checked = false;
+            document.getElementById('adm-only-cash').checked = false;
+            document.getElementById('adm-custom-cash').value = '';
+            admToggleOnlyCheck();
+            document.getElementById('admin-modal').classList.remove('hidden'); renderGrants(); renderBroadcastList();
         }
         function closeAdmin() { document.getElementById('admin-modal').classList.add('hidden'); }
+        // Saat "hanya centang" dicentang, paket & nominal khusus dinonaktifkan (tidak dipakai), dan otomatis
+        // membatalkan centang "hanya saldo" (dua opsi ini saling meniadakan, tidak bisa aktif berbarengan).
+        function admToggleOnlyCheck() {
+            const only = document.getElementById('adm-only-check').checked;
+            if (only) document.getElementById('adm-only-cash').checked = false;
+            document.getElementById('adm-pkg').disabled = only;
+            document.getElementById('adm-custom-cash').disabled = only;
+            admCustomPreview();
+        }
+        // Saat "hanya saldo" dicentang, saldo tetap dikirim (dari paket atau nominal khusus) tapi centang biru
+        // TIDAK ikut dikirim/diperpanjang. Otomatis membatalkan centang "hanya centang biru".
+        function admToggleOnlyCash() {
+            const onlyCash = document.getElementById('adm-only-cash').checked;
+            if (onlyCash) {
+                document.getElementById('adm-only-check').checked = false;
+                document.getElementById('adm-pkg').disabled = false;
+                document.getElementById('adm-custom-cash').disabled = false;
+            }
+            admCustomPreview();
+        }
+        // Pratinjau nominal khusus yang akan dikirim (dibatasi maks ADMIN_CASH_MAX)
+        function admCustomPreview() {
+            const el = document.getElementById('adm-custom-preview');
+            if (document.getElementById('adm-only-check').checked) { el.textContent = 'Hanya kirim centang biru, saldo tidak dikirim.'; return; }
+            const onlyCash = document.getElementById('adm-only-cash').checked;
+            const raw = parseInt(document.getElementById('adm-custom-cash').value, 10);
+            if (!raw || raw <= 0) { el.textContent = onlyCash ? 'Saldo mengikuti nominal paket di atas, tanpa centang biru.' : ''; return; }
+            const clamped = Math.min(raw, ADMIN_CASH_MAX);
+            el.textContent = 'Nominal terkirim: ' + rpFmt(clamped) + (raw > ADMIN_CASH_MAX ? ' (dibatasi maks 1 Triliun)' : '') + (onlyCash ? ', tanpa centang biru.' : '');
+        }
         const admUid = () => document.getElementById('adm-uid').value.trim();
         async function adminLookup() {
             const uid = admUid(), el = document.getElementById('adm-player');
@@ -2926,18 +3526,88 @@
         }
         async function adminSend() {
             if (!isAdminUser) return;
-            const uid = admUid(), pkg = TOPUP_PKGS.find(x => x.id === document.getElementById('adm-pkg').value), btn = document.getElementById('adm-send');
+            const uid = admUid(), pkg = ADMIN_PKGS.find(x => x.id === document.getElementById('adm-pkg').value), btn = document.getElementById('adm-send');
             const pl = await adminLookup(); if (pl === null || !pkg) return admMsg('Periksa UID dan paket.', false);
-            if (!confirm(`Kirim ${pkg.label} + centang biru ${pkg.days} hari ke ${pl.company || 'UID ini (TIDAK ditemukan di leaderboard)'}?\nUID: ${uid}`)) return;
+
+            // Tentukan nominal & hari centang biru yang dikirim:
+            // - onlyCheck: hanya kirim centang biru, saldo = 0
+            // - onlyCash : hanya kirim saldo (dari paket/nominal khusus), hari centang biru = 0 (tidak dikirim/diperpanjang)
+            // - selain itu: kirim keduanya (nominal khusus kalau diisi, atau ikut paket)
+            const onlyCheck = document.getElementById('adm-only-check').checked;
+            const onlyCash = document.getElementById('adm-only-cash').checked;
+            const customRaw = parseInt(document.getElementById('adm-custom-cash').value, 10);
+            let cash = pkg.cash, days = pkg.days, label = pkg.label;
+            if (onlyCheck) {
+                cash = 0; label = 'Centang biru saja (tanpa saldo)';
+            } else if (onlyCash) {
+                days = 0; label = pkg.label + ' (tanpa centang biru)';
+                if (customRaw > 0) { cash = Math.min(customRaw, ADMIN_CASH_MAX); label = rpFmt(cash) + ' (nominal khusus, tanpa centang biru)'; }
+            } else if (customRaw > 0) {
+                cash = Math.min(customRaw, ADMIN_CASH_MAX); label = rpFmt(cash) + ' (nominal khusus)';
+            }
+            const sendPkg = { id: pkg.id, label, cash, price: 0, days };
+
+            const centangTxt = days > 0 ? ` + centang biru ${days} hari` : ' (tanpa centang biru)';
+            if (!(await showConfirm(`Kirim ${sendPkg.label}${centangTxt} ke ${pl.company || 'UID ini (TIDAK ditemukan di leaderboard)'}?\nUID: ${uid}`, { title: 'Kirim Top Up', iconClass: 'fa-paper-plane', theme: 'blue', okLabel: 'Kirim' }))) return;
             btn.disabled = true;
             try {
-                await fb.adminGrant(currentAccount.id, uid, pkg, document.getElementById('adm-note').value.trim());
+                await fb.adminGrant(currentAccount.id, uid, sendPkg, document.getElementById('adm-note').value.trim());
                 admMsg(`Berhasil dikirim ke ${pl.company || uid}. Pemain tinggal menekan Klaim di kotak Notifikasi Top Up.`, true);
-                showModal('Top Up Terkirim', `${pkg.label} (+centang biru ${pkg.days} hari) berhasil dikirim ke ${pl.company || uid}.`, 'fa-circle-check', 'blue');
+                showModal('Top Up Terkirim', `${sendPkg.label}${centangTxt} berhasil dikirim ke ${pl.company || uid}.`, 'fa-circle-check', 'blue');
                 document.getElementById('adm-uid').value = ''; document.getElementById('adm-note').value = ''; document.getElementById('adm-player').textContent = '';
+                document.getElementById('adm-only-check').checked = false; document.getElementById('adm-only-cash').checked = false; document.getElementById('adm-custom-cash').value = ''; admToggleOnlyCheck();
                 renderGrants();
             } catch (e) { admMsg('Gagal mengirim: ' + (e.code || e.message), false); }
             finally { btn.disabled = false; }
+        }
+        // ----- Broadcast: kirim notifikasi ke semua pemain -----
+        function admBroadcastMsg(t, ok) {
+            const el = document.getElementById('adm-broadcast-msg-status');
+            el.textContent = t; el.className = 'mt-2 text-[11px] rounded-lg px-3 py-2 border ' + (ok ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30' : 'text-red-300 bg-red-500/10 border-red-500/30') + (t ? '' : ' hidden');
+        }
+        async function renderBroadcastList() {
+            try {
+                const list = await fb.recentBroadcasts();
+                document.getElementById('adm-broadcast-list').innerHTML = list.map(x => `<div class="bg-gray-950 rounded px-2 py-1 ${x.level === 'warn' ? 'text-amber-300' : 'text-gray-300'}">${esc(x.message)}</div>`).join('') || '<div class="text-gray-600">Belum ada.</div>';
+            } catch (e) { document.getElementById('adm-broadcast-list').textContent = 'Gagal memuat riwayat.'; }
+        }
+        async function adminSendBroadcast() {
+            if (!isAdminUser) return;
+            const inp = document.getElementById('adm-broadcast-msg'), msg = inp.value.trim();
+            const level = document.getElementById('adm-broadcast-level').value;
+            const btn = document.getElementById('adm-broadcast-send');
+            if (!msg) return admBroadcastMsg('Isi dulu pesannya.', false);
+            if (!(await showConfirm(`Kirim pengumuman ini ke SEMUA pemain (termasuk yang sedang offline, akan mereka terima saat login berikutnya)?\n\n"${msg}"`, { title: 'Kirim Broadcast', iconClass: 'fa-tower-broadcast', theme: 'amber', okLabel: 'Kirim ke Semua' }))) return;
+            btn.disabled = true;
+            try {
+                await fb.sendBroadcast(currentAccount.id, msg, level);
+                admBroadcastMsg('Terkirim. Pemain yang offline akan otomatis menerimanya begitu mereka login lagi.', true);
+                inp.value = '';
+                renderBroadcastList();
+            } catch (e) { admBroadcastMsg('Gagal mengirim: ' + (e.code || e.message), false); }
+            finally { btn.disabled = false; }
+        }
+        // Dipanggil sekali tiap login/refresh (bukan realtime listener) - ambil broadcast yang belum pernah
+        // dilihat akun ini (dibandingkan "terakhir dilihat" yang tersimpan di Firestore, ikut akun bukan ikut
+        // perangkat), lalu tampilkan sebagai notifikasi biasa (masuk ke panel Notifikasi + ikut bunyi
+        // notifikasi yang sudah ada). Login dari HP lalu dari laptop tetap tersinkron - tidak dobel.
+        async function checkNewBroadcasts() {
+            if (!window.fb || !currentAccount) return;
+            let lastSeen = currentAccount.lastBroadcastSeen || 0;
+            // Migrasi sekali dari localStorage lama (peninggalan versi sebelumnya, per-perangkat) kalau akun
+            // ini belum pernah punya catatan "terakhir dilihat" di Firestore sama sekali.
+            if (!lastSeen) {
+                try { lastSeen = parseInt(localStorage.getItem('pmid_lastbroadcast_' + currentAccount.id) || '0', 10) || 0; } catch (e) { /* localStorage diblokir, abaikan */ }
+            }
+            try {
+                const list = await fb.fetchNewBroadcasts();
+                const belum = list.filter(x => x.created && x.created.toMillis && x.created.toMillis() > lastSeen).sort((a, b) => a.created.toMillis() - b.created.toMillis());
+                if (!belum.length) return;
+                belum.forEach(x => notify('PENGUMUMAN: ' + x.message, x.level === 'warn' ? 'warn' : 'info'));
+                const newest = belum[belum.length - 1].created.toMillis();
+                currentAccount.lastBroadcastSeen = newest; // langsung update di memori, cegah double-trigger kalau fungsi ini kepanggil 2x sebelum tulisan cloud selesai
+                try { await fb.markBroadcastSeen(currentAccount.id, newest); } catch (e) { console.warn('Gagal simpan status broadcast ke cloud:', e); }
+            } catch (e) { console.warn('Gagal ambil broadcast:', e); }
         }
         async function adminBan() {
             if (!isAdminUser) return;
@@ -2945,7 +3615,7 @@
             if (uid.length < 20) return admMsg('UID tidak valid.', false);
             const raw = document.getElementById('adm-ban-days').value, days = raw === '0' ? null : parseInt(raw, 10);
             const reason = document.getElementById('adm-ban-reason').value.trim(), label = days ? `${days} hari` : 'PERMANEN';
-            if (!confirm(`Blokir UID ${uid} selama ${label}?${reason ? '\nAlasan: ' + reason : ''}`)) return;
+            if (!(await showConfirm(`Blokir UID ${uid} selama ${label}?${reason ? '\nAlasan: ' + reason : ''}`, { title: 'Blokir Pemain', iconClass: 'fa-ban', theme: 'red', okLabel: 'Blokir' }))) return;
             try {
                 await fb.banPlayer(currentAccount.id, uid, days, reason);
                 admMsg(`UID ${uid} diblokir (${label}).`, true);
@@ -2958,7 +3628,7 @@
             if (!isAdminUser) return;
             const uid = admUid();
             if (uid.length < 20) return admMsg('UID tidak valid.', false);
-            if (!confirm(`Buka blokir UID ${uid}?`)) return;
+            if (!(await showConfirm(`Buka blokir UID ${uid}?`, { title: 'Buka Blokir', iconClass: 'fa-lock-open', theme: 'blue', okLabel: 'Buka Blokir' }))) return;
             try {
                 await fb.unbanPlayer(uid);
                 admMsg(`UID ${uid} dibuka blokirnya.`, true);
@@ -3003,12 +3673,12 @@
                 companyCash += t.cash; topupTotal += t.cash; appliedTopups.push(t.id);
                 updateCashDisplay(); saveGame();
                 addLog(`TOP UP: Saldo bertambah ${formatRupiah(t.cash)} (pembayaran ${rpFmt(t.price)}).`, 'success');
-                showModal('Top Up Berhasil!', `Saldo perusahaan bertambah ${formatRupiah(t.cash)}.`, 'fa-wallet', 'blue');
+                addLog('CLOUD: Saldo top up baru tersimpan lokal. Tekan "Save Cloud" supaya tidak hilang kalau ganti perangkat.', 'warning');
+                document.getElementById('btn-cloud-save')?.classList.add('cloud-remind');
+                showModal('Top Up Berhasil!', `Saldo perusahaan bertambah ${formatRupiah(t.cash)}.\n\nJangan lupa tekan "Save Cloud" di pojok atas supaya saldo ini aman tersimpan di cloud.`, 'fa-wallet', 'blue');
             }
-            // Uang sungguhan: langsung simpan ke cloud (tanpa cooldown) baru tandai selesai
-            const sv = buildSave();
-            await cloudSave(sv);
-            cloudTs = sv.ts; store.set('pml_cloudts_' + currentAccount.id, cloudTs); renderCloudStatus();
+            // Saldo tersimpan lokal otomatis (saveGame di atas). Save cloud tetap manual lewat tombol "Save Cloud" -
+            // di sini cukup tandai kiriman sebagai sudah diklaim supaya tidak muncul lagi di notifikasi.
             await fb.markClaimed(t.id);
         }
 
@@ -3085,7 +3755,7 @@
                         <div class="min-w-0"><div class="font-bold text-gray-200 truncate">${esc(l.truck.name)} <span class="text-amber-400 font-mono">[${esc(l.truck.plat)}]</span></div><div class="text-[10px] text-gray-500 truncate">Penjual: ${esc(l.sellerCompany)}</div></div>
                         <span class="text-[10px] font-bold border rounded px-1.5 py-0.5 shrink-0 ${l.truck.type === 'LPG' ? 'text-amber-400 border-amber-500/40' : 'text-indigo-400 border-indigo-500/40'}">${l.truck.type}</span>
                     </div>
-                    <div class="text-[10px] text-gray-400">Kapasitas ${l.truck.cap} ${l.truck.type === 'LPG' ? 'Ton' : 'KL'} &middot; Odometer ${l.truck.odometer.toLocaleString('id-ID')} km &middot; Ban ${l.truck.banPct}%</div>
+                    <div class="text-[10px] text-gray-400">Kapasitas ${l.truck.cap} ${l.truck.type === 'LPG' ? 'Ton' : 'KL'} &middot; Odometer ${l.truck.odometer.toLocaleString('id-ID')} km &middot; ${l.truck.kelas === 'kapal' ? 'Kondisi Mesin' : 'Ban'} ${l.truck.banPct}%</div>
                     <div class="flex justify-between items-center"><span class="text-emerald-400 font-mono font-bold text-sm">${formatRupiah(l.harga)}</span>
                     <button onclick="buyBursaListing('${esc(l.id)}')" ${bursaBuyBusy.has(l.id) ? 'disabled' : ''} class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-3 py-1.5 rounded font-bold">${bursaBuyBusy.has(l.id) ? 'Memproses...' : 'Beli'}</button></div>
                 </div>`).join('') : '<div class="text-gray-600 text-center py-2">Belum ada truk dijual pemain lain saat ini.</div>';
@@ -3143,7 +3813,7 @@
             sellModalTruckId = truckId;
             document.getElementById('sell-spec-name').innerText = `${truck.id} - ${truck.name}`;
             document.getElementById('sell-spec-plat').innerText = truck.plat;
-            document.getElementById('sell-spec-cond').innerText = `${truck.odometer.toLocaleString('id-ID')} km \u00b7 Ban ${truck.banPct}%`;
+            document.getElementById('sell-spec-cond').innerText = `${truck.odometer.toLocaleString('id-ID')} km \u00b7 ${truck.kelas === 'kapal' ? 'Kondisi Mesin' : 'Ban'} ${truck.banPct}%`;
             document.getElementById('sell-modal-price').value = estimateTruckValue(truck);
             document.getElementById('sell-modal').classList.remove('hidden');
         }
@@ -3214,11 +3884,11 @@
         function applySave(sv) {
             sv = migrateLegacy(sv);
             companyCash = sv.cash; totalIncome = sv.income; totalExpense = sv.expense;
-            sv.refineries.forEach(r => { const k = refineryData.find(x => x.id === r.id); if (k) { k.is_unlocked = r.u; k.stok_current = r.s; if (r.mid !== undefined) k.mekanikId = r.mid; if (r.kap) k.kap = r.kap; } });
+            sv.refineries.forEach(r => { const k = refineryData.find(x => x.id === r.id); if (k) { k.is_unlocked = r.u; k.stok_current = r.s; if (r.m) k.stok_max = r.m; if (r.lvl !== undefined) k.stokUpgradeLevel = r.lvl; if (r.mid !== undefined) k.mekanikId = r.mid; if (r.kap) k.kap = r.kap; } });
             companyFleet = sv.fleet; companyCrew = sv.crew; crewIdCounter = sv.crewCounter; suratJalanCounter = sv.sj; { const saved = sv.spbu || [], m = new Map(saved.map(s => [s.kode, s]));
               loadedSpbuList = loadedSpbuList.map(s => m.get(s.kode) || s);
               const have = new Set(loadedSpbuList.map(s => s.kode)); saved.forEach(s => { if (!have.has(s.kode)) loadedSpbuList.push(s); }); }
-            orders = sv.orders || []; ordHist = sv.ordHist || [];
+            orders = sv.orders || []; ordHist = sv.ordHist || []; nextOrderGt = sv.nextOrderGt || 0;
             // Pesanan SPBU dihitung mundur pakai waktu nyata (lihat ORDER_TTL) - kalau tidak digeser,
             // durasi saat pemain logout ikut terhitung dan banyak pesanan langsung dianggap kedaluwarsa
             // begitu login lagi. Geser jam pembuatan tiap pesanan maju sebesar durasi offline, supaya
@@ -3231,6 +3901,7 @@
             document.getElementById('finance-history-log').innerHTML = '';
             financeEntries = [];
             (sv.fin || []).forEach(f => addFinanceLog(f.desc, f.amount));
+            recomputeWilayah();
             renderRefineries(); renderSpbuOnMap(); populateSpbuDropdowns(); populateTruckDropdowns();
             populateCrewDropdowns(); renderInvestorTab(); renderFleetDashboard(); renderDriversDashboard();
         }
@@ -3306,15 +3977,31 @@
                 </div>`).join('');
         }
 
-        // ===== JAM GAME: 1 menit game = 0,536 detik nyata (kecepatan 112x, 1 minggu game = 1 jam 30 menit nyata) =====
-        const GAME_START = new Date(2026, 8, 25, 6, 0, 0).getTime(), GAME_SPEED = 112, ORDER_DELAY = 180000;
+        // ===== JAM GAME: 1 menit game = 3 detik nyata (kecepatan 20x, 1 jam game = 3 menit nyata, 1 hari game = 72 menit nyata, 1 minggu game = 8,4 jam nyata) =====
+        const GAME_START = new Date(2026, 8, 25, 6, 0, 0).getTime(), GAME_SPEED = 20, ORDER_DELAY = 180000;
         let gameElapsed = 0;
         const gameNow = () => GAME_START + gameElapsed * GAME_SPEED;
         const fmtTime = ms => new Date(ms).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
         const fmtDate = ms => new Date(ms).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const gameStamp = () => new Date(gameNow()).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ' ' + fmtTime(gameNow());
         function renderClock() { document.getElementById('game-date').innerText = fmtDate(gameNow()); document.getElementById('game-time').innerText = fmtTime(gameNow()) + ' WIB'; }
-        setInterval(() => { if (currentAccount) gameElapsed += 500; renderClock(); }, 500);
+        // Jam game dihitung dari SELISIH waktu nyata (Date.now()), bukan dari jumlah "tick" setInterval yang lewat,
+        // supaya akurat. Tapi begitu tab/window tidak aktif (pindah tab, minimize dsb), jam SENGAJA dijeda:
+        // selisih waktu selama tersembunyi TIDAK ditambahkan ke gameElapsed. Saat tab aktif lagi, lastClockTick
+        // di-reset ke waktu sekarang dulu, jadi jam lanjut jalan normal dari titik terakhir dia berhenti
+        // (bukan "mengejar" ketertinggalan).
+        let lastClockTick = Date.now();
+        function tickClock() {
+            const now = Date.now();
+            const delta = now - lastClockTick;
+            lastClockTick = now;
+            if (currentAccount && !document.hidden && delta > 0) gameElapsed += delta;
+            renderClock();
+        }
+        function resumeClock() { lastClockTick = Date.now(); tickClock(); }
+        setInterval(tickClock, 500);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeClock(); });
+        window.addEventListener('focus', resumeClock);
         renderClock();
 
         // ===== STOK SPBU & PESANAN OTOMATIS =====
@@ -3327,8 +4014,13 @@
             { id: 'lpg', label: 'LPG', cap: 40, lpg: true, unit: 'Ton', color: 'text-orange-400 border-orange-500/40 bg-orange-500/10' }
         ];
         let orders = [], ordHist = [], orderSeq = 1;
-        const ORDER_BATCH = { BBM: 5, LPG: 3 }, ORDER_TTL = 600000; // 10 menit nyata = 2 jam game
-        const LPG_FALLBACK_TON = [3, 5, 8, 10, 12, 15, 20]; // ukuran default pesanan LPG sebelum punya armada LPG sendiri
+        const ORDER_BATCH = { BBM: 5, LPG: 3 }, ORDER_TTL = 600000; // batas maksimal pesanan TERBUKA bersamaan per jenis; TTL: 10 menit nyata = 3 jam 20 menit game (kecepatan 20x)
+        // Pesanan baru muncul BERTAHAP satu per satu (bukan langsung penuh sekaligus begitu ada armada pertama),
+        // supaya terasa natural. Jeda dasar antar kemunculan pesanan baru = ORDER_TRICKLE_HOURS jam waktu GAME,
+        // dengan sedikit variasi acak (+-30%) biar tidak terasa seperti metronom. Terus jalan sampai jumlah
+        // pesanan TERBUKA per jenis menyentuh batas ORDER_BATCH di atas.
+        const ORDER_TRICKLE_HOURS = 2;
+        let nextOrderGt = 0; // gameNow() paling cepat pesanan baru berikutnya boleh muncul
 
         const fuelsOf = s => FUELS.filter(f => !f.lpg || s.has_lpg);
         const capsOf = type => [...new Set(companyFleet.filter(t => t.type === type).map(t => t.cap))];
@@ -3363,34 +4055,43 @@
                 const mult = TRAFFIC[s.traffic || 'Sedang'].mult;
                 fuelsOf(s).forEach(f => { s.stok[f.id] = Math.max(0, Math.round((s.stok[f.id] - f.cap * STOK_BASE_RATE * mult * (0.7 + Math.random() * 0.6)) * 10) / 10); });
             });
-            // Pesanan datang per gelombang: maksimal 5. Gelombang berikutnya baru muncul setelah kelima pesanan selesai/batal.
+            // Pesanan datang BERTAHAP satu-satu (lihat ORDER_TRICKLE_HOURS/nextOrderGt di atas), bukan langsung
+            // penuh sekaligus - terus jalan sampai jumlah pesanan TERBUKA per jenis menyentuh batas ORDER_BATCH.
             // SPBU sudah masuk kandidat pesanan begitu stoknya turun ke 75% kapasitas tangki timbun (belum sampai
             // separuh) - jadi SPBU minta pasokan lebih dini, sebelum stoknya benar-benar mepet.
             const ORDER_TRIGGER_RATIO = 0.75;
-            if (!orders.length && gameElapsed >= ORDER_DELAY) {
+            const openBBM = orders.filter(o => o.fuel !== 'lpg').length, openLPG = orders.filter(o => o.fuel === 'lpg').length;
+            const slotBBMOpen = openBBM < ORDER_BATCH.BBM, slotLPGOpen = openLPG < ORDER_BATCH.LPG;
+            if ((slotBBMOpen || slotLPGOpen) && gameElapsed >= ORDER_DELAY && gameNow() >= nextOrderGt) {
                 // Ukuran pesanan = kapasitas armada milik pemain (BBM: KL, LPG: Ton)
                 const cand = [];
                 loadedSpbuList.forEach(s => { if (isOp(s)) fuelsOf(s).forEach(f => {
                     ensureStok(s);
+                    if (f.lpg ? !slotLPGOpen : !slotBBMOpen) return; // jenis ini sudah penuh, jangan diundi dulu
+                    if (orders.some(o => o.kode === s.kode && o.fuel === f.id)) return; // SPBU ini sudah punya pesanan jenis ini yang masih terbuka
+                    // LPG cuma boleh bikin pesanan kalau SPBU-nya masih dalam jangkauan depo LPG aktif mana pun
+                    // (lihat MAX_SERVICE_KM/nearestActiveKilang) - di luar itu, dianggap belum terjangkau layanan.
+                    if (f.lpg && !s.wilayahLpgId) return;
                     const ratio = (s.stok[f.id] || 0) / f.cap;
                     if (ratio > ORDER_TRIGGER_RATIO) return; // masih di atas 75%, belum perlu pesan
-                    let sizes = capsOf(f.lpg ? 'LPG' : 'BBM').filter(c => c <= f.cap * 0.8);
-                    if (!sizes.length && f.lpg) sizes = LPG_FALLBACK_TON.filter(c => c <= f.cap * 0.8); // belum punya armada LPG, tetap tawarkan pesanan LPG
+                    // Ukuran pesanan HARUS mengikuti kapasitas armada yang benar-benar dimiliki pemain untuk jenis
+                    // ini (BBM maupun LPG) - kalau belum punya truk jenis itu sama sekali, jangan buat pesanan
+                    // (sama seperti BBM: tidak ada armada = tidak ada pesanan yang bisa/perlu ditawarkan).
+                    const sizes = capsOf(f.lpg ? 'LPG' : 'BBM').filter(c => c <= f.cap * 0.8);
                     if (sizes.length) cand.push({ s, f, sizes, r: ratio });
                 }); });
-                const used = new Set(), pickedBBM = orders.filter(o => o.fuel !== 'lpg').length, pickedLPG = orders.filter(o => o.fuel === 'lpg').length;
-                let slotBBM = Math.max(0, ORDER_BATCH.BBM - pickedBBM), slotLPG = Math.max(0, ORDER_BATCH.LPG - pickedLPG);
-                cand.sort((x, y) => x.r - y.r).filter(c => !used.has(c.s.kode + c.f.id) && used.add(c.s.kode + c.f.id)).filter(c => {
-                    if (c.f.lpg) { if (slotLPG <= 0) return false; slotLPG--; return true; }
-                    if (slotBBM <= 0) return false; slotBBM--; return true;
-                }).forEach(({ s, f, sizes }) => {
-                    // Stok TIDAK dipaksa turun lagi - pesanan dibuat sesuai sisa stok riil saat itu (sudah <= 50%).
+                if (cand.length) {
+                    // SPBU dengan sisa stok (rasio) paling kecil menang duluan - yang paling butuh dilayani lebih dulu.
+                    cand.sort((x, y) => x.r - y.r);
+                    const { s, f, sizes } = cand[0];
                     const kl = sizes[Math.floor(Math.random() * sizes.length)], unit = f.unit || 'KL';
                     orders.push({ id: orderSeq++, kode: s.kode, nama: s.nama, region: s.region, prov: s.provinsi || 'Jawa Timur', fuel: f.id, kl, unit, terkirim: 0, t: now, gt: gameNow(), status: 'open' });
                     addLog(`PESANAN OTOMATIS (${fmtTime(gameNow())}): ${s.nama} (${s.region}) memesan ${kl} ${unit} ${f.label} - sisa stok ${s.stok[f.id]} ${unit} (${Math.round(s.stok[f.id] / f.cap * 100)}% dari tangki).`, 'purple');
-                });
+                    notify(`Pesanan baru masuk: ${s.nama} - ${kl} ${unit} ${f.label}. Buka tab Pesanan.`, 'info');
+                    // Jeda acak (+-30%) sebelum pesanan berikutnya boleh muncul, biar kedatangannya terasa bertahap.
+                    nextOrderGt = gameNow() + ORDER_TRICKLE_HOURS * 3600000 * (0.7 + Math.random() * 0.6);
+                }
             }
-            if (orders.length && orders.every(o => o.t === now)) notify(`Gelombang pesanan baru: ${orders.length} pesanan masuk. Buka tab Pesanan.`, 'info');
             const p0 = refineryData[0], pp = p0.stok_current / p0.stok_max;
             if (pp <= 0.2 && !bbmWarned) { bbmWarned = true; renderRefineries(); addLog(`PERINGATAN: Stok bahan bakar Kilang Tuban tinggal ${Math.round(pp * 100)}%. Segera beli pasokan di menu Kilang.`, 'warning'); }
             else if (pp > 0.3) bbmWarned = false;
@@ -3420,7 +4121,9 @@
             switchTab('tab-delivery');
         }
         let ordFuelFilter = 'ALL';
+        let ordKilangFilter = 'ALL';
         function setOrdFuel(f) { ordFuelFilter = f; renderOrders(); }
+        function setOrdKilang(key) { ordKilangFilter = key; renderOrders(); }
         function renderOrders() {
             const badge = document.getElementById('ord-badge');
             badge.innerText = orders.length; badge.classList.toggle('hidden', !orders.length);
@@ -3434,15 +4137,55 @@
             const open = orders.filter(o => (pv === 'ALL' || o.prov === pv) && matchFuel(o)).sort((a, b) => live(a) - live(b));
             const kpi = (l, v, c) => `<div class="bg-gray-900 rounded-lg p-2 text-center border border-gray-800"><div class="text-[9px] text-gray-500">${l}</div><div class="font-mono font-black text-sm ${c}">${v}</div></div>`;
             document.getElementById('ord-kpi').innerHTML = kpi('Pesanan BBM', orders.filter(o => o.fuel !== 'lpg').length, 'text-blue-400') + kpi('Pesanan LPG', orders.filter(o => o.fuel === 'lpg').length, 'text-orange-400') + kpi('Stok Habis', orders.filter(o => live(o) <= 0).length, 'text-amber-400') + kpi('Total Diminta', orders.filter(o => !o.unit || o.unit === 'KL').reduce((n, o) => n + o.kl - o.terkirim, 0) + ' KL' + (orders.some(o => o.unit === 'Ton') ? ' + ' + orders.filter(o => o.unit === 'Ton').reduce((n, o) => n + o.kl - o.terkirim, 0) + ' T' : ''), 'text-emerald-400');
-            document.getElementById('ord-list').innerHTML = open.length ? open.map(o => {
-                const f = FUELS.find(x => x.id === o.fuel), sisa = live(o), pct = Math.round(sisa / f.cap * 100), left = Math.max(0, Math.round((ORDER_TTL - (now - o.t)) / (60000 / GAME_SPEED))), sp = loadedSpbuList.find(x => x.kode === o.kode), trf = sp ? TRAFFIC[sp.traffic || 'Sedang'].label : 'Sedang'; // menit game
+            // ===== KELOMPOKKAN PESANAN PER KILANG/DEPO SUMBER =====
+            // Setiap pesanan dikaitkan ke kilang/depo AKTIF terdekat yang benar-benar men-supply jenis produknya
+            // (lihat recomputeWilayah/nearestActiveKilang). Kalau pemain sudah membuka kilang/depo kedua,
+            // pesanan SPBU di sekitarnya otomatis masuk bagian kilang itu sendiri, terpisah dari bagian Kilang Tuban.
+            // Pesanan yang sumbernya tidak valid/tidak ketemu (jangan pernah ditebak asal-asalan) masuk bagian "Idle" di akhir.
+            const orderAsal = o => {
+                const sp = loadedSpbuList.find(x => x.kode === o.kode);
+                const asalId = sp ? (o.fuel === 'lpg' ? sp.wilayahLpgId : sp.wilayahBbmId) : null;
+                const asalKilang = asalId ? refineryData.find(k => k.id === asalId && k.is_unlocked) : null;
+                const asalJarak = asalKilang ? (o.fuel === 'lpg' ? sp.wilayahLpgJarak : sp.wilayahBbmJarak) : null;
+                return { sp, asalKilang, asalJarak };
+            };
+            const orderCardHtml = o => {
+                const f = FUELS.find(x => x.id === o.fuel), sisa = live(o), pct = Math.round(sisa / f.cap * 100), left = Math.max(0, Math.round((ORDER_TTL - (now - o.t)) / (60000 / GAME_SPEED))), trf = TRAFFIC[(orderAsal(o).sp && orderAsal(o).sp.traffic) || 'Sedang'].label; // menit game
+                const { asalJarak } = orderAsal(o);
                 return `<div class="bg-gray-900 border ${sisa <= 0 ? 'border-red-500/60' : 'border-gray-800'} rounded-lg p-2.5 space-y-1.5">
-                  <div class="flex justify-between items-start gap-2"><div class="min-w-0"><div class="text-xs font-bold text-gray-100 truncate">${esc(o.nama)}</div><div class="text-[10px] text-gray-500">${esc(o.region)} &middot; ${esc(o.prov)} &middot; Keramaian ${trf} &middot; ${o.gt ? new Date(o.gt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + fmtTime(o.gt) : ''}</div></div>
+                  <div class="flex justify-between items-start gap-2"><div class="min-w-0"><div class="text-xs font-bold text-gray-100 truncate">${esc(o.nama)}</div><div class="text-[10px] text-gray-500">${esc(o.region)} &middot; ${esc(o.prov)} &middot; Keramaian ${trf}${asalJarak != null ? ` &middot; &plusmn;${asalJarak} km dari depo` : ''} &middot; ${o.gt ? new Date(o.gt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + fmtTime(o.gt) : ''}</div></div>
                   <span class="text-[10px] font-bold border rounded px-1.5 py-0.5 shrink-0 ${f.color}">${f.label}</span></div>
                   <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden"><div class="${pct <= 0 ? 'bg-red-600' : 'bg-amber-500'} h-full" style="width:${pct}%"></div></div>
                   <div class="flex justify-between items-center text-[10px]"><span class="text-gray-400">${sisa <= 0 ? '<b class="text-red-400">HABIS</b>' : `Sisa <b class="text-amber-400">${sisa} ${f.unit || 'KL'}</b> / ${f.cap} ${f.unit || 'KL'}`} &middot; Pesan <b class="text-emerald-400">${o.kl - o.terkirim} ${o.unit || 'KL'}</b> &middot; ${Math.floor(left / 60)}j ${left % 60}m</span>
                   <button onclick="kirimPesanan(${o.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-bold">Kirim</button></div></div>`;
-            }).join('') : (companyFleet.length ? `<div class="text-xs text-gray-500 text-center py-4">Belum ada pesanan ${ordFuelFilter === 'ALL' ? '' : ordFuelFilter + ' '}yang cocok dengan filter ini. Pesanan muncul otomatis, ukurannya mengikuti kapasitas armada Anda${ordFuelFilter !== 'BBM' ? ' (LPG memakai ukuran umum sebelum Anda punya armada LPG sendiri)' : ''}.</div>` : '<div class="text-xs text-gray-500 text-center py-4">Belum punya armada. Beli truk dulu; pesanan menyesuaikan kapasitas armada Anda.</div>');
+            };
+            const ordGroups = new Map(); // id kilang (atau 'IDLE') -> { kilang, orders: [] }
+            open.forEach(o => {
+                const { asalKilang } = orderAsal(o);
+                const key = asalKilang ? asalKilang.id : 'IDLE';
+                if (!ordGroups.has(key)) ordGroups.set(key, { kilang: asalKilang, orders: [] });
+                ordGroups.get(key).orders.push(o);
+            });
+            const refOrderIdx = refineryData.map(k => k.id);
+            const ordGroupKeys = [...ordGroups.keys()].sort((a, b) => (a === 'IDLE' ? 1 : b === 'IDLE' ? -1 : refOrderIdx.indexOf(a) - refOrderIdx.indexOf(b)));
+            // Chip filter kilang/depo: klik salah satu (atau klik langsung judul grupnya) untuk cuma menampilkan pesanan kilang itu.
+            const kilangChips = refineryData.filter(k => k.is_unlocked).map(k => ({ key: k.id, label: k.nama }));
+            if (ordGroups.has('IDLE')) kilangChips.push({ key: 'IDLE', label: 'Idle' });
+            document.getElementById('ord-kilang-tabs').innerHTML = [{ key: 'ALL', label: 'Semua Kilang' }, ...kilangChips].map(c =>
+                `<button onclick="setOrdKilang('${c.key}')" class="shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold border transition ${ordKilangFilter === c.key ? 'bg-cyan-600 border-cyan-500 text-white' : 'bg-gray-900 border-gray-800 text-gray-400 hover:text-gray-200'}">${esc(c.label)}</button>`
+            ).join('');
+            const visibleGroupKeys = ordGroupKeys.filter(key => ordKilangFilter === 'ALL' || key === ordKilangFilter);
+            document.getElementById('ord-list').innerHTML = open.length && visibleGroupKeys.length ? visibleGroupKeys.map(key => {
+                const grp = ordGroups.get(key), k = grp.kilang;
+                return `<div class="space-y-2">
+                  <div onclick="setOrdKilang('${key}')" class="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide ${k ? 'text-cyan-400' : 'text-amber-400'} border-b ${k ? 'border-cyan-500/20' : 'border-amber-500/20'} pb-1 cursor-pointer select-none" title="Klik untuk hanya tampilkan bagian ini">
+                    <i class="fa-solid ${k ? (k.id === 'KILANG-01' ? 'fa-industry' : 'fa-warehouse') : 'fa-triangle-exclamation'}"></i>
+                    <span>${k ? esc(k.nama) : 'Idle &middot; Belum Ada Kilang/Depo Aktif'}</span>
+                    <span class="ml-auto font-mono text-[10px] bg-gray-900 border border-gray-800 rounded-full px-2 py-0.5 normal-case text-gray-400">${grp.orders.length} pesanan</span>
+                  </div>
+                  <div class="space-y-2">${grp.orders.map(orderCardHtml).join('')}</div>
+                </div>`;
+            }).join('') : (companyFleet.length ? `<div class="text-xs text-gray-500 text-center py-4">Belum ada pesanan ${ordFuelFilter === 'ALL' ? '' : ordFuelFilter + ' '}yang cocok dengan filter ini. Pesanan muncul otomatis, ukurannya mengikuti kapasitas armada Anda.</div>` : '<div class="text-xs text-gray-500 text-center py-4">Belum punya armada. Beli truk dulu (BBM dan/atau LPG); pesanan menyesuaikan kapasitas armada yang Anda miliki.</div>');
             document.getElementById('ord-hist').innerHTML = ordHist.map(o => `<div class="flex justify-between bg-gray-900 rounded px-2 py-1"><span class="truncate text-gray-300">${esc(o.nama)} &middot; ${fuelLabel(o.fuel)} ${o.kl} ${o.unit || 'KL'}</span><b class="${o.status === 'Selesai' ? 'text-emerald-400' : 'text-red-400'}">${o.status}</b></div>`).join('') || '<div class="text-gray-600">Belum ada riwayat.</div>';
         }
         setInterval(() => { if (currentAccount) tickStock(); }, 6000);
