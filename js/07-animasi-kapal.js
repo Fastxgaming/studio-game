@@ -21,6 +21,24 @@
             `;
         }
 
+        // Fluktuasi kecepatan "hidup" untuk truk (kosmetik saja, TIDAK mengubah durasi/biaya perjalanan yang
+        // sudah dihitung & dikunci sejak dispatch) - dulu popup info truk cuma menampilkan satu angka speed
+        // tetap sepanjang perjalanan (mis. selalu "55 km/j"), padahal jalan lurus & lancar seharusnya kecepatan
+        // riil naik-turun sedikit (56/57/58...80), bukan diam di satu angka. Dibungkus gelombang sinus 2
+        // frekuensi (bukan random murni) supaya perubahannya mulus, bukan lompat-lompat kasar tiap frame.
+        function hashSeed(str) {
+            let h = 0;
+            for (let i = 0; i < String(str).length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+            return h;
+        }
+        function liveSpeedKmh(t, now) {
+            const range = SPEED_RANGE;
+            const base = t.e.baseSpeedKmh != null ? t.e.baseSpeedKmh : t.e.speedKmh;
+            const seed = hashSeed(t.e.id || 'truck');
+            const wobble = Math.sin(now / 2600 + seed) * 0.6 + Math.sin(now / 900 + seed * 1.7) * 0.4;
+            const amp = (range[1] - range[0]) * 0.18; // amplitudo proporsional lebar rentang kecepatan jalan
+            return Math.max(range[0], Math.min(range[1], base + wobble * amp));
+        }
         function launchTruck(e, remote) {
             if (vNow() - e.startAt >= e.dur || flying.size > 80) return null;
             if (!remote && parkedMarkers.has(e.id)) { map.removeLayer(parkedMarkers.get(e.id)); parkedMarkers.delete(e.id); }
@@ -30,7 +48,7 @@
             const isKapal = e.vehicle === 'kapal';
             const isBoat = isFerry || isKapal;
             const color = isFerry ? '#0ea5e9' : isKapal ? '#06b6d4' : (remote ? '#38bdf8' : (TRUCK_COLOR[e.type] || '#3b82f6'));
-            const routeColor = '#f59e0b';
+            const routeColor = '#a855f7'; // ungu terang - dulu amber (#f59e0b), gampang menyatu dengan warna jalan nasional/arteri di tile peta
             const line = L.polyline(pts, { color: routeColor, weight: remote ? 2 : 3, opacity: isBoat ? 0.75 : 0.85, dashArray: isBoat ? '2 10' : '6 8' }).addTo(map);
             const trail = L.polyline([pts[0]], { color, weight: remote ? 3 : 4, opacity: 0.85 }).addTo(map);
             const marker = L.marker(pts[0], {
@@ -50,6 +68,7 @@
             const now = vNow();
             flying.forEach(t => {
                 const f = Math.min(1, (now - t.e.startAt) / t.e.dur);
+                if (t.e.vehicle === 'truck' && f < 1) t.e.speedKmh = liveSpeedKmh(t, now);
                 const { i, ll } = posAt(t.pts, t.cum, f * t.total);
                 t.marker.setLatLng(ll);
                 const tf = t.marker.getElement() && t.marker.getElement().querySelector('.tf');
@@ -107,19 +126,20 @@
                 t.done = () => resolve();
             });
         }
-        async function driveLeg(from, to, meta, fit) {
-            const { pts, real } = await fetchRoute(from, to, meta.routeMode);
+        // Satu ruas perjalanan darat, mengikuti SATU jalur nyata apa adanya dari OSRM (fitur pilihan Rute
+        // Tol/Non-Tol sudah dihapus - tidak ada lagi pemisahan gaya rute atau potongan gerbang tol). Kecepatan
+        // & durasi murni mengikuti karakter/kelokan jalur asli yang benar-benar dilalui (lihat roadSpeedKmh).
+        async function driveSegment(from, to, meta, fit) {
+            const { pts, real } = await fetchRoute(from, to);
             const straightKm = distKm(from, to);
-            const { total: rawTotal, sinuosity } = sinuosityOf(pts, straightKm);
-            // Kecepatan mengikuti karakter jalan sesungguhnya & mode rute (lihat roadSpeedKmh):
-            // Rute Tol 80-100 km/j, Rute Non-Tol 55-80 km/j, makin berkelok jalurnya makin pelan.
-            const speedKmh = roadSpeedKmh(sinuosity, real, meta.routeMode);
-            // Rute Non-Tol lewat jalan nasional/arteri: jarak tempuh riil lebih jauh dari rute Tol.
-            const rm = ROUTE_MODE[meta.routeMode] || ROUTE_MODE.tol;
-            const total = rawTotal * rm.distFactor;
+            const { total, sinuosity } = sinuosityOf(pts, straightKm);
+            const speedKmh = roadSpeedKmh(sinuosity, real);
             const dur = (total / speedKmh) * (3600000 / GAME_SPEED);
-            await runVehicleLeg(pts, dur, { ...meta, vehicle: 'truck', speedKmh }, fit);
+            await runVehicleLeg(pts, dur, { ...meta, vehicle: 'truck', speedKmh, baseSpeedKmh: speedKmh }, fit);
             return { km: total, dur, real, speedKmh, sinuosity };
+        }
+        async function driveLeg(from, to, meta, fit) {
+            return await driveSegment(from, to, meta, fit);
         }
         async function ferryLeg(from, to, meta, fit) {
             const pts = [[from.lat, from.lon], [to.lat, to.lon]];
@@ -143,8 +163,8 @@
             const oIsl = islandOf(from), dIsl = islandOf(to);
             if (oIsl === dIsl) {
                 const leg = await driveLeg(from, to, meta, fitFirst);
-                const rmLabel = meta.vehicle !== 'kapal' && ROUTE_MODE[meta.routeMode] ? ` &middot; ${ROUTE_MODE[meta.routeMode].label} &middot; ${Math.round(leg.speedKmh)} km/j` : '';
-                addLog(`BERANGKAT: ${meta.id} dari ${from.nama} menuju ${to.nama} (±${Math.round(leg.km)} km${leg.real ? ', mengikuti jalan' : ', rute perkiraan'}${rmLabel} &middot; estimasi ${fmtJam(leg.dur * GAME_SPEED / 3600000)} perjalanan).`, 'info', 'truck');
+                const speedLabel = meta.vehicle !== 'kapal' ? ` &middot; ${Math.round(leg.speedKmh)} km/j` : '';
+                addLog(`BERANGKAT: ${meta.id} dari ${from.nama} menuju ${to.nama} (±${Math.round(leg.km)} km${leg.real ? ', mengikuti jalan' : ', rute perkiraan'}${speedLabel} &middot; estimasi ${fmtJam(leg.dur * GAME_SPEED / 3600000)} perjalanan).`, 'info', 'truck');
                 return leg.km;
             }
             const depPort = getPort(oIsl, dIsl), arrPort = getPort(dIsl, oIsl);
@@ -174,7 +194,7 @@
             ids.forEach(i => busyIds.add(i));
             populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
             ownAnims++;
-            const meta = { id: truck.id, plat: truck.plat, type: truck.type, owner: currentAccount ? currentAccount.company : 'Pemain', routeMode: d.routeMode || 'tol',
+            const meta = { id: truck.id, plat: truck.plat, type: truck.type, owner: currentAccount ? currentAccount.company : 'Pemain',
                            depoNama: origin.nama, tujuanNama: spbu.nama, nomorSJ: d.nomorSJ };
             const fit = ownAnims === 1;
             try {
@@ -278,13 +298,10 @@
 
             const biayaKirimDasar = Math.round(truck.cap * (truck.type === 'LPG' ? ECO.biayaKirimTon : ECO.biayaKirimKl));
 
-            // Biaya BBM Solar & Tol truk dihitung dari jarak riil pulang-pergi (PP) & rute yang dipilih saat dispatch.
+            // Biaya BBM Solar truk dihitung dari jarak riil pulang-pergi (PP) sepanjang jalur nyata yang dilalui.
             const roundTripKmBiaya = Math.round((d.km || 0) * 2 * 10) / 10;
-            const routeMode = d.routeMode || 'tol';
-            const rm = ROUTE_MODE[routeMode] || ROUTE_MODE.tol;
             const biayaBbm = Math.round((roundTripKmBiaya / kmPerLiterTruk(truck)) * HARGA_SOLAR_TRUK);
-            const biayaTol = routeMode === 'tol' ? Math.round(roundTripKmBiaya * tarifTolPerKm(truck)) : 0;
-            const biayaKirim = biayaKirimDasar + biayaBbm + biayaTol;
+            const biayaKirim = biayaKirimDasar + biayaBbm;
             const revenueBersih = revenueKotor - biayaKirim;
 
             companyCash += revenueBersih;
@@ -294,8 +311,7 @@
             addFinanceLog(`Pasokan ${jenisMuatan} ke ${spbu.nama} (${driver.name}) - pendapatan kotor`, revenueKotor);
             if (bonusJarak > 0) addFinanceLog(`Bonus jarak tempuh ${truck.id} ke ${spbu.nama} (±${Math.round(jarakBonusKm)} km)`, bonusJarak);
             addFinanceLog(`Biaya kirim dasar ${truck.id} ke ${spbu.nama}`, -biayaKirimDasar);
-            addFinanceLog(`Biaya BBM Solar truk ${truck.id} (PP, ${rm.label}, ±${roundTripKmBiaya} km)`, -biayaBbm);
-            if (biayaTol > 0) addFinanceLog(`Biaya Tol truk ${truck.id} (PP, Golongan ${golonganTolTruk(truck).gol})`, -biayaTol);
+            addFinanceLog(`Biaya BBM Solar truk ${truck.id} (PP, ±${roundTripKmBiaya} km)`, -biayaBbm);
 
             // Truk kembali ke depot pangkalan setelah bongkar muatan tuntas - jarak PP dihitung ke odometer & keausan ban
             const roundTripKm = roundTripKmBiaya;
@@ -317,7 +333,7 @@
             renderDriversDashboard();
             renderFleetDashboard();
 
-            addLog(`BONGKAR SELESAI (SJ ${nomorSJ}): ${truck.id} [Supir: ${driver.name}] tuntas bongkar ${jenisMuatan} di ${spbu.nama} lewat ${rm.label}. Kotor ${formatRupiah(revenueKotor)}${bonusJarak > 0 ? ` (termasuk bonus jarak ±${Math.round(jarakBonusKm)} km: ${formatRupiah(bonusJarak)})` : ''} - biaya kirim dasar ${formatRupiah(biayaKirimDasar)} - BBM ${formatRupiah(biayaBbm)}${biayaTol > 0 ? ` - Tol ${formatRupiah(biayaTol)}` : ''} = bersih ${formatRupiah(revenueBersih)} cair ke kas. ${result.notes.join('; ')}. Menempuh ±${roundTripKm} km PP (total odometer ${truck.odometer.toLocaleString('id-ID')} km, sisa ban ${truck.banPct}%).${banNote}`, result.violated ? 'warning' : 'success', 'truck');
+            addLog(`BONGKAR SELESAI (SJ ${nomorSJ}): ${truck.id} [Supir: ${driver.name}] tuntas bongkar ${jenisMuatan} di ${spbu.nama}. Kotor ${formatRupiah(revenueKotor)}${bonusJarak > 0 ? ` (termasuk bonus jarak ±${Math.round(jarakBonusKm)} km: ${formatRupiah(bonusJarak)})` : ''} - biaya kirim dasar ${formatRupiah(biayaKirimDasar)} - BBM ${formatRupiah(biayaBbm)} = bersih ${formatRupiah(revenueBersih)} cair ke kas. ${result.notes.join('; ')}. Menempuh ±${roundTripKm} km PP (total odometer ${truck.odometer.toLocaleString('id-ID')} km, sisa ban ${truck.banPct}%).${banNote}`, result.violated ? 'warning' : 'success', 'truck');
             notify(`Pendapatan ${formatRupiah(revenueBersih)} cair dari ${truck.id} setelah bongkar muatan di ${spbu.nama}.`, result.violated ? 'warn' : 'info');
 
             // busyIds TIDAK dilepas di sini lagi - baru dilepas setelah truk benar-benar tiba kembali di depot asal

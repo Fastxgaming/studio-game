@@ -104,7 +104,7 @@
             { icon: 'fa-gas-pump', title: 'Selamat Datang di Migas Manager ID!', desc: 'Kamu jadi bos perusahaan distribusi BBM & LPG. Modal awal Rp 650 Juta, Kilang Tuban sudah aktif dengan stok 750.000 Bbl. Tutorial singkat ini menunjukkan langkah pertama supaya kamu tidak bingung.' },
             { icon: 'fa-store', title: '1. Beli Armada di Dealer', desc: 'Buka tab Dealer untuk beli truk tangki BBM atau LPG. Setiap pembelian sudah termasuk biaya Uji KIR, STNK, dan plat nomor, jadi truk langsung siap jalan.' },
             { icon: 'fa-user-shield', title: '2. Rekrut Supir & Kernet', desc: 'Buka tab SDM Driver untuk merekrut supir dan kernet. Truk butuh keduanya sebelum bisa dikirim ke SPBU, jadi rekrut secukupnya sesuai jumlah armada.' },
-            { icon: 'fa-gas-pump', title: '3. Kirim BBM / LPG ke SPBU', desc: 'Buka tab POM BBM atau LPG, pilih truk + supir + kernet, lalu tanda tangani Surat Jalan. Pendapatan cair otomatis setelah truk tiba dan selesai bongkar muatan.' },
+            { icon: 'fa-gas-pump', title: '3. Kirim BBM / LPG ke SPBU', desc: 'Buka tab Pesanan SPBU, tekan tombol "Kirim" di pesanan yang mau dilayani, lalu pilih truk + supir + kernet dan tanda tangani Surat Jalan. Pendapatan cair otomatis setelah truk tiba dan selesai bongkar muatan.' },
             { icon: 'fa-bell', title: '4. Pantau Pesanan SPBU', desc: 'Kalau stok BBM di suatu SPBU menipis, SPBU otomatis memesan ke perusahaanmu. Cek tab Pesanan SPBU secara rutin dan kirim sebelum batas waktu habis, atau SPBU beralih ke pesaing.' },
             { icon: 'fa-right-left', title: '5. Bursa P2P', desc: 'Punya truk nganggur? Buka tab Armada, lalu klik tombol "Jual ke Bursa P2P" di kartu truk yang tidak bertugas untuk langsung pasang iklan (harga wajar otomatis terisi, tinggal sesuaikan). Bisa juga lewat tab Bursa P2P langsung, atau beli truk bekas dari pemain lain dengan harga lebih murah daripada beli baru di Dealer.' },
             { icon: 'fa-trophy', title: '6. Naik Peringkat & Cek Laporan', desc: 'Tab Peringkat membandingkan kas, armada, dan kilang/depo milikmu dengan pemain lain. Tab Laporan menampilkan pemasukan, pengeluaran, dan kewajiban PPh Badan perusahaanmu.' },
@@ -134,7 +134,7 @@
 
         let companyCash = 650000000;
         // ===== EKONOMI (sesuaikan di sini) =====
-        const ECO = { bblPerKl: 6.2898, jualKl: 7600000, jualTon: 10400000, hppTon: 9500000, bonusPesanan: 0.06, bonusJarakPerKm: 0.0008, jarakBonusCapKm: 175, gajiSupir: [4500000, 30000], gajiKernet: [3500000, 20000], gajiMekanik: [4000000, 25000], gajiNahkoda: [6000000, 45000], gajiABK: [3800000, 22000], biayaKirimKl: 350000, biayaKirimTon: 500000 };
+        const ECO = { bblPerKl: 6.2898, jualKl: 10000000, jualTon: 10400000, hppTon: 9500000, bonusPesanan: 0.06, bonusJarakPerKm: 0.0008, jarakBonusCapKm: 175, gajiSupir: [4500000, 30000], gajiKernet: [3500000, 20000], gajiMekanik: [4000000, 25000], gajiNahkoda: [6000000, 45000], gajiABK: [3800000, 22000], biayaKirimKl: 350000, biayaKirimTon: 500000 };
         let totalIncome = 0;
         let totalExpense = 0;
 
@@ -199,8 +199,8 @@
             "total_spbu": 5,
             "list_spbu": [
               {"kode": "JT-632-01", "nama": "SPBU Mantingan (Jalan Raya Solo-Ngawi)", "lat": -7.362145, "lon": 111.161042, "tipe": "DODO"},
-              {"kode": "JT-632-22", "nama": "SPBU Rest Area KM 575 A Tol Solo-Ngawi", "lat": -7.421520, "lon": 111.354110, "tipe": "COCO"},
-              {"kode": "JT-632-23", "nama": "SPBU Rest Area KM 575 B Tol Solo-Ngawi", "lat": -7.421890, "lon": 111.354890, "tipe": "COCO"},
+              {"kode": "JT-632-22", "nama": "SPBU Rest Area KM 575 A Tol Solo-Ngawi", "lat": -7.429500, "lon": 111.309500, "tipe": "COCO"},
+              {"kode": "JT-632-23", "nama": "SPBU Rest Area KM 575 B Tol Solo-Ngawi", "lat": -7.429100, "lon": 111.310300, "tipe": "COCO"},
               {"kode": "JT-632-05", "nama": "SPBU Ngawi Kota / Ringroad Timur", "lat": -7.402100, "lon": 111.452100, "tipe": "DODO"},
               {"kode": "JT-632-09", "nama": "SPBU Geneng Ngawi", "lat": -7.489120, "lon": 111.441020, "tipe": "DODO"}
             ]
