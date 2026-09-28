@@ -13,11 +13,14 @@
             { list: 'dealer-lpg-bulk-list', type: 'LPG', name: 'Skid Tank LPG 20 Ton Trailer', short: 'Skid Tank Trailer (20 Ton)', cap: 20, price: 2400000000, engine: 'Kepala Trailer Diesel 6 Silinder 400 PS', axle: 'Semi-Trailer (18 Roda)', capText: '20 Ton LPG Curah (Pressure Vessel)' },
 
             // --- Kapal Tanker (khusus transfer Kilang Pusat <-> Depo Cabang yang punya akses pelabuhan) ---
-            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Kapal Tanker BBM 500 KL', short: 'Tanker Kecil (500 KL)', cap: 500, price: 8500000000, engine: 'Marine Diesel 1200 HP', axle: 'Kapal Tanker Pelayaran Pantai', capText: '500.000 Liter · Tanker Curah' },
-            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Kapal Tanker BBM 1.500 KL', short: 'Tanker Sedang (1.500 KL)', cap: 1500, price: 21000000000, engine: 'Marine Diesel 2400 HP', axle: 'Kapal Tanker Pelayaran Nusantara', capText: '1.500.000 Liter · Tanker Curah' },
-            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Kapal Tanker BBM 3.000 KL', short: 'Tanker Besar (3.000 KL)', cap: 3000, price: 38000000000, engine: 'Marine Diesel 4000 HP', axle: 'Kapal Tanker Pelayaran Nusantara', capText: '3.000.000 Liter · Tanker Curah' },
-            { list: 'dealer-kapal-lpg-list', type: 'LPG', kelas: 'kapal', name: 'Kapal Tanker LPG 300 Ton', short: 'LPG Carrier Kecil (300 Ton)', cap: 300, price: 12000000000, engine: 'Marine Diesel 1600 HP', axle: 'Kapal LPG Carrier Pressurized', capText: '300 Ton LPG Curah' },
-            { list: 'dealer-kapal-lpg-list', type: 'LPG', kelas: 'kapal', name: 'Kapal Tanker LPG 800 Ton', short: 'LPG Carrier Besar (800 Ton)', cap: 800, price: 27000000000, engine: 'Marine Diesel 3200 HP', axle: 'Kapal LPG Carrier Pressurized', capText: '800 Ton LPG Curah' },
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Tanker Pesisir 50.000 Bbl (Coastal)', short: 'Coastal Tanker (50.000 Bbl)', cap: 50000, price: 10000000000, engine: 'Marine Diesel 2.400 HP', axle: 'Coastal Tanker · di bawah 50.000 DWT (antar-pulau/pantai)', capText: '50.000 Bbl · Tanker Curah Pesisir' },
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'MR Tanker Nusa Sagara 250.000 Bbl', short: 'MR / GP Tanker (250.000 Bbl)', cap: 250000, price: 50000000000, engine: 'Marine Diesel 8.000 HP', axle: 'Medium Range / General Purpose · 17.000–45.000 DWT', capText: '250.000 Bbl · Tanker Curah MR/GP' },
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Aframax MT Galunggong 500.000 Bbl', short: 'Aframax / LR2 (500.000 Bbl)', cap: 500000, price: 150000000000, engine: 'Marine Diesel 14.000 HP', axle: 'Large Range / Aframax · 80.000–120.000 DWT', capText: '500.000 Bbl · Tanker Curah Aframax' },
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'Suezmax Permatina Halmahera 800.000 Bbl', short: 'Suezmax (800.000 Bbl)', cap: 800000, price: 300000000000, engine: 'Marine Diesel 18.000 HP', axle: 'Suezmax · 125.000–156.000 DWT', capText: '800.000 Bbl · Tanker Curah Suezmax' },
+            { list: 'dealer-kapal-bbm-list', type: 'BBM', kelas: 'kapal', name: 'VLCC Pertamini Pride 2.000.000 Bbl', short: 'VLCC (2.000.000 Bbl)', cap: 2000000, price: 500000000000, engine: 'Marine Diesel 30.000 HP', axle: 'Very Large Crude Carrier · 300.000+ DWT', capText: '2.000.000 Bbl · Tanker Minyak Mentah Raksasa' },
+            { list: 'dealer-kapal-lpg-list', type: 'LPG', kelas: 'kapal', name: 'Small LPG Gas Antasenu 3.000 Ton', short: 'Small LPG (3.000 Ton)', cap: 3000, price: 15000000000, engine: 'Marine Diesel 3.500 HP', axle: 'Small LPG Carrier · 1.700–3.800 MT (2.000–4.000 CBM)', capText: '3.000 Ton LPG Curah · Kapal Kecil (pelabuhan kecil/antar-pulau)' },
+            { list: 'dealer-kapal-lpg-list', type: 'LPG', kelas: 'kapal', name: 'Midsize LPG Gas Widuro 15.000 Ton', short: 'Midsize LPG (15.000 Ton)', cap: 15000, price: 100000000000, engine: 'Marine Diesel 9.000 HP', axle: 'Midsize LPG Carrier · 15.000–17.400 MT', capText: '15.000 Ton LPG Curah · Kapal Menengah (rute regional)' },
+            { list: 'dealer-kapal-lpg-list', type: 'LPG', kelas: 'kapal', name: 'VLGC PIZ Prolifik 40.000 Ton', short: 'VLGC (40.000 Ton)', cap: 40000, price: 400000000000, engine: 'Marine Diesel 22.000 HP', axle: 'Very Large Gas Carrier · 56.000–91.000 CBM', capText: '40.000 Ton LPG Curah · Kapal Raksasa (VLGC)' },
             // --- LPG tabung: Truk distribusi agen/SPBE ---
             { list: 'dealer-lpg-agent-list', type: 'LPG', name: 'Truk Agen Tabung 3 Kg (Oranye)', short: 'Agen Tabung 3 Kg (3 Ton)', cap: 3, price: 380000000, engine: 'Diesel 4 Silinder 110 PS', axle: '2 Sumbu (6 Roda)', capText: '3 Ton Tabung LPG 3 Kg' },
             { list: 'dealer-lpg-agent-list', type: 'LPG', name: 'Truk Agen LPG 12 Kg (Biru)', short: 'Agen LPG 12 Kg (4 Ton)', cap: 4, price: 420000000, engine: 'Diesel 4 Silinder 130 PS', axle: '2 Sumbu (6 Roda)', capText: '4 Ton Tabung LPG 12 Kg' },
@@ -25,8 +28,8 @@
         ];
 
         // Biaya legalitas saat beli: uji KIR baru + STNK/BBN + pelat nomor (TNKB)
-        const regFee = u => { const kir = Math.round((1200000 + u.cap * 150000) / 100000) * 100000, stnk = Math.round(u.price * 0.03 / 100000) * 100000, plat = 500000; return { kir, stnk, plat, total: kir + stnk + plat }; };
-        const kirRenewCost = t => Math.round(regFee({ cap: t.cap, price: t.price || 500e6 }).kir * 0.6 / 50000) * 50000;
+        const regFee = u => { const kir = u.kelas === 'kapal' ? Math.round(u.price * 0.005 / 100000) * 100000 : Math.round((1200000 + u.cap * 150000) / 100000) * 100000, stnk = Math.round(u.price * 0.03 / 100000) * 100000, plat = 500000; return { kir, stnk, plat, total: kir + stnk + plat }; };
+        const kirRenewCost = t => Math.round(regFee({ cap: t.cap, price: t.price || 500e6, kelas: t.kelas }).kir * 0.6 / 50000) * 50000;
         const stnkRenewCost = t => Math.round((t.price || 500e6) * 0.02 / 100000) * 100000;
         const platRenewCost = t => 500000;
         const STNK_PERIOD = 5 * 365 * 86400000; // STNK berlaku 5 tahun
@@ -102,7 +105,7 @@
         }
 
         function openDealerConfirm(name, cap, type, price, engine, axle, capText, kelas) {
-            pendingTruckPurchase = { name, cap, type, price, fee: regFee({ cap, price }), kelas: kelas || 'truk' };
+            pendingTruckPurchase = { name, cap, type, price, fee: regFee({ cap, price }), kelas: kelas || 'truk', qty: 1 };
             
             document.getElementById('dealer-spec-name').innerText = name;
             document.getElementById('dealer-spec-engine').innerText = engine;
@@ -111,7 +114,41 @@
             { const f = regFee({ cap, price }); document.getElementById('dealer-spec-price').innerHTML = formatRupiah(price) + `<br><span class="text-[10px] font-sans font-normal text-gray-400">+ Uji KIR ${formatRupiah(f.kir)} &middot; STNK ${formatRupiah(f.stnk)} &middot; Plat ${formatRupiah(f.plat)}</span><br><span class="text-[11px] font-sans text-amber-300">Total ${formatRupiah(price + f.total)}</span>`; }
 
             document.getElementById('btn-confirm-buy-truck').onclick = executeTruckPurchase;
+            renderDealerQty();
             document.getElementById('dealer-modal').classList.remove('hidden');
+        }
+
+        // ===== BELI BORONGAN (dealer) =====
+        // Diskon volume hanya untuk truk darat, dihitung dari harga unit (biaya KIR/STNK/plat tetap per unit).
+        // Kapal boleh borongan tapi tanpa diskon dan dibatasi 3 unit (harga sudah sangat besar).
+        const BULK_MAX_TRUK = 10, BULK_MAX_KAPAL = 3;
+        const bulkMax = k => k === 'kapal' ? BULK_MAX_KAPAL : BULK_MAX_TRUK;
+        const bulkDiscPct = (qty, kelas) => kelas === 'kapal' ? 0 : qty >= 8 ? 8 : qty >= 5 ? 5 : qty >= 3 ? 3 : 0;
+        function bulkQuote(pp) {
+            const disc = bulkDiscPct(pp.qty, pp.kelas);
+            const gross = pp.price * pp.qty;
+            const discAmt = Math.round(gross * disc / 100);
+            const fees = pp.fee.total * pp.qty;
+            return { disc, gross, discAmt, fees, total: gross - discAmt + fees };
+        }
+        function renderDealerQty() {
+            const pp = pendingTruckPurchase; if (!pp) return;
+            const q = bulkQuote(pp);
+            document.getElementById('dealer-qty').innerText = pp.qty;
+            document.getElementById('dealer-qty-minus').disabled = pp.qty <= 1;
+            document.getElementById('dealer-qty-plus').disabled = pp.qty >= bulkMax(pp.kelas);
+            document.getElementById('dealer-bulk-info').innerHTML =
+                `<div class="flex justify-between"><span class="text-gray-400">Harga unit x ${pp.qty}</span><span class="text-gray-200 font-mono">${formatRupiah(q.gross)}</span></div>` +
+                (q.disc ? `<div class="flex justify-between"><span class="text-emerald-400">Diskon borongan ${q.disc}%</span><span class="text-emerald-400 font-mono">-${formatRupiah(q.discAmt)}</span></div>` : '') +
+                `<div class="flex justify-between"><span class="text-gray-400">KIR + STNK + Plat x ${pp.qty}</span><span class="text-gray-200 font-mono">${formatRupiah(q.fees)}</span></div>` +
+                `<div class="flex justify-between border-t border-gray-800 pt-1 mt-1"><span class="text-gray-300 font-bold">Total Bayar</span><span class="text-amber-300 font-mono font-bold">${formatRupiah(q.total)}</span></div>` +
+                (pp.kelas !== 'kapal' && pp.qty < 8 ? `<div class="text-[10px] text-gray-500 mt-1">Diskon: 3 unit 3% &middot; 5 unit 5% &middot; 8 unit 8%</div>` : '');
+            document.getElementById('btn-confirm-buy-truck').innerText = pp.qty > 1 ? `Setujui & Beli ${pp.qty} Unit` : 'Setujui & Beli';
+        }
+        function changeDealerQty(d) {
+            const pp = pendingTruckPurchase; if (!pp) return;
+            pp.qty = Math.min(bulkMax(pp.kelas), Math.max(1, pp.qty + d));
+            renderDealerQty();
         }
 
         function closeDealerModal() {
@@ -121,51 +158,61 @@
 
         function executeTruckPurchase() {
             if (!pendingTruckPurchase) return;
-            
-            const { name, cap, type, price, fee, kelas } = pendingTruckPurchase;
 
-            if (companyCash < price + fee.total) {
+            const { name, cap, type, price, kelas, qty } = pendingTruckPurchase;
+            const fee = pendingTruckPurchase.fee;
+            const q = bulkQuote(pendingTruckPurchase);
+
+            if (companyCash < q.total) {
                 closeDealerModal();
-                showModal('Kas Tidak Cukup', `Butuh ${formatRupiah(price + fee.total)} (harga unit ${formatRupiah(price)} + KIR/STNK/plat ${formatRupiah(fee.total)}).`, 'fa-triangle-exclamation', 'red');
+                showModal('Kas Tidak Cukup', `Butuh ${formatRupiah(q.total)} (${qty} unit ${formatRupiah(q.gross - q.discAmt)} + KIR/STNK/plat ${formatRupiah(q.fees)}).`, 'fa-triangle-exclamation', 'red');
                 return;
             }
 
-            companyCash -= price + fee.total;
-            totalExpense += price + fee.total;
+            companyCash -= q.total;
+            totalExpense += q.total;
 
             const isKapal = kelas === 'kapal';
-            const randomPlat = isKapal ? 'GT ' + Math.floor(100 + Math.random() * 900) + ' NUSA' : 'W ' + Math.floor(1000 + Math.random() * 9000) + ' PK';
             const prefix = isKapal ? 'KPL-' : 'TRK-';
-            let truckNo = companyFleet.length + 1;
-            while (companyFleet.some(t => t.id === prefix + String(truckNo).padStart(2, '0'))) truckNo++;
-            const newTruckId = prefix + String(truckNo).padStart(2, '0');
+            const newUnits = [];
+            for (let i = 0; i < qty; i++) {
+                let randomPlat;
+                do { randomPlat = isKapal ? 'GT ' + Math.floor(100 + Math.random() * 900) + ' NUSA' : 'W ' + Math.floor(1000 + Math.random() * 9000) + ' PK'; }
+                while (companyFleet.some(t => t.plat === randomPlat));
+                let truckNo = companyFleet.length + 1;
+                while (companyFleet.some(t => t.id === prefix + String(truckNo).padStart(2, '0'))) truckNo++;
+                const newTruckId = prefix + String(truckNo).padStart(2, '0');
+                const newTruck = {
+                    id: newTruckId,
+                    name: name,
+                    cap: cap,
+                    type: type,
+                    kelas: isKapal ? 'kapal' : 'truk',
+                    status: 'Sedia',
+                    plat: randomPlat,
+                    depotId: 'KILANG-01',
+                    odometer: 0, banPct: 100,
+                    price, kirTs: gameNow() + 182 * 86400000, stnkTs: gameNow() + STNK_PERIOD, platTs: gameNow() + PLAT_PERIOD, kirPending: null
+                };
+                companyFleet.push(newTruck);
+                newUnits.push(newTruck);
+                spawnOrderForNewTruck(newTruck);
+            }
 
-            const newTruck = {
-                id: newTruckId, 
-                name: name, 
-                cap: cap, 
-                type: type, 
-                kelas: isKapal ? 'kapal' : 'truk',
-                status: 'Sedia',
-                plat: randomPlat,
-                depotId: 'KILANG-01',
-                odometer: 0, banPct: 100,
-                price, kirTs: gameNow() + 182 * 86400000, stnkTs: gameNow() + STNK_PERIOD, platTs: gameNow() + PLAT_PERIOD, kirPending: null
-            };
-            companyFleet.push(newTruck);
-
-            addFinanceLog(`Pembelian ${name} (${newTruckId})`, -price);
-            addFinanceLog(`Uji KIR baru ${newTruckId}`, -fee.kir);
-            addFinanceLog(`STNK/BBN ${newTruckId}`, -fee.stnk);
-            addFinanceLog(`Pelat nomor ${randomPlat}`, -fee.plat);
-            spawnOrderForNewTruck(newTruck);
+            // Catatan keuangan: harga unit (sudah dikurangi diskon borongan) sebagai satu baris, biaya legalitas per unit
+            const idList = newUnits.length > 1 ? `${newUnits[0].id} s/d ${newUnits[newUnits.length - 1].id}` : newUnits[0].id;
+            addFinanceLog(`Pembelian ${qty}x ${name} (${idList})${q.disc ? ` diskon borongan ${q.disc}%` : ''}`, -(q.gross - q.discAmt));
+            addFinanceLog(`Uji KIR baru ${idList}`, -fee.kir * qty);
+            addFinanceLog(`STNK/BBN ${idList}`, -fee.stnk * qty);
+            addFinanceLog(`Pelat nomor ${qty} unit`, -fee.plat * qty);
             closeDealerModal();
             updateCashDisplay();
             populateTruckDropdowns();
             renderFleetDashboard();
 
-            addLog(`BERHASIL MEMBELI ARMADA: 1 Unit ${name} [${randomPlat}] ditambahkan ke garasi, berpangkalan di Kilang Tuban.`, 'success');
-            showModal('Pembelian Berhasil', `1 Unit ${name} [Plat: ${randomPlat}] berhasil dibeli!<br><br>STNK &amp; Plat Nomor aktif <b>5 tahun</b> sejak hari ini. Silakan assign ${isKapal ? 'Nahkoda & ABK' : 'driver'} saat hendak dispatch, dan atur pangkalan depo di tab Armada.`, 'fa-circle-check', 'blue');
+            const platList = newUnits.map(u => u.plat).join(', ');
+            addLog(`BERHASIL MEMBELI ARMADA: ${qty} Unit ${name} [${platList}] ditambahkan ke garasi, berpangkalan di Kilang Tuban.${q.disc ? ` Diskon borongan ${q.disc}% (hemat ${formatRupiah(q.discAmt)}).` : ''}`, 'success');
+            showModal('Pembelian Berhasil', `${qty} Unit ${name} berhasil dibeli!<br><b>${newUnits.map(u => u.id + ' [' + u.plat + ']').join('<br>')}</b>${q.disc ? `<br><br>Diskon borongan ${q.disc}%: hemat <b>${formatRupiah(q.discAmt)}</b>.` : ''}<br><br>STNK &amp; Plat Nomor aktif <b>5 tahun</b> sejak hari ini. Silakan assign ${isKapal ? 'Nahkoda & ABK' : 'driver'} saat hendak dispatch, dan atur pangkalan depo di tab Armada.`, 'fa-circle-check');
         }
 
         function formatRupiah(amount) {
@@ -183,17 +230,54 @@
         }
 
         // ===== LAPORAN KEUANGAN & PPh BADAN =====
-        let pphPaid = 0, topupTotal = 0;
-        // Tarif: Pasal 17 ayat (1) huruf b UU PPh (22%); Pasal 31E ayat (1): diskon 50% untuk bagian peredaran bruto s.d. Rp 4,8 M (peredaran bruto <= Rp 50 M)
+        // PPh Badan tiap 2 MINGGU: tiap akhir periode 2 minggu game (14 hari game = ±11,2 jam nyata) terbit tagihan sebesar
+        // PPh kumulatif dikurangi yang sudah pernah ditagih. Bayar sebelum jatuh tempo; lewat itu denda otomatis
+        // ditambahkan ke tagihan dan makin besar tiap hari game keterlambatan.
+        const PPH_TARIF_KECIL = 0.15, PPH_TARIF_UMUM = 0.30;   // tarif SIMULASI game, dinaikkan dari 11% / 22% aslinya
+        const PPH_DAY_MS = 86400000, PPH_PERIODE_MS = 14 * PPH_DAY_MS;
+        const PPH_JATUH_TEMPO_HARI = 2;                         // batas bayar: 2 hari game (±96 menit nyata) sejak tagihan terbit
+        const PPH_DENDA_AWAL = 0.20, PPH_DENDA_PER_HARI = 0.10, PPH_DENDA_MAX = 1.0; // denda 20% begitu lewat tempo, +10%/hari game berikutnya, maksimal 100% dari pokok tagihan
+        let pphPaid = 0, pphBilled = 0, pphBills = [], nextPphGt = 0, topupTotal = 0;
+        // Tarif: omzet <= Rp 4,8 M pakai tarif kecil; Rp 4,8-50 M campuran (bagian laba setara Rp 4,8 M pertama tarif kecil, sisanya tarif umum); > Rp 50 M tarif umum.
         function calcPph(laba, omzet) {
             if (laba <= 0 || omzet <= 0) return 0;
-            if (omzet <= 4.8e9) return Math.round(laba * 0.11);
-            if (omzet <= 50e9) { const a = laba * 4.8e9 / omzet; return Math.round(a * 0.11 + (laba - a) * 0.22); }
-            return Math.round(laba * 0.22);
+            if (omzet <= 4.8e9) return Math.round(laba * PPH_TARIF_KECIL);
+            if (omzet <= 50e9) { const a = laba * 4.8e9 / omzet; return Math.round(a * PPH_TARIF_KECIL + (laba - a) * PPH_TARIF_UMUM); }
+            return Math.round(laba * PPH_TARIF_UMUM);
+        }
+        const pphPokokBelum = () => pphBills.reduce((n, b) => n + b.amt, 0);
+        const pphDendaBelum = () => pphBills.reduce((n, b) => n + b.fine, 0);
+        // Dipanggil dari tickStock (tiap ~6 detik): terbitkan tagihan mingguan & hitung denda yang lewat jatuh tempo.
+        function tickPph() {
+            if (!currentAccount) return;
+            const now = gameNow();
+            if (!nextPphGt) nextPphGt = GAME_START + PPH_PERIODE_MS;
+            let berubah = false;
+            if (now >= nextPphGt) {
+                const baru = Math.max(0, calcPph(totalIncome - totalExpense, totalIncome) - pphBilled);
+                nextPphGt += PPH_PERIODE_MS * Math.max(1, Math.ceil((now - nextPphGt + 1) / PPH_PERIODE_MS)); // lompat ke batas minggu berikutnya (aman kalau game lama ditinggal)
+                if (baru > 0) {
+                    pphBilled += baru;
+                    pphBills.push({ id: Date.now(), amt: baru, gt: now, due: now + PPH_JATUH_TEMPO_HARI * PPH_DAY_MS, fine: 0, rate: 0 });
+                    addLog(`PAJAK: Tagihan PPh Badan periode 2 minggu ini terbit ${formatRupiah(baru)}. Bayar di tab Laporan dalam ${PPH_JATUH_TEMPO_HARI} hari game, kalau lewat kena denda otomatis mulai ${Math.round(PPH_DENDA_AWAL * 100)}%.`, 'warning');
+                }
+                berubah = true;
+            }
+            pphBills.forEach(b => {
+                if (now <= b.due) return;
+                const telat = Math.floor((now - b.due) / PPH_DAY_MS);
+                const rate = Math.min(PPH_DENDA_MAX, PPH_DENDA_AWAL + PPH_DENDA_PER_HARI * telat);
+                if (rate > b.rate) {
+                    const pertama = b.rate === 0;
+                    b.rate = rate; b.fine = Math.round(b.amt * rate); berubah = true;
+                    addLog(`PAJAK: PPh Badan ${formatRupiah(b.amt)} TERLAMBAT ${telat + 1} hari. Denda otomatis ${Math.round(rate * 100)}% = ${formatRupiah(b.fine)}${rate >= PPH_DENDA_MAX ? ' (batas maksimal denda)' : ' dan terus naik tiap hari game'}.`, 'warning');
+                }
+            });
+            if (berubah && typeof renderFinance === 'function') renderFinance();
         }
         function renderFinance() {
             const box = document.getElementById('fin-report'); if (!box) return;
-            const laba = totalIncome - totalExpense, tax = calcPph(laba, totalIncome), kurang = Math.max(0, tax - pphPaid);
+            const laba = totalIncome - totalExpense, tax = calcPph(laba, totalIncome), pokokBelum = pphPokokBelum(), dendaBelum = pphDendaBelum(), kurang = pokokBelum + dendaBelum;
             const row = (l, v, c, b) => `<div class="flex justify-between gap-2 ${b ? 'border-t border-gray-700 pt-1 font-bold' : ''}"><span class="text-gray-400 font-sans">${l}</span><span class="${c || 'text-gray-200'}">${v}</span></div>`;
             const neg = n => (n < 0 ? '(' + formatRupiah(-n) + ')' : formatRupiah(n));
             box.innerHTML = row('Pendapatan (peredaran bruto)', formatRupiah(totalIncome), 'text-emerald-400')
@@ -204,27 +288,37 @@
                 + row('Laba (Rugi) Bersih', neg(laba - tax), laba - tax >= 0 ? 'text-emerald-400' : 'text-red-400', true)
                 + row('Kas saat ini', formatRupiah(companyCash), 'text-teal-300', true)
                 + row('Setoran modal tambahan (top up)', formatRupiah(topupTotal), 'text-sky-300');
+            const estimasi = Math.max(0, tax - pphBilled), jt = pphBills.length ? Math.min(...pphBills.map(b => b.due)) : 0, now = gameNow();
+            const sisaMs = nextPphGt ? Math.max(0, nextPphGt - now) : 0;
             document.getElementById('pph-box').innerHTML = row('Dasar pengenaan (laba sebelum pajak)', neg(laba))
                 + row('Tarif efektif', laba > 0 ? (tax / laba * 100).toFixed(1).replace('.', ',') + '%' : '-')
-                + row('PPh terutang', formatRupiah(tax), 'text-amber-300')
+                + row('PPh terutang (kumulatif)', formatRupiah(tax), 'text-amber-300')
                 + row('Sudah dibayar', formatRupiah(pphPaid), 'text-emerald-400')
-                + row('Kurang bayar', formatRupiah(kurang), kurang ? 'text-red-400' : 'text-gray-300', true);
+                + row('Estimasi PPh periode berjalan (2 minggu)', formatRupiah(estimasi), 'text-gray-300')
+                + row('Tagihan berikutnya terbit', nextPphGt ? 'dalam ' + Math.floor(sisaMs / PPH_DAY_MS) + ' hr ' + Math.floor((sisaMs % PPH_DAY_MS) / 3600000) + ' j game' : '-', 'text-gray-300')
+                + row('Tagihan PPh belum dibayar', formatRupiah(pokokBelum), pokokBelum ? 'text-amber-300' : 'text-gray-300')
+                + (pphBills.length ? row('Jatuh tempo terdekat', jt > now ? 'dalam ' + Math.floor((jt - now) / 3600000) + ' j game' : 'LEWAT ' + Math.floor((now - jt) / 3600000) + ' j game', jt > now ? 'text-gray-300' : 'text-red-400') : '')
+                + row('Denda keterlambatan', formatRupiah(dendaBelum), dendaBelum ? 'text-red-400' : 'text-gray-300')
+                + row('Total wajib bayar', formatRupiah(kurang), kurang ? 'text-red-400' : 'text-gray-300', true);
             document.getElementById('pph-pay').disabled = kurang <= 0;
             const co = currentAccount ? esc(currentAccount.company) : 'perusahaan';
             document.getElementById('pph-law').innerHTML = `<div class="font-bold text-gray-300">Dasar hukum untuk ${co} (WP badan dalam negeri berbentuk PT)</div>
                 <div>&bull; <b>UU No. 7 Tahun 1983</b> tentang Pajak Penghasilan, sebagaimana telah diubah terakhir dengan <b>UU No. 7 Tahun 2021</b> tentang Harmonisasi Peraturan Perpajakan (UU HPP).</div>
-                <div>&bull; Tarif umum: <b>Pasal 17 ayat (1) huruf b</b> = 22% (berlaku sejak tahun pajak 2022).</div>
-                <div>&bull; Fasilitas: <b>Pasal 31E ayat (1)</b> (UU No. 36 Tahun 2008) = pengurangan tarif 50% (efektif 11%) atas penghasilan kena pajak dari bagian peredaran bruto sampai Rp 4,8 miliar, bagi peredaran bruto sampai Rp 50 miliar.</div>
+                <div>&bull; Tarif umum aslinya: <b>Pasal 17 ayat (1) huruf b</b> = 22%. <b>Di game ini tarif dinaikkan</b> menjadi ${Math.round(PPH_TARIF_UMUM * 100)}% (umum) dan ${Math.round(PPH_TARIF_KECIL * 100)}% (fasilitas omzet kecil).</div>
+                <div>&bull; Fasilitas: <b>Pasal 31E ayat (1)</b> (UU No. 36 Tahun 2008) = fasilitas tarif lebih rendah atas penghasilan kena pajak dari bagian peredaran bruto sampai Rp 4,8 miliar, bagi peredaran bruto sampai Rp 50 miliar.</div>
+                <div>&bull; <b>Tagihan 2 mingguan &amp; denda (aturan game):</b> PPh ditagih tiap 2 minggu game, jatuh tempo ${PPH_JATUH_TEMPO_HARI} hari game. Lewat tempo, denda otomatis ${Math.round(PPH_DENDA_AWAL * 100)}% dari tagihan, lalu +${Math.round(PPH_DENDA_PER_HARI * 100)}% tiap hari game keterlambatan (maks ${Math.round(PPH_DENDA_MAX * 100)}%).</div>
                 <div>&bull; Pelaporan: <b>UU No. 6 Tahun 1983</b> tentang KUP (diubah UU No. 7 Tahun 2021) <b>Pasal 3 ayat (3) huruf b</b>: SPT Tahunan badan paling lambat 4 bulan setelah tahun pajak berakhir.</div>
-                <div class="text-gray-500">Simulasi: laba = pendapatan &minus; beban, dihitung kumulatif sejak akun dibuat. Bukan konsultasi pajak.</div>`;
+                <div class="text-gray-500">Simulasi: laba = pendapatan &minus; beban, dihitung kumulatif sejak akun dibuat; tagihan 2 mingguan = PPh kumulatif dikurangi yang sudah ditagih. Bukan konsultasi pajak.</div>`;
         }
         function payPph() {
-            const kurang = Math.max(0, calcPph(totalIncome - totalExpense, totalIncome) - pphPaid);
-            if (kurang <= 0) return;
-            if (companyCash < kurang) return showModal('Kas Tidak Cukup', `Butuh ${formatRupiah(kurang)} untuk membayar PPh.`, 'fa-triangle-exclamation', 'red');
-            companyCash -= kurang; pphPaid += kurang;
-            addFinanceLog('Pembayaran PPh Badan', -kurang); updateCashDisplay();
-            addLog(`PAJAK: PPh Badan ${formatRupiah(kurang)} dibayar.`, 'success');
+            const pokok = pphPokokBelum(), denda = pphDendaBelum(), total = pokok + denda;
+            if (total <= 0) return showModal('Tidak Ada Tagihan', 'Belum ada tagihan PPh yang terbit. Tagihan baru terbit tiap 2 minggu game.', 'fa-circle-info', 'blue');
+            if (companyCash < total) return showModal('Kas Tidak Cukup', `Butuh ${formatRupiah(total)} untuk melunasi PPh${denda > 0 ? ` (pokok ${formatRupiah(pokok)} + denda ${formatRupiah(denda)})` : ''}.`, 'fa-triangle-exclamation', 'red');
+            companyCash -= total; pphPaid += pokok; pphBills = [];
+            addFinanceLog('Pembayaran PPh Badan', -pokok);
+            if (denda > 0) addFinanceLog('Denda keterlambatan PPh Badan', -denda);
+            updateCashDisplay();
+            addLog(`PAJAK: PPh Badan ${formatRupiah(pokok)}${denda > 0 ? ` + denda ${formatRupiah(denda)}` : ''} dibayar lunas.`, 'success');
         }
 
         let financeEntries = [];
@@ -245,7 +339,7 @@
         }
 
         // Tab yang tampil menggantikan peta (Peta & Dealer tetap tampil inline di sidebar)
-        const POPUP_TABS = ['tab-kilang', 'tab-dealer', 'tab-delivery', 'tab-lpg', 'tab-kapal', 'tab-fleet', 'tab-bursa', 'tab-drivers', 'tab-partnership', 'tab-finance', 'tab-orders', 'tab-leaderboard'];
+        const POPUP_TABS = ['tab-kilang', 'tab-hulu', 'tab-dealer', 'tab-delivery', 'tab-lpg', 'tab-kapal', 'tab-fleet', 'tab-bursa', 'tab-drivers', 'tab-partnership', 'tab-finance', 'tab-orders', 'tab-leaderboard'];
 
         let currentTabId = 'tab-map-view';
         function switchTab(tabId) {
@@ -273,6 +367,7 @@
             if (tabId === 'tab-orders') renderOrders();
             if (tabId === 'tab-delivery' || tabId === 'tab-lpg') populateSpbuDropdowns(document.getElementById('delivery-region-filter') ? document.getElementById('delivery-region-filter').value : 'ALL');
             if (tabId === 'tab-kapal') populateTransferKapal();
+            if (tabId === 'tab-hulu' && typeof huluRender === 'function') huluRender();
             if (tabId === 'tab-bursa') { startBursaListingsListener(); renderBursa(); }
             const activeBtn = document.getElementById('btn-' + tabId);
             // Tombol yang bukan bagian nav sidebar (mis. Peringkat di header) sengaja tidak diberi class

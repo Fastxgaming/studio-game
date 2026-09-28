@@ -109,12 +109,15 @@
             const box = document.getElementById('splash-account'); if (!box) return;
             const email = (currentAccount && currentAccount.email) || store.get('pml_last_email', '')
                 || (() => { const a = store.get('pml_accounts', []); return a.length ? (a[a.length - 1].email || '') : ''; })();
-            if (!email) { box.classList.add('hidden'); return; }   // pemain baru: tidak ada yang ditampilkan
+            // Selalu tampil di semua perangkat (HP & laptop/PC). Riwayat email hanya tersimpan per browser,
+            // jadi di perangkat yang belum pernah dipakai login, tombol tetap ada dan mengarah ke form Masuk.
             box.classList.remove('hidden');
-            document.getElementById('splash-acc-email').textContent = email;
-            document.getElementById('splash-acc-state').textContent = currentAccount ? 'Masuk sebagai' : 'Terakhir masuk dengan';
+            document.getElementById('splash-acc-email').textContent = email || 'Belum ada akun di perangkat ini';
+            document.getElementById('splash-acc-state').textContent = currentAccount ? 'Masuk sebagai' : (email ? 'Terakhir masuk dengan' : 'Sudah punya akun?');
+            const lbl = document.getElementById('splash-load-lbl');
+            if (lbl && !splashLoadBusy && !/Memuat|Dimuat/.test(lbl.textContent)) lbl.textContent = currentAccount ? 'Muat Progres' : 'Masuk & Muat Progres';
             const info = document.getElementById('splash-load-info');
-            if (info && !splashLoadBusy) info.textContent = currentAccount ? 'Cloud terakhir disimpan: ' + fmtCloudTs(cloudTs) : 'Masuk dulu untuk memuat progres dari cloud.';
+            if (info && !splashLoadBusy) info.textContent = currentAccount ? 'Cloud terakhir disimpan: ' + fmtCloudTs(cloudTs) : 'Masuk dulu, lalu progres dari cloud dimuat otomatis.';
         }
         async function splashLoadProgress() {
             if (splashLoadBusy) return;
@@ -298,7 +301,7 @@
                 cash: companyCash, income: totalIncome, expense: totalExpense,
                 refineries: refineryData.map(k => ({ id: k.id, u: k.is_unlocked, s: k.stok_current, m: k.stok_max, lvl: k.stokUpgradeLevel, mid: k.mekanikId, kap: k.kap })),
                 fleet: companyFleet, crew: companyCrew, crewCounter: crewIdCounter, sj: suratJalanCounter,
-                spbu: loadedSpbuList, fin: financeEntries, orders, ordHist, nextOrderGt, setor: lastSetor, izin: izinLog, clock: gameElapsed, topups: appliedTopups, pph: pphPaid, bbm: bbmSpent, tsetor: topupTotal, ts: Date.now()
+                spbu: loadedSpbuList, fin: financeEntries, orders, ordHist, nextOrderGt, setor: lastSetor, izin: izinLog, clock: gameElapsed, hulu, topups: appliedTopups, pph: pphPaid, pphB: pphBilled, pphBills, pphNext: nextPphGt, bbm: bbmSpent, tsetor: topupTotal, ts: Date.now()
             };
         }
 

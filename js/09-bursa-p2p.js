@@ -362,7 +362,15 @@
         // tab Bursa P2P dibuka (lihat switchTab), bukan sepanjang sesi login.
         function startBursaListingsListener() {
             if (!window.fb || !currentAccount) return;
-            if (!bursaListingsUnsub) bursaListingsUnsub = fb.listenBursaListings(list => { bursaListings = list; if (!document.getElementById('tab-bursa').classList.contains('hidden')) renderBursa(); });
+            if (bursaListingsUnsub) return;
+            bursaListingsUnsub = fb.listenBursaListings(list => {
+                // terbaru di atas; iklan yang baru dipasang (created belum terisi server) dianggap paling baru
+                bursaListings = list.sort((a, b) => (b.created ? b.created.seconds : 9e15) - (a.created ? a.created.seconds : 9e15));
+                if (!document.getElementById('tab-bursa').classList.contains('hidden')) renderBursa();
+            }, e => {
+                bursaListingsUnsub = null;   // biar bisa dicoba lagi saat tab dibuka ulang
+                showModal('Daftar Bursa Gagal Dimuat', 'Iklan tidak bisa diambil dari server. Coba buka ulang tab Bursa P2P. (' + (e.code || e.message) + ')', 'fa-triangle-exclamation', 'red');
+            });
         }
         function stopBursaListingsListener() { if (bursaListingsUnsub) { bursaListingsUnsub(); bursaListingsUnsub = null; } }
 
@@ -407,7 +415,7 @@
             const mine = bursaListings.filter(l => l.sellerUid === currentAccount.id);
             document.getElementById('bursa-mine-list').innerHTML = mine.length ? mine.map(l => `
                 <div class="bg-gray-900 border border-gray-800 rounded-lg p-2.5 flex justify-between items-center gap-2">
-                    <div class="min-w-0"><div class="font-bold text-gray-200 truncate">${esc(l.truck.name)} <span class="text-amber-400 font-mono">[${esc(l.truck.plat)}]</span></div><div class="text-[10px] text-gray-500">${esc(l.truck.id)} &middot; ${l.truck.type} &middot; ${l.truck.cap} ${l.truck.type === 'LPG' ? 'Ton' : 'KL'}</div><div class="text-emerald-400 font-mono font-bold text-xs mt-0.5">${formatRupiah(l.harga)}</div></div>
+                    <div class="min-w-0"><div class="font-bold text-gray-200 truncate">${esc(l.truck.name)} <span class="text-amber-400 font-mono">[${esc(l.truck.plat)}]</span></div><div class="text-[10px] text-gray-500">${esc(l.truck.id)} &middot; ${l.truck.type} &middot; ${l.truck.cap} ${l.truck.type === 'LPG' ? 'Ton' : (l.truck.kelas === 'kapal' ? 'Bbl' : 'KL')}</div><div class="text-emerald-400 font-mono font-bold text-xs mt-0.5">${formatRupiah(l.harga)}</div></div>
                     <button onclick="cancelBursaListing('${esc(l.id)}')" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-2.5 py-1.5 rounded font-bold shrink-0">Batalkan</button>
                 </div>`).join('') : '<div class="empty-state"><i class="fa-solid fa-tags"></i>Belum ada iklan aktif.</div>';
 
@@ -419,7 +427,7 @@
                         <div class="min-w-0"><div class="font-bold text-gray-200 truncate">${esc(l.truck.name)} <span class="text-amber-400 font-mono">[${esc(l.truck.plat)}]</span></div><div class="text-[10px] text-gray-500 truncate">Penjual: ${esc(l.sellerCompany)}</div></div>
                         <span class="text-[10px] font-bold border rounded px-1.5 py-0.5 shrink-0 ${l.truck.type === 'LPG' ? 'text-amber-400 border-amber-500/40' : 'text-indigo-400 border-indigo-500/40'}">${l.truck.type}</span>
                     </div>
-                    <div class="text-[10px] text-gray-400">Kapasitas ${l.truck.cap} ${l.truck.type === 'LPG' ? 'Ton' : 'KL'} &middot; Odometer ${l.truck.odometer.toLocaleString('id-ID')} km &middot; ${l.truck.kelas === 'kapal' ? 'Kondisi Mesin' : 'Ban'} ${l.truck.banPct}%</div>
+                    <div class="text-[10px] text-gray-400">Kapasitas ${l.truck.cap} ${l.truck.type === 'LPG' ? 'Ton' : (l.truck.kelas === 'kapal' ? 'Bbl' : 'KL')} &middot; Odometer ${l.truck.odometer.toLocaleString('id-ID')} km &middot; ${l.truck.kelas === 'kapal' ? 'Kondisi Mesin' : 'Ban'} ${l.truck.banPct}%</div>
                     <div class="flex justify-between items-center"><span class="text-emerald-400 font-mono font-bold text-sm">${formatRupiah(l.harga)}</span>
                     <button onclick="buyBursaListing('${esc(l.id)}')" ${bursaBuyBusy.has(l.id) ? 'disabled' : ''} class="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-3 py-1.5 rounded font-bold">${bursaBuyBusy.has(l.id) ? 'Memproses...' : 'Beli'}</button></div>
                 </div>`).join('') : '<div class="empty-state"><i class="fa-solid fa-store-slash"></i>Belum ada truk dijual pemain lain saat ini.</div>';
@@ -442,7 +450,7 @@
             companyFleet.splice(idx, 1);   // truk keluar dari garasi selama iklan aktif
             try {
                 await fb.postBursaListing(currentAccount.id, currentAccount.company, truck, harga);
-                populateTruckDropdowns(); renderFleetDashboard(); updateCashDisplay();
+                populateTruckDropdowns(); renderFleetDashboard(); updateCashDisplay(); saveGame();
                 addLog(`BURSA P2P: Truk ${truck.id} [${truck.plat}] dipasang di Bursa P2P seharga ${formatRupiah(harga)}.`, 'info');
                 notify(`${truck.name} dipasang di Bursa P2P.`, 'info');
                 return true;

@@ -7,13 +7,13 @@
            } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
 
     const firebaseConfig = {
-        apiKey: "AIzaSyAokOJBi9KPoQZDEGNlZHU1RgBwMY6DNm4",
-        authDomain: "nusa-energi-manager-id.firebaseapp.com",
-        projectId: "nusa-energi-manager-id",
-        storageBucket: "nusa-energi-manager-id.firebasestorage.app",
-        messagingSenderId: "1018363998822",
-        appId: "1:1018363998822:web:aef36ec463cf412cfaf3a7",
-        measurementId: "G-TCT9SZ8QEJ"
+        apiKey: "AIzaSyCDtefVgfEl_Q-NFjrJOg7jB1lIusHFFLM",
+        authDomain: "migas-manager-indonesia.firebaseapp.com",
+        projectId: "migas-manager-indonesia",
+        storageBucket: "migas-manager-indonesia.firebasestorage.app",
+        messagingSenderId: "678967562740",
+        appId: "1:678967562740:web:b19c87b0a2032a7589a9a1",
+        measurementId: "G-YBSB580XD6"
     };
     const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app);
     // Analytics bersifat opsional; tidak boleh mengganggu game jika gagal (mis. dibuka via file://)
@@ -94,8 +94,9 @@
         // pemain login dari HP lalu dari laptop, status "sudah dilihat"-nya tersinkron - tidak dobel per perangkat.
         markBroadcastSeen: (uid, ts) => setDoc(doc(db, 'users', uid), { lastBroadcastSeen: ts }, { merge: true }),
         // ===== Bursa P2P: jual-beli unit truk bekas antar pemain nyata =====
-        listenBursaListings: cb => onSnapshot(query(collection(db, 'bursa'), where('status', '==', 'open'), orderBy('created', 'desc'), limit(200)),
-            sn => cb(sn.docs.map(d => ({ id: d.id, ...d.data() }))), e => console.warn('Listener bursa:', e)),
+        // Tanpa orderBy supaya TIDAK butuh composite index (status + created); urutan dibuat di sisi client.
+        listenBursaListings: (cb, onErr) => onSnapshot(query(collection(db, 'bursa'), where('status', '==', 'open'), limit(200)),
+            sn => cb(sn.docs.map(d => ({ id: d.id, ...d.data() }))), e => { console.warn('Listener bursa:', e); if (onErr) onErr(e); }),
         postBursaListing(sellerUid, sellerCompany, truck, harga) {
             const ref = doc(collection(db, 'bursa'));
             return setDoc(ref, { sellerUid, sellerCompany, truck, harga, status: 'open', created: serverTimestamp() }).then(() => ref.id);
