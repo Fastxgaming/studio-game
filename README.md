@@ -1,4 +1,4 @@
-# ⛽ Pertama Manager ID: Nusantara Edition
+# ⛽ Migas Manager ID: Nusantara Edition
 
 **Game simulasi bisnis (tycoon) distribusi BBM & LPG berbasis web**, dimainkan langsung di browser dalam satu file HTML. Pemain berperan sebagai direktur perusahaan energi swasta yang membangun jaringan distribusi bahan bakar dari kilang pusat hingga ke SPBU-SPBU di seluruh Indonesia.
 
