@@ -77,6 +77,7 @@
                 return;
             }
             store.set('pml_seen', true);
+            if (user.email) store.set('pml_last_email', user.email);
             const accs = store.get('pml_accounts', []);
             let acc = accs.find(a => a.id === user.uid);
             if (!acc) { acc = { id: user.uid, stats: liveStats() }; accs.push(acc); }
@@ -102,8 +103,63 @@
             catch (err) { showMsg(id, fbErr(err), false); }
         }
 
+        // ===== LAYAR MULAI: email akun yang pernah login + tombol Muat Progres =====
+        let splashLoadBusy = false, pendingCloudLoad = false;
+        function renderSplashAccount() {
+            const box = document.getElementById('splash-account'); if (!box) return;
+            const email = (currentAccount && currentAccount.email) || store.get('pml_last_email', '')
+                || (() => { const a = store.get('pml_accounts', []); return a.length ? (a[a.length - 1].email || '') : ''; })();
+            if (!email) { box.classList.add('hidden'); return; }   // pemain baru: tidak ada yang ditampilkan
+            box.classList.remove('hidden');
+            document.getElementById('splash-acc-email').textContent = email;
+            document.getElementById('splash-acc-state').textContent = currentAccount ? 'Masuk sebagai' : 'Terakhir masuk dengan';
+            const info = document.getElementById('splash-load-info');
+            if (info && !splashLoadBusy) info.textContent = currentAccount ? 'Cloud terakhir disimpan: ' + fmtCloudTs(cloudTs) : 'Masuk dulu untuk memuat progres dari cloud.';
+        }
+        async function splashLoadProgress() {
+            if (splashLoadBusy) return;
+            if (!currentAccount) {
+                // Belum ada sesi: buka form Masuk dengan email terisi; progres cloud dimuat otomatis setelah masuk.
+                pendingCloudLoad = true;
+                document.getElementById('splash-overlay').classList.add('hidden');
+                document.getElementById('auth-overlay').classList.remove('hidden');
+                const em = document.getElementById('log-email'), last = store.get('pml_last_email', '');
+                if (em && last && !em.value) em.value = last;
+                if (typeof setAuthMode === 'function') setAuthMode('login');
+                return;
+            }
+            if (!window.fb) { document.getElementById('splash-load-info').textContent = 'Firebase belum siap. Periksa koneksi internet.'; return; }
+            const ok = await showConfirm('Ini akan MENIMPA progres di perangkat ini dengan versi yang tersimpan di cloud. Progres lokal yang belum di-"Save Cloud" akan hilang. Lanjutkan?',
+                { title: 'Muat Progres', iconClass: 'fa-cloud-arrow-down', theme: 'blue', okLabel: 'Muat Progres' });
+            if (!ok) return;
+            const btn = document.getElementById('splash-load-btn'), ico = document.getElementById('splash-load-ico'),
+                  lbl = document.getElementById('splash-load-lbl'), info = document.getElementById('splash-load-info');
+            splashLoadBusy = true; btn.disabled = true;
+            ico.className = 'fa-solid fa-spinner fa-spin mr-1.5'; lbl.textContent = 'Memuat...';
+            try {
+                const cloud = await fb.loadSave(currentAccount.id);
+                if (!cloud) { info.textContent = 'Belum ada progres tersimpan di cloud untuk akun ini.'; return; }
+                const sv = JSON.parse(cloud.data), uid = currentAccount.id;
+                store.set('pml_save_' + uid, sv);
+                cloudTs = cloud.ts || 0; store.set('pml_cloudts_' + uid, cloudTs);
+                applySave(sv); updateCashDisplay(); renderCloudStatus();
+                addLog('CLOUD: Progres berhasil dimuat dari cloud.', 'success');
+                info.textContent = 'Progres dimuat (' + fmtCloudTs(cloudTs) + '). Tekan Main Sekarang.';
+                ico.className = 'fa-solid fa-check mr-1.5'; lbl.textContent = 'Progres Dimuat';
+                setTimeout(() => { ico.className = 'fa-solid fa-cloud-arrow-down mr-1.5'; lbl.textContent = 'Muat Progres'; }, 2500);
+                return;
+            } catch (e) {
+                console.warn('Muat progres gagal:', e);
+                info.textContent = 'Gagal memuat dari cloud (' + (e.code || e.message || 'error') + ').';
+            } finally {
+                splashLoadBusy = false; btn.disabled = false;
+                if (lbl.textContent === 'Memuat...') { ico.className = 'fa-solid fa-cloud-arrow-down mr-1.5'; lbl.textContent = 'Muat Progres'; }
+            }
+        }
+
         function startSession(acc, isNew) {
             currentAccount = acc;
+            renderSplashAccount();
             const save = store.get('pml_save_' + acc.id, null);
             if (save) applySave(save);
             document.getElementById('kpis-company').innerText = acc.company;
@@ -126,6 +182,7 @@
                 addLog(`LOGIN: ${acc.owner} masuk sebagai pemilik ${acc.company}.`, 'success');
                 // Kalau splash "Main Sekarang" sudah dilewati (alur daftar/masuk manual), tampilkan tutorial/welcome sekarang.
                 if (fromAuthForm) maybeShowTutorial(isNew);
+                if (pendingCloudLoad) { pendingCloudLoad = false; setTimeout(() => manualCloudLoad(), 600); }
             };
             // Kalau ini alur Daftar/Masuk manual (splash sudah dilewati, form auth sedang tampil), fade dulu
             // sebelum masuk ke in-game biar mulus. Kalau splash masih tampil (sesi lama dipulihkan otomatis
@@ -230,6 +287,7 @@
 
         async function logoutAccount() {
             if (cloudBusy && !(await showConfirm('Penyimpanan cloud sedang berjalan. Jika keluar sekarang, penyimpanan dibatalkan. Lanjutkan keluar?', { title: 'Keluar Akun', iconClass: 'fa-right-from-bracket', theme: 'red', okLabel: 'Keluar' }))) return;
+            if (typeof setPaused === 'function') setPaused(false);
             try { saveGame(); } catch (e) {} skipSave = true; try { await fb.out(); } catch (e) {} location.reload(); }
 
         function liveStats() { return { cash: companyCash, units: companyFleet.length, kilang: refineryData.filter(k => k.is_unlocked).length }; }

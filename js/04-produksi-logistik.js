@@ -445,10 +445,14 @@
         // sebelumnya, cuma sekarang benar-benar terlihat progresnya, bukan cuma badge statis lalu tiba-tiba penuh).
         function animateRefineFill(kilang, slot, addAmount, durasiMs, onDone) {
             const startCur = slot.cur, target = Math.min(slot.max, Math.round((startCur + addAmount) * 100) / 100);
-            const t0 = performance.now();
+            let t0 = performance.now(), lastT = t0;
             const TICK_MS = 150;
             const iv = setInterval(() => {
-                const frac = Math.min(1, (performance.now() - t0) / durasiMs);
+                const nowT = performance.now();
+                // Selama jeda manual, geser titik awal supaya progres pengolahan ikut berhenti.
+                if (gamePaused) { t0 += nowT - lastT; lastT = nowT; return; }
+                lastT = nowT;
+                const frac = Math.min(1, (nowT - t0) / durasiMs);
                 slot.cur = Math.round((startCur + (target - startCur) * frac) * 100) / 100;
                 updateKilangLiveBars(kilang);
                 if (frac >= 1) {
@@ -932,19 +936,42 @@
             if (l.length) map.flyToBounds(L.latLngBounds(l.map(s => [s.lat, s.lon])), { maxZoom: 11, padding: [30, 30] });
         }
 
-        // Peta "Peta Sebaran Aset" sengaja dipatenkan (dikunci) cuma menampilkan Kilang & Depo + rute
-        // Kirim BBL/LPG Curah (kapal tanker antar depo) - titik SPBU TIDAK lagi digambar di peta ini
-        // supaya tidak penuh/ramai oleh ratusan titik SPBU. Data SPBU sendiri tetap lengkap & bisa
-        // dicek lewat tab "Pesanan SPBU" (daftar, bukan peta). Hitungan jumlah SPBU aktif untuk KPI
-        // header tetap dihitung seperti biasa di bawah ini, cuma bagian gambar titik ke peta yang dilepas.
         function renderSpbuOnMap() {
             mapMarkers.forEach(m => map.removeLayer(m));
             mapMarkers = [];
 
             let activeSpbuCount = 0;
+
             loadedSpbuList.forEach(spbu => {
                 if (!spbu.is_approved) return;
+
                 if (!spbu.blocked) activeSpbuCount++;
+                let markerColor = spbu.tipe === 'COCO' ? '#3b82f6' : '#a855f7';
+                if (spbu.has_lpg) markerColor = '#eab308';
+                if (spbu.blocked) markerColor = '#ef4444';
+
+                const marker = L.circleMarker([spbu.lat, spbu.lon], {
+                    radius: spbu.has_lpg ? 6.5 : 5,
+                    fillColor: markerColor,
+                    color: "#ffffff",
+                    weight: 1.2,
+                    fillOpacity: spbu.blocked ? 0.45 : 0.85
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <div class="text-gray-900 font-sans p-1">
+                        <div class="text-[10px] font-bold text-blue-700">${spbu.kode}</div>
+                        <strong class="text-xs font-bold block">${spbu.nama}</strong>
+                        <div class="text-[10px] text-gray-600">Kab/Kota: ${spbu.region}</div>
+                        <div class="text-[10px] text-gray-600">Wilayah BBM Terdekat: <b>${spbu.wilayahBbmNama || '-'}</b>${spbu.wilayahBbmJarak != null ? ` (&plusmn;${spbu.wilayahBbmJarak} km)` : ''}</div>
+                        ${spbu.has_lpg ? `<div class="text-[10px] text-gray-600">Wilayah LPG Terdekat: <b>${spbu.wilayahLpgNama || '-'}</b>${spbu.wilayahLpgJarak != null ? ` (&plusmn;${spbu.wilayahLpgJarak} km)` : ''}</div>` : ''}
+                        <div class="text-[10px] text-gray-600">Keramaian: <b>${TRAFFIC[spbu.traffic || (spbu.traffic = pickTraffic())].label}</b> &middot; konsumsi BBM/LPG ${TRAFFIC[spbu.traffic].mult}x</div>
+                        <div class="text-[10px] text-gray-600">${spbu.tipe === 'COCO' ? 'Milik perusahaan (dikelola swasta)' : 'Mitra: ' + esc(spbu.mitra ? spbu.mitra.nama : '-')}${spbu.has_lpg ? ' &middot; + LPG' : ''}</div>
+                        ${spbu.blocked ? '<div class="text-[10px] font-bold text-red-600">DIBLOKIR - operasional off</div>' : ''}
+                    </div>
+                `);
+
+                mapMarkers.push(marker);
             });
 
             document.getElementById('kpis-spbu-count').innerText = `${activeSpbuCount} Unit`;

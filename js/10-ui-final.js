@@ -219,7 +219,7 @@
             const now = Date.now();
             const delta = now - lastClockTick;
             lastClockTick = now;
-            if (currentAccount && !document.hidden && delta > 0) gameElapsed += delta;
+            if (currentAccount && !isSuspended() && delta > 0) gameElapsed += delta;
             renderClock();
         }
         function resumeClock() { lastClockTick = Date.now(); tickClock(); }
@@ -227,6 +227,52 @@
         document.addEventListener('visibilitychange', () => { if (!document.hidden) resumeClock(); });
         window.addEventListener('focus', resumeClock);
         renderClock();
+
+        // ===== TOMBOL JEDA PERMAINAN =====
+        let pauseStartedAt = 0;
+        function setPaused(on) {
+            if (on === gamePaused) return;
+            if (on) {
+                tickClock();                 // catat waktu game terakhir sebelum berhenti
+                gamePaused = true;
+                pauseStartedAt = Date.now();
+            } else {
+                const dur = Math.max(0, Date.now() - pauseStartedAt);
+                // Batas waktu pesanan dihitung dari waktu nyata: geser maju sebesar lama jeda.
+                orders.forEach(o => { o.t += dur; });
+                gamePaused = false;
+                lastClockTick = Date.now();  // jam lanjut dari titik berhenti, bukan mengejar
+            }
+            syncTravelSuspend();
+            renderPauseUi();
+            renderClock();
+        }
+        function renderPauseUi() {
+            const btn = document.getElementById('btn-pause-toggle');
+            if (btn) {
+                btn.querySelector('.hico').className = 'hico fa-solid ' + (gamePaused ? 'fa-play' : 'fa-pause');
+                btn.querySelector('.hlbl').textContent = gamePaused ? 'Lanjut' : 'Jeda';
+                btn.title = gamePaused ? 'Lanjutkan permainan' : 'Jeda permainan';
+                btn.style.setProperty('--hb', gamePaused ? '#34d399' : '#94a3b8');
+                btn.style.setProperty('--hbg', gamePaused ? 'rgba(52,211,153,.18)' : 'rgba(148,163,184,.14)');
+                btn.classList.toggle('hbtn-paused', gamePaused);
+            }
+            let bar = document.getElementById('pause-banner');
+            if (gamePaused && !bar) {
+                bar = document.createElement('div');
+                bar.id = 'pause-banner';
+                bar.innerHTML = '<i class="fa-solid fa-pause"></i><span>Permainan dijeda &mdash; jam, perjalanan, dan pesanan berhenti</span><button type="button">Lanjutkan</button>';
+                bar.querySelector('button').addEventListener('click', () => setPaused(false));
+                document.body.appendChild(bar);
+            } else if (!gamePaused && bar) bar.remove();
+            const gt = document.getElementById('game-time');
+            if (gt) gt.classList.toggle('opacity-50', gamePaused);
+        }
+        document.getElementById('btn-pause-toggle').addEventListener('click', () => {
+            if (!currentAccount) return;
+            setPaused(!gamePaused);
+            if (typeof notify === 'function') notify(gamePaused ? 'Permainan dijeda.' : 'Permainan dilanjutkan.', 'info');
+        });
 
         // ===== STOK SPBU & PESANAN OTOMATIS =====
         const busyIds = new Set();
@@ -322,6 +368,7 @@
             }
         }
         function tickStock() {
+            if (gamePaused) return; // jeda manual: stok SPBU & batas waktu pesanan ikut berhenti
             const now = Date.now();
             processKirPending();
             orders.slice().forEach(o => { if (now - o.t > ORDER_TTL) {
