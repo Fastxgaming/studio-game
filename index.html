@@ -385,8 +385,18 @@
                         </label>
                     </div>
 
-                    <label class="text-gray-400 block mb-1 mt-3 font-semibold">Nominal khusus <span class="text-gray-600 font-normal">(opsional, maks Rp 1 Triliun)</span></label>
-                    <input id="adm-custom-cash" type="number" min="0" max="1000000000000" step="1" oninput="admCustomPreview()" placeholder="Kosongkan utk pakai nominal paket di atas" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-100 font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 transition">
+                    <label class="text-gray-400 block mb-1 mt-3 font-semibold">Durasi centang biru limited <span class="text-gray-600 font-normal">(hari, opsional, maks 3650)</span></label>
+                    <div class="flex flex-wrap gap-1.5 mb-1.5">
+                        <button type="button" onclick="admSetDays(1)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold px-2.5 py-1 rounded-md transition">1 hari</button>
+                        <button type="button" onclick="admSetDays(3)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold px-2.5 py-1 rounded-md transition">3 hari</button>
+                        <button type="button" onclick="admSetDays(7)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold px-2.5 py-1 rounded-md transition">7 hari</button>
+                        <button type="button" onclick="admSetDays(14)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold px-2.5 py-1 rounded-md transition">14 hari</button>
+                        <button type="button" onclick="admSetDays(30)" class="bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold px-2.5 py-1 rounded-md transition">30 hari</button>
+                    </div>
+                    <input id="adm-custom-days" type="number" min="0" max="3650" step="1" oninput="admCustomPreview()" placeholder="Kosongkan utk pakai durasi paket di atas" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-100 font-mono focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/40 transition">
+
+                    <label class="text-gray-400 block mb-1 mt-3 font-semibold">Nominal khusus <span class="text-gray-600 font-normal">(opsional, maks Rp 10 Triliun)</span></label>
+                    <input id="adm-custom-cash" type="number" min="0" max="10000000000000" step="1" oninput="admCustomPreview()" placeholder="Kosongkan utk pakai nominal paket di atas" class="w-full bg-gray-950 border border-gray-800 rounded-lg p-2.5 text-gray-100 font-mono focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 transition">
                     <div id="adm-custom-preview" class="text-[11px] text-gray-500 mt-1 min-h-[1rem]"></div>
 
                     <label class="text-gray-400 block mb-1 mt-3 font-semibold">Catatan <span class="text-gray-600 font-normal">(mis. jam/bank pengirim)</span></label>

@@ -417,7 +417,7 @@
             { id: 'p50m', label: 'Rp 50 Miliar', cash: 50e9, price: 70000, days: 30, tag: 'Hemat' },
             { id: 'p100m', label: 'Rp 100 Miliar', cash: 100e9, price: 100000, days: 30, tag: 'Terbaik' }
         ];
-        // Paket khusus panel admin: tidak melalui pembayaran, jadi tanpa harga (price) dan boleh sampai 1 Triliun
+        // Paket khusus panel admin: tidak melalui pembayaran, jadi tanpa harga (price) dan boleh sampai 10 Triliun
         const ADMIN_PKGS = [
             { id: 'a500j', label: 'Rp 500 Juta', cash: 500e6, price: 0, days: 5 },
             { id: 'a1m', label: 'Rp 1 Miliar', cash: 1e9, price: 0, days: 10 },
@@ -426,9 +426,10 @@
             { id: 'a50m', label: 'Rp 50 Miliar', cash: 50e9, price: 0, days: 30 },
             { id: 'a100m', label: 'Rp 100 Miliar', cash: 100e9, price: 0, days: 30 },
             { id: 'a500m', label: 'Rp 500 Miliar', cash: 500e9, price: 0, days: 30 },
-            { id: 'a1t', label: 'Rp 1 Triliun', cash: 1e12, price: 0, days: 30 }
+            { id: 'a1t', label: 'Rp 1 Triliun', cash: 1e12, price: 0, days: 30 },
+            { id: 'a10t', label: 'Rp 10 Triliun', cash: 10e12, price: 0, days: 30 }
         ];
-        const ADMIN_CASH_MAX = 1e12; // batas atas nominal khusus admin: 1 Triliun
+        const ADMIN_CASH_MAX = 10e12; // batas atas nominal khusus admin: 10 Triliun
         let appliedTopups = [], selTopup = null, topupBusy = false, topupUnsub = null, topupChain = Promise.resolve();
         let banUnsub = null;
         const topupInflight = new Set();
