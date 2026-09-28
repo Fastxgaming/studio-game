@@ -276,7 +276,7 @@
             const { spbu: target, truck, driver, kernet, nomorSJ } = d;
             const ids = [truck.id, driver.id, kernet.id];
             const muat = d.amount != null ? d.amount : truck.cap;
-            const info = creditKlgDelivery(target, muat);
+            const info = creditKlgDelivery(target, muat, d.neededType);
             const result = settleCrewResult(driver, kernet);
             if (result.fine) {
                 companyCash -= result.fine; totalExpense += result.fine;
@@ -284,7 +284,7 @@
             }
             // busyIds TIDAK dilepas di sini lagi - baru dilepas setelah kapal benar-benar sandar kembali di depot
             // asal (lihat animateKapalTransfer), supaya kapal tidak bisa ditugaskan dobel selagi masih berlayar pulang.
-            addLog(`TRANSFER SELESAI ${nomorSJ || ''}: ${muat.toLocaleString('id-ID')} ${target.unit} pasokan curah diturunkan di ${target.nama}. Stok kini ${Math.round(info.cur).toLocaleString()}/${info.max.toLocaleString()} ${info.unit}.`, 'success');
+            addLog(`TRANSFER SELESAI ${nomorSJ || ''}: ${muat.toLocaleString('id-ID')} ${d.neededType === 'LPG' ? 'Ton' : target.unit} pasokan curah diturunkan di ${target.nama}. Stok kini ${Math.round(info.cur).toLocaleString()}/${info.max.toLocaleString()} ${info.unit}.`, 'success');
             notify(`${truck.id} selesai bongkar muatan di ${target.nama}.`, 'ok');
             updateCashDisplay();
             renderRefineries();

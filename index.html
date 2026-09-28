@@ -133,7 +133,7 @@
             </div>
 
             <p class="text-[10px] text-gray-400 mt-6"><i class="fa-solid fa-circle-info mr-1 text-gray-500"></i>Ada tutorial singkat di dalam game untuk pemain baru.</p>
-            <p class="text-[10px] text-gray-500 mt-2">CC 2026 by Studio Game &middot; <span id="app-version-splash" class="text-cyan-300/80 font-semibold"></span></p>
+            <p class="text-[10px] text-gray-500 mt-2">&copy; 2026 by Studio Game &middot; <span id="app-version-splash" class="text-cyan-300/80 font-semibold"></span></p>
         </div>
     </div>
 
@@ -964,11 +964,12 @@
                             <span class="panel-head-ico bg-gradient-to-br from-pink-400 to-fuchsia-600 text-white"><i class="fa-solid fa-handshake"></i></span>
                             <div class="min-w-0">
                                 <h3 class="text-pink-400">Izinkan Mitra Buka SPBU Baru (DODO)</h3>
-                                <p>Setiap kota mulai dengan 3 SPBU aktif (1 COCO milik perusahaan + 2 DODO mitra yang sudah otomatis disetujui), macam-macam ada yang sudah dilengkapi Outlet LPG ada juga yang belum. Cari wilayah lalu setujui izin mitra untuk SPBU DODO lain yang masih menunggu; SPBU baru langsung muncul di peta. Mitra membayar biaya izin sekali di awal + iuran operasional tiap bulan. Menunggak lebih dari 10 hari = lisensi dicabut &amp; SPBU diblokir.</p>
+                                <p>Setiap kota mulai dengan 3 SPBU aktif (1 COCO milik perusahaan + 2 DODO mitra yang sudah otomatis disetujui), macam-macam ada yang sudah dilengkapi Outlet LPG ada juga yang belum. Pilih tab wilayah (angka = SPBU yang masih menunggu izin) atau cari, lalu setujui izin mitra untuk SPBU DODO lain yang masih menunggu; SPBU baru langsung muncul di peta. Mitra membayar biaya izin sekali di awal + iuran operasional tiap bulan. Menunggak lebih dari 10 hari = lisensi dicabut &amp; SPBU diblokir.</p>
                             </div>
                         </div>
                         <input id="mitra-q" oninput="renderMitraSearch()" placeholder="Cari kota / provinsi / nama jalan..." class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-xs text-gray-200 focus:outline-none focus:border-pink-500 mb-2">
                         <select id="mitra-lpg" onchange="renderMitraSearch()" class="w-full bg-gray-900 border border-gray-800 rounded-lg p-2 text-xs text-gray-200 mb-2"><option value="ALL">Semua jenis</option><option value="LPG">SPBU + LPG</option><option value="BBM">SPBU tanpa LPG</option></select>
+                        <div id="mitra-region-tabs" class="flex flex-wrap gap-1 mb-2 max-h-24 overflow-y-auto custom-scrollbar"></div>
                         <div id="investor-spbu-list" class="space-y-2.5 text-xs max-h-80 overflow-y-auto custom-scrollbar"></div>
                     </div>
                     <div class="bg-gray-950 p-3.5 rounded-xl border border-gray-800 shadow border-l-4 border-l-emerald-500">
