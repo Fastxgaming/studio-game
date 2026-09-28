@@ -114,8 +114,28 @@
             { const f = regFee({ cap, price }); document.getElementById('dealer-spec-price').innerHTML = formatRupiah(price) + `<br><span class="text-[10px] font-sans font-normal text-gray-400">+ Uji KIR ${formatRupiah(f.kir)} &middot; STNK ${formatRupiah(f.stnk)} &middot; Plat ${formatRupiah(f.plat)}</span><br><span class="text-[11px] font-sans text-amber-300">Total ${formatRupiah(price + f.total)}</span>`; }
 
             document.getElementById('btn-confirm-buy-truck').onclick = executeTruckPurchase;
+            renderDealerDepotOptions();
             renderDealerQty();
             document.getElementById('dealer-modal').classList.remove('hidden');
+        }
+
+        // ===== PILIH PANGKALAN DEPO SAAT BELI (supaya tidak perlu Pindah Depot satu-satu) =====
+        // Semua depo yang sudah dibeli ditampilkan. Depo tanpa mekanik tampil nonaktif (aturan pangkalan armada sama
+        // seperti Pindah Depot di tab Armada). Pilihan terakhir diingat selama sesi supaya pembelian berikutnya langsung sama.
+        let lastDealerDepotId = 'KILANG-01';
+        function dealerDepotReady(k) { return !!(k && k.is_unlocked && k.mekanikId); }
+        function renderDealerDepotOptions() {
+            const sel = document.getElementById('dealer-depot-sel'); if (!sel) return;
+            const aktif = refineryData.filter(k => k.is_unlocked);
+            const siap = aktif.filter(dealerDepotReady);
+            const pilih = siap.some(k => k.id === lastDealerDepotId) ? lastDealerDepotId : 'KILANG-01';
+            sel.innerHTML = aktif.map(k => dealerDepotReady(k)
+                ? `<option value="${k.id}" ${k.id === pilih ? 'selected' : ''}>${esc(k.nama)}</option>`
+                : `<option value="${k.id}" disabled>${esc(k.nama)} (belum ada mekanik)</option>`).join('');
+            const tanpa = aktif.length - siap.length;
+            document.getElementById('dealer-depot-hint').innerHTML = tanpa
+                ? `<span class="text-amber-400"><i class="fa-solid fa-circle-info mr-1"></i>${tanpa} depo sudah dibeli tapi belum bisa dipilih: tugaskan mekanik dulu di tab Kilang.</span>`
+                : 'Unit langsung berpangkalan di depo ini, tanpa biaya mobilisasi.';
         }
 
         // ===== BELI BORONGAN (dealer) =====
@@ -169,6 +189,12 @@
                 return;
             }
 
+            // Pangkalan yang dipilih (validasi ulang: harus depo aktif + punya mekanik, kalau tidak jatuh ke Tuban)
+            const selDepot = document.getElementById('dealer-depot-sel');
+            let depotTarget = refineryData.find(k => k.id === (selDepot && selDepot.value));
+            if (!dealerDepotReady(depotTarget)) depotTarget = refineryData[0];
+            lastDealerDepotId = depotTarget.id;
+
             companyCash -= q.total;
             totalExpense += q.total;
 
@@ -190,7 +216,7 @@
                     kelas: isKapal ? 'kapal' : 'truk',
                     status: 'Sedia',
                     plat: randomPlat,
-                    depotId: 'KILANG-01',
+                    depotId: depotTarget.id,
                     odometer: 0, banPct: 100,
                     price, kirTs: gameNow() + 182 * 86400000, stnkTs: gameNow() + STNK_PERIOD, platTs: gameNow() + PLAT_PERIOD, kirPending: null
                 };
@@ -211,8 +237,8 @@
             renderFleetDashboard();
 
             const platList = newUnits.map(u => u.plat).join(', ');
-            addLog(`BERHASIL MEMBELI ARMADA: ${qty} Unit ${name} [${platList}] ditambahkan ke garasi, berpangkalan di Kilang Tuban.${q.disc ? ` Diskon borongan ${q.disc}% (hemat ${formatRupiah(q.discAmt)}).` : ''}`, 'success');
-            showModal('Pembelian Berhasil', `${qty} Unit ${name} berhasil dibeli!<br><b>${newUnits.map(u => u.id + ' [' + u.plat + ']').join('<br>')}</b>${q.disc ? `<br><br>Diskon borongan ${q.disc}%: hemat <b>${formatRupiah(q.discAmt)}</b>.` : ''}<br><br>STNK &amp; Plat Nomor aktif <b>5 tahun</b> sejak hari ini. Silakan assign ${isKapal ? 'Nahkoda & ABK' : 'driver'} saat hendak dispatch, dan atur pangkalan depo di tab Armada.`, 'fa-circle-check');
+            addLog(`BERHASIL MEMBELI ARMADA: ${qty} Unit ${name} [${platList}] ditambahkan ke garasi, berpangkalan di ${depotTarget.nama}.${q.disc ? ` Diskon borongan ${q.disc}% (hemat ${formatRupiah(q.discAmt)}).` : ''}`, 'success');
+            showModal('Pembelian Berhasil', `${qty} Unit ${name} berhasil dibeli!<br><b>${newUnits.map(u => u.id + ' [' + u.plat + ']').join('<br>')}</b>${q.disc ? `<br><br>Diskon borongan ${q.disc}%: hemat <b>${formatRupiah(q.discAmt)}</b>.` : ''}<br><br>STNK &amp; Plat Nomor aktif <b>5 tahun</b> sejak hari ini. Pangkalan: <b>${esc(depotTarget.nama)}</b>. Silakan assign ${isKapal ? 'Nahkoda & ABK' : 'driver'} saat hendak dispatch.`, 'fa-circle-check');
         }
 
         function formatRupiah(amount) {
