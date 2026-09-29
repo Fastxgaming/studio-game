@@ -133,7 +133,10 @@
         // (bukan cuma di bawah ikon), supaya tidak menimpa/kepotong saat header pecah 2 baris.
         function positionNotifPanel() {
             const header = document.querySelector('header');
-            if (header) document.documentElement.style.setProperty('--notif-panel-top', (header.getBoundingClientRect().bottom + 6) + 'px');
+            const btn = document.querySelector('#notif-wrap > button');
+            const isMobile = window.matchMedia('(max-width: 767.98px)').matches;
+            const top = (!isMobile && btn) ? btn.getBoundingClientRect().bottom + 8 : (header ? header.getBoundingClientRect().bottom + 6 : 64);
+            document.documentElement.style.setProperty('--notif-panel-top', top + 'px');
         }
         window.addEventListener('resize', () => {
             const pn = document.getElementById('notif-panel');

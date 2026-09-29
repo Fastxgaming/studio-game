@@ -172,3 +172,26 @@
 #pause-banner i{ color:#34d399; }
 #pause-banner button{ background:#059669; color:#fff; border:0; border-radius:8px; padding:6px 12px; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap; }
 #pause-banner button:hover{ background:#047857; }
+
+
+/* ===== FIX layar laptop/PC (tinggi layar pendek) =====
+   1) Modal Dealer: isinya (spesifikasi + jumlah + depo + julukan) lebih tinggi dari layar laptop,
+      sebelumnya kepotong atas & bawah tanpa scroll. Sekarang kotak dibatasi tinggi layar & bisa di-scroll. */
+#dealer-modal .dealer-modal-box{
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #374151 transparent;
+}
+#dealer-modal .dealer-modal-box::-webkit-scrollbar{ width:6px; }
+#dealer-modal .dealer-modal-box::-webkit-scrollbar-thumb{ background:#374151; border-radius:6px; }
+@media (max-height: 800px) and (min-width: 768px){
+    #dealer-modal .dealer-modal-box{ padding: 1rem 1.25rem; }
+    #dealer-modal .dealer-modal-box > .mb-4{ margin-bottom: .6rem; }
+}
+/* 2) Panel notifikasi: selalu di atas tombol Tutorial/Jeda/dll (yang position:relative & muncul
+      setelahnya di DOM), dan tingginya menyesuaikan sisa layar. */
+#notif-wrap{ z-index:2500; }
+#notif-panel{ z-index:2600; }
