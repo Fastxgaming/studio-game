@@ -11,14 +11,15 @@
         // tab tersembunyi / pemain offline - tidak perlu logika jeda tambahan.
 
         const HULU_SITES = {
-            alpha: { nama: 'Anjungan Madura Alpha', fuel: 'oil', unit: 'Bbl', jenis: 'minyak mentah', shipType: 'BBM', icon: 'fa-oil-well', tone: 'teal',
+            alpha: { nama: 'Anjungan Madura Alpha', berth: 'AN_alpha', fuel: 'oil', unit: 'Bbl', jenis: 'minyak mentah', shipType: 'BBM', icon: 'fa-oil-well', tone: 'teal',
                      lat: -7.39984902546815, lon: 114.02713911013367, buildCost: 48e9, buildHours: 12, rate: 5000, cap: 30000, opexWeek: 9e9, minLoad: 500 },
-            bravo: { nama: 'Anjungan Madura Bravo', fuel: 'oil', unit: 'Bbl', jenis: 'minyak mentah', shipType: 'BBM', icon: 'fa-oil-well', tone: 'amber',
+            bravo: { nama: 'Anjungan Madura Bravo', berth: 'AN_bravo', fuel: 'oil', unit: 'Bbl', jenis: 'minyak mentah', shipType: 'BBM', icon: 'fa-oil-well', tone: 'amber',
                      lat: -7.47, lon: 114.10, buildCost: 88e9, buildHours: 18, rate: 9500, cap: 60000, opexWeek: 17e9, minLoad: 500 },
-            gamma: { nama: 'Anjungan Gas Madura Gamma', fuel: 'gas', unit: 'Ton', jenis: 'gas bumi (LPG Curah)', shipType: 'LPG', icon: 'fa-fire-flame-simple', tone: 'orange',
+            gamma: { nama: 'Anjungan Gas Madura Gamma', berth: 'AN_gamma', fuel: 'gas', unit: 'Ton', jenis: 'gas bumi (LPG Curah)', shipType: 'LPG', icon: 'fa-fire-flame-simple', tone: 'orange',
                      lat: -7.34, lon: 113.96, buildCost: 36e9, buildHours: 12, rate: 300, cap: 2400, opexWeek: 4.8e9, minLoad: 50 }
         };
         const HULU_KEYS = Object.keys(HULU_SITES);
+        seaValidateBerths(Object.values(HULU_SITES));
         // Koordinat di atas format Google Maps / Leaflet: lat, lon. Untuk OSRM urutannya dibalik: lon,lat
         // (Alpha = 114.02713911013367,-7.39984902546815). Bravo & Gamma ditaruh beberapa km di sekitar Alpha.
         // Titik-titik perantara di Laut Madura: kapal & pipa TIDAK boleh memotong daratan Jawa/Madura, jadi jalurnya
@@ -227,7 +228,7 @@
             if (!sSel || !nSel || !aSel) return;
             const prev = [sSel.value, nSel.value, aSel.value], unitKap = HULU_SITES[k].fuel === 'gas' ? 'Ton' : 'Bbl';
             sSel.innerHTML = ''; nSel.innerHTML = ''; aSel.innerHTML = '';
-            huluShips(k).forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.id} [${t.plat}] - ${t.cap.toLocaleString('id-ID')} ${unitKap}`; sSel.appendChild(o); });
+            huluShips(k).forEach(t => { const o = document.createElement('option'); o.value = t.id; o.textContent = `${t.id} [${t.plat}]${unitJulukan(t)} - ${t.cap.toLocaleString('id-ID')} ${unitKap}`; sSel.appendChild(o); });
             companyCrew.forEach(c => {
                 if (busyIds.has(c.id)) return;
                 const o = document.createElement('option'); o.value = c.id;
@@ -239,10 +240,12 @@
         }
         function huluUpdateEstimate() {
             const el = document.getElementById('hulu-estimate'); if (!el) return;
-            const k = huluSel, c = HULU_SITES[k], s = hs(k), dest = huluDest(k), km = huluPathKm(k);
+            const k = huluSel, c = HULU_SITES[k], s = hs(k), dest = huluDest(k), km = seaKm(c, dest.tuban);
             const kapal = companyFleet.find(t => t.id === (document.getElementById('hulu-ship') || {}).value);
             const capU = kapal ? huluShipCap(k, kapal) : 0, load = kapal ? Math.floor(Math.min(capU, s.stok, dest.room)) : 0;
-            el.innerHTML = `Jarak ke ${esc(dest.tuban.nama)}: <b>±${Math.round(km)} km laut</b> &middot; estimasi <b>${fmtJam(km / AVG_SHIP_SPEED_KMH)}</b> sekali jalan.` +
+            const plan = kapal ? shipPlan(kapal, c, dest.tuban) : null;
+            el.innerHTML = `Jarak ke ${esc(dest.tuban.nama)}: <b>±${Math.round(km)} km laut</b> &middot; estimasi <b>${fmtJam(km / (kapal ? shipSpeedKmh(kapal) : AVG_SHIP_SPEED_KMH))}</b> sekali jalan.` +
+                (plan && !plan.err ? `<br>Bahan bakar pergi-pulang: <b class="text-amber-300">${fmtN(plan.needL)} L</b> &middot; ${shipPlanText(plan)} (tangki kini ${fmtN(kapal.fuelL)} L, mesin ${shipCond(kapal)}%).` : (plan ? `<br><span class="text-red-300">${esc(plan.err)}</span>` : '')) +
                 (kapal ? `<br>Muatan kali ini: <b class="text-amber-300">${fmtN(load)} ${c.unit}</b> (kapal muat ${fmtN(capU)}, tangki anjungan ${fmtN(s.stok)}, sisa ruang ${dest.label} Tuban ${fmtN(dest.room)}).` : '');
         }
         async function huluKirim() {
@@ -257,6 +260,9 @@
             if (docBlock(kapal)) return;
             const calc = () => { const d = huluDest(k); return Math.floor(Math.min(huluShipCap(k, kapal), s.stok, d.room)); };
             const d0 = huluDest(k);
+            { const p0 = shipPlan(kapal, c, d0.tuban);
+              if (p0.err) return showModal('Pelayaran Ditolak', p0.err, 'fa-gas-pump', 'red');
+              if (companyCash < p0.cost) return showModal('Kas Tidak Cukup', `${kapal.id} butuh ${shipPlanText(p0)} sebelum berlayar, kas Anda ${formatRupiah(companyCash)}.`, 'fa-sack-dollar', 'red'); }
             if (d0.room < c.minLoad) return showModal('Tangki Tuban Penuh', `Tangki ${d0.label} Kilang Tuban hampir penuh, tidak ada ruang untuk muatan baru.`, 'fa-circle-info', 'blue');
             let amount = calc();
             if (amount < c.minLoad) return showModal('Muatan Kurang', `Stok anjungan baru ${fmtN(s.stok)} ${c.unit}. Minimal ${fmtN(c.minLoad)} ${c.unit} agar kapal berangkat.`, 'fa-circle-info', 'amber');
@@ -266,6 +272,8 @@
             if (busyIds.has(kapal.id) || busyIds.has(nahkoda.id) || busyIds.has(abk.id)) return showModal('Masih Bertugas', 'Kapal atau kru sudah dipakai tugas lain.', 'fa-ship', 'red');
             amount = calc();
             if (amount < c.minLoad) return showModal('Muatan Kurang', 'Stok anjungan atau ruang tangki Tuban berubah, muatan kini terlalu sedikit.', 'fa-circle-info', 'amber');
+            { const p1 = shipPlan(kapal, c, d0.tuban);
+              if (p1.err || !shipBunker(kapal, p1)) return showModal('Kas Tidak Cukup', p1.err || `${kapal.id} butuh ${shipPlanText(p1)} sebelum berlayar.`, 'fa-sack-dollar', 'red'); }
             s.stok -= amount; s.transit += amount;
             animateHuluTransfer({ site: k, truck: kapal, driver: nahkoda, kernet: abk, amount, epoch: huluEpoch });
             addLog(`HULU: ${kapal.id} [Nahkoda: ${nahkoda.name}] berlayar dari ${c.nama} membawa ${fmtN(amount)} ${c.unit} ${c.jenis} ke ${d0.tuban.nama}.`, 'purple');
@@ -274,7 +282,7 @@
         }
         async function animateHuluTransfer(d) {
             const { truck, driver, kernet, site } = d, c = HULU_SITES[site], tuban = refineryData[0];
-            const origin = { nama: c.nama, lat: c.lat, lon: c.lon };
+            const origin = { nama: c.nama, lat: c.lat, lon: c.lon, berth: c.berth };
             const ids = [truck.id, driver.id, kernet.id];
             ids.forEach(i => busyIds.add(i));
             populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
@@ -283,29 +291,31 @@
                            depoNama: origin.nama, tujuanNama: tuban.nama, nomorSJ: c.fuel === 'gas' ? 'GAS BUMI' : 'MINYAK MENTAH' };
             const fit = ownAnims === 1;
             const release = () => { ids.forEach(x => busyIds.delete(x)); populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard(); huluPopulateShip(); };
-            // Pelayaran per ruas lewat titik-titik jalur laut (tidak memotong daratan). rev=false: anjungan -> Tuban.
-            const sail = async (rev, fitFirst) => {
-                const pts = huluPath(site).map(x => ({ lat: x[0], lon: x[1] })); if (!rev) pts.reverse();
-                let km = 0;
-                for (let i = 1; i < pts.length; i++) { const l = await shipLeg(pts[i - 1], pts[i], meta, fitFirst && i === 1); km += l.km; }
-                return { km };
-            };
+            // Kapal berlayar di lajur pelayaran sendiri (07a-rute-laut.js) - TIDAK mengikuti garis pipa (huluPath dipakai khusus pipa).
+            // Pangkalan kapal untuk misi ini = dermaga anjungan (muat & pulang di sana); tujuan bongkar = dermaga Kilang Tuban.
+            let arrived = false;
             try {
-                const leg = await sail(false, fit);
-                addLog(`SANDAR: Kapal ${truck.id} tiba di ${tuban.nama} (±${Math.round(leg.km)} km laut), kru bongkar ${c.jenis} (±${UNLOAD_SECONDS_KAPAL} detik)...`, 'info', 'truck');
-                notify(`${truck.id} sandar di ${tuban.nama}, bongkar ${c.jenis}...`, 'info');
+                await shipDepart(truck, origin);                       // [antre] -> muat di anjungan -> lepas sandar
+                const leg = await shipSail(truck, origin, tuban, meta, fit);
+                arrived = true;
                 ownAnims = Math.max(0, ownAnims - 1);
-                await pausableDelay(UNLOAD_SECONDS_KAPAL * 1000);
-                completeHuluTransfer(d);
+                await shipCallAt(truck, tuban, UNLOAD_SECONDS_KAPAL, () => completeHuluTransfer(d), {
+                    onBerthed: () => {
+                        addLog(`SANDAR: Kapal ${truck.id} tiba di ${tuban.nama} (±${Math.round(leg.km)} km laut), kru bongkar ${c.jenis} (±${UNLOAD_SECONDS_KAPAL} detik)...`, 'info', 'truck');
+                        notify(`${truck.id} sandar di ${tuban.nama}, bongkar ${c.jenis}...`, 'info');
+                    }
+                });
                 try {
-                    await sail(true, false);
-                    addLog(`Kapal ${truck.id} [Nahkoda: ${driver.name}] kembali berlabuh di ${c.nama}.`, 'info', 'truck');
-                } catch (e) { /* animasi pulang gagal, tidak mempengaruhi stok yang sudah masuk */ }
+                    await shipSail(truck, tuban, origin, meta, false);
+                    await shipReturnHome(truck, origin);
+                    addLog(`Kapal ${truck.id} [Nahkoda: ${driver.name}] kembali berlabuh di ${c.nama}. BBM ${fmtN(truck.fuelL)} L, mesin ${shipCond(truck)}%.`, 'info', 'truck');
+                } catch (e) { /* animasi pulang gagal, tidak mempengaruhi stok yang sudah masuk */ shipAbort(truck); }
                 release();
             } catch (err) {
                 // Pelayaran gagal di tengah jalan: kembalikan muatan ke tangki anjungan agar tidak hilang.
+                shipAbort(truck);
                 if (d.epoch === huluEpoch && !d.done) { const s = hs(site); s.transit = Math.max(0, s.transit - d.amount); s.stok += d.amount; }
-                ownAnims = Math.max(0, ownAnims - 1);
+                if (!arrived) ownAnims = Math.max(0, ownAnims - 1);
                 release();
             }
         }

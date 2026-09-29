@@ -1,6 +1,6 @@
         // ===== LAYAR LOADING & PLAY GAME (sebelum Daftar/Masuk) =====
         // Satu-satunya tempat untuk update nomor versi - otomatis tampil di layar loading & layar "Main Sekarang".
-        const APP_VERSION = '1.5.0';
+        const APP_VERSION = '1.5.3';
         (function showAppVersion() {
             const label = 'v' + APP_VERSION;
             const a = document.getElementById('app-version-loading'); if (a) a.textContent = label;
@@ -157,11 +157,12 @@
             {
                 id: 'KILANG-01',
                 nama: 'Kilang Tuban',
+                berth: 'TBb', // id node dermaga di SEA_NODES (07a-rute-laut.js). null = tidak punya dermaga
                 tipe: 'Pusat Utama',
                 lat: -6.812400,
                 lon: 111.962100,
                 is_unlocked: true,
-                stok_current: 1000000,
+                stok_current: 5000000, // pemain baru mulai dengan tangki mentah Tuban penuh (save lama memakai nilainya sendiri)
                 stok_max: 5000000,
                 unit: 'Bbl',
                 harga_beli: 0,
@@ -170,6 +171,7 @@
             {
                 id: 'KILANG-02',
                 nama: 'TBBM Perak Surabaya',
+                berth: 'SBb', // id node dermaga di SEA_NODES (07a-rute-laut.js). null = tidak punya dermaga
                 tipe: 'Depo Cabang BBM',
                 lat: -7.201400,
                 lon: 112.728100,
@@ -183,6 +185,7 @@
             {
                 id: 'KILANG-03',
                 nama: 'Depo LPG Gresik',
+                berth: 'SBb', // id node dermaga di SEA_NODES (07a-rute-laut.js). null = tidak punya dermaga
                 tipe: 'Depo Cabang LPG',
                 lat: -7.151200,
                 lon: 112.651200,

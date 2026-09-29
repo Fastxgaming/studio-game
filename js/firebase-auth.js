@@ -97,6 +97,22 @@
             }
             await b.commit(); return id;
         },
+        // Pass: hanya admin yang boleh menulis (lihat firestore.rules); pemain cukup mendengarkan dokumennya sendiri.
+        adminGrantPass: async (adminUid, uid, tier, days) => {
+            const ref = doc(db, 'passes', uid), v = await getDoc(ref), cur = v.exists() && v.data().tier === tier ? (v.data().until || 0) : 0;
+            const b = writeBatch(db); b.set(ref, { tier, until: Math.max(Date.now(), cur) + days * 86400000, by: adminUid, updated: serverTimestamp() }); await b.commit();
+        },
+        listenPass: (uid, cb) => onSnapshot(doc(db, 'passes', uid), s => cb(s.exists() ? s.data() : null), e => console.warn('Listener pass:', e)),
+        // Jumlah iklan Bursa aktif milik pemain (dicek di server supaya batas slot tetap akurat walau listener Bursa sedang mati)
+        myBursaCount: uid => getDocs(query(collection(db, 'bursa'), where('sellerUid', '==', uid), where('status', '==', 'open'))).then(sn => sn.size),
+        // Isi BBL cabang (khusus admin): admin menulis perintah, klien pemain menerapkannya otomatis lalu menandai selesai.
+        adminFillBbl: async (adminUid, uid) => {
+            const id = 'FILL-' + Date.now() + '-' + uid.slice(0, 6), b = writeBatch(db);
+            b.set(doc(db, 'fills', id), { uid, type: 'bbl_cabang', claimed: false, created: serverTimestamp(), by: adminUid }); await b.commit(); return id;
+        },
+        listenFills: (uid, cb) => onSnapshot(query(collection(db, 'fills'), where('uid', '==', uid), where('claimed', '==', false)),
+            snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))), e => console.warn('Listener fills:', e)),
+        markFillClaimed: id => updateDoc(doc(db, 'fills', id), { claimed: true, claimedAt: serverTimestamp() }),
         markClaimed: id => updateDoc(doc(db, 'topups', id), { claimed: true, claimedAt: serverTimestamp() }),
         // ===== BROADCAST: notifikasi admin ke semua pemain, tersimpan permanen di Firestore =====
         // Kenapa bukan push notification (FCM)? Proyek ini belum menyiapkan service worker/VAPID key.

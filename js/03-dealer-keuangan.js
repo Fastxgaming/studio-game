@@ -114,9 +114,42 @@
             { const f = regFee({ cap, price }); document.getElementById('dealer-spec-price').innerHTML = formatRupiah(price) + `<br><span class="text-[10px] font-sans font-normal text-gray-400">+ Uji KIR ${formatRupiah(f.kir)} &middot; STNK ${formatRupiah(f.stnk)} &middot; Plat ${formatRupiah(f.plat)}</span><br><span class="text-[11px] font-sans text-amber-300">Total ${formatRupiah(price + f.total)}</span>`; }
 
             document.getElementById('btn-confirm-buy-truck').onclick = executeTruckPurchase;
+            { const jk = document.getElementById('dealer-julukan'); if (jk) jk.value = ''; }
             renderDealerDepotOptions();
             renderDealerQty();
             document.getElementById('dealer-modal').classList.remove('hidden');
+        }
+
+        // ===== PLAT NOMOR MENGIKUTI DAERAH DEPO + JULUKAN ARMADA =====
+        // Kode wilayah TNKB sesuai lokasi depo pangkalan (Tuban = S, Surabaya = L, Gresik = W, Banyuwangi = P, dst).
+        const PLAT_DAERAH = {
+            'KILANG-01': 'S',  'KILANG-02': 'L',  'KILANG-03': 'W',  'KILANG-04': 'B',  'KILANG-05': 'H',  'KILANG-06': 'D',
+            'KILANG-07': 'DK', 'KILANG-08': 'DB', 'KILANG-09': 'DN', 'KILANG-10': 'DC', 'KILANG-11': 'KT', 'KILANG-12': 'DA',
+            'KILANG-13': 'KB', 'KILANG-14': 'KH', 'KILANG-15': 'KU', 'KILANG-16': 'DD', 'KILANG-17': 'P'
+        };
+        const platKode = depotId => PLAT_DAERAH[depotId] || 'S';
+        const PLAT_HURUF = 'ABCDEFGHJKLMNPRSTUVWXYZ';
+        function buatPlat(kelas, depotId) {
+            let plat;
+            do {
+                plat = kelas === 'kapal'
+                    ? 'GT ' + Math.floor(100 + Math.random() * 900) + ' NUSA'
+                    : platKode(depotId) + ' ' + Math.floor(1000 + Math.random() * 9000) + ' ' + PLAT_HURUF[Math.floor(Math.random() * PLAT_HURUF.length)] + PLAT_HURUF[Math.floor(Math.random() * PLAT_HURUF.length)];
+            } while (companyFleet.some(t => t.plat === plat));
+            return plat;
+        }
+        // Julukan bebas (opsional), maks 24 karakter, tanpa tag HTML.
+        const cleanJulukan = v => String(v || '').replace(/<[^>]*>/g, '').replace(/[<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+        // Label unit untuk dropdown/daftar: "TRK-01 [S 1234 AB] "Si Bolang" - ..."
+        const unitJulukan = t => t && t.julukan ? ` "${t.julukan}"` : '';
+        // Save lama: plat bawaan lama ("W ####  PK") disesuaikan ke daerah depo pangkalannya.
+        function migrasiPlatDaerah() {
+            companyFleet.forEach(t => {
+                if (t.kelas === 'kapal' || !/^W \d{4} PK$/.test(t.plat || '')) return;
+                const kode = platKode(t.depotId); if (kode === 'W') return;
+                let baru; do { baru = kode + t.plat.slice(1); if (companyFleet.some(x => x !== t && x.plat === baru)) t.plat = 'W ' + Math.floor(1000 + Math.random() * 9000) + ' PK'; else break; } while (true);
+                t.plat = baru;
+            });
         }
 
         // ===== PILIH PANGKALAN DEPO SAAT BELI (supaya tidak perlu Pindah Depot satu-satu) =====
@@ -126,6 +159,7 @@
         function dealerDepotReady(k) { return !!(k && k.is_unlocked && k.mekanikId); }
         function renderDealerDepotOptions() {
             const sel = document.getElementById('dealer-depot-sel'); if (!sel) return;
+            sel.onchange = updateDealerPlatHint;
             const aktif = refineryData.filter(k => k.is_unlocked);
             const siap = aktif.filter(dealerDepotReady);
             const pilih = siap.some(k => k.id === lastDealerDepotId) ? lastDealerDepotId : 'KILANG-01';
@@ -136,6 +170,13 @@
             document.getElementById('dealer-depot-hint').innerHTML = tanpa
                 ? `<span class="text-amber-400"><i class="fa-solid fa-circle-info mr-1"></i>${tanpa} depo sudah dibeli tapi belum bisa dipilih: tugaskan mekanik dulu di tab Kilang.</span>`
                 : 'Unit langsung berpangkalan di depo ini, tanpa biaya mobilisasi.';
+            updateDealerPlatHint();
+        }
+        function updateDealerPlatHint() {
+            const el = document.getElementById('dealer-plat-hint'); if (!el) return;
+            const sel = document.getElementById('dealer-depot-sel');
+            const isKapal = pendingTruckPurchase && pendingTruckPurchase.kelas === 'kapal';
+            el.innerHTML = isKapal ? 'Kapal memakai nomor registrasi GT (bukan plat daerah).' : `Plat nomor akan berkode wilayah <b class="text-amber-400 font-mono">${platKode(sel && sel.value)}</b> sesuai daerah depo.`;
         }
 
         // ===== BELI BORONGAN (dealer) =====
@@ -199,12 +240,11 @@
             totalExpense += q.total;
 
             const isKapal = kelas === 'kapal';
+            const julukanDasar = cleanJulukan((document.getElementById('dealer-julukan') || {}).value);
             const prefix = isKapal ? 'KPL-' : 'TRK-';
             const newUnits = [];
             for (let i = 0; i < qty; i++) {
-                let randomPlat;
-                do { randomPlat = isKapal ? 'GT ' + Math.floor(100 + Math.random() * 900) + ' NUSA' : 'W ' + Math.floor(1000 + Math.random() * 9000) + ' PK'; }
-                while (companyFleet.some(t => t.plat === randomPlat));
+                const randomPlat = buatPlat(kelas, depotTarget.id);
                 let truckNo = companyFleet.length + 1;
                 while (companyFleet.some(t => t.id === prefix + String(truckNo).padStart(2, '0'))) truckNo++;
                 const newTruckId = prefix + String(truckNo).padStart(2, '0');
@@ -216,6 +256,7 @@
                     kelas: isKapal ? 'kapal' : 'truk',
                     status: 'Sedia',
                     plat: randomPlat,
+                    julukan: julukanDasar ? (qty > 1 ? cleanJulukan(julukanDasar.slice(0, 20) + ' ' + (i + 1)) : julukanDasar) : '',
                     depotId: depotTarget.id,
                     odometer: 0, banPct: 100,
                     price, kirTs: gameNow() + 182 * 86400000, stnkTs: gameNow() + STNK_PERIOD, platTs: gameNow() + PLAT_PERIOD, kirPending: null

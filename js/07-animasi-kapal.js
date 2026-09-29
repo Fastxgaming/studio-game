@@ -1,6 +1,11 @@
         // ===== ANIMASI TRUK: hanya terlihat oleh pemain yang mengirim (tidak dibagikan ke pemain lain) =====
         const flying = new Set();
         let ownAnims = 0;
+        // ===== PERJALANAN AKTIF (ikut disimpan) =====
+        // Sebelumnya perjalanan truk cuma ada di memori: refresh/tutup tab membuat truk "lupa" sedang jalan, padahal stok
+        // kilang sudah terpotong & pesanan SPBU masih ditandai inTransit -> muatan hilang, pesanan nyangkut.
+        // Sekarang tiap perjalanan dicatat di activeTrips (id saja, bukan objek) dan dipulihkan lewat resumeTrips() saat save dimuat.
+        const activeTrips = new Map();
         // Bug fix: sebelumnya truk/kapal yang sudah tiba kembali di depot langsung dihapus total dari peta (marker +
         // bekas rute lenyap begitu saja). Sekarang truk milik sendiri "diparkir" sebagai titik kecil di lokasi
         // terakhirnya (depot) sampai truk itu ditugaskan berangkat lagi, supaya tidak terasa tiba-tiba menghilang.
@@ -15,8 +20,10 @@
                     <strong class="text-xs font-bold block text-blue-700 mb-1">${esc(label)}${e.plat ? ' · ' + esc(e.plat) : ''}</strong>
                     <div class="text-[10px] text-gray-600 leading-4">Depo: <b>${esc(e.depoNama || '-')}</b></div>
                     <div class="text-[10px] text-gray-600 leading-4">Tujuan: <b>${esc(e.tujuanNama || '-')}</b></div>
-                    <div class="text-[10px] text-gray-600 leading-4">Speed: <b>${e.speedKmh ? Math.round(e.speedKmh) + ' km/j' : '-'}</b></div>
+                    <div class="text-[10px] text-gray-600 leading-4">Speed: <b>${e.halted ? '0 km/j' : e.speedKmh ? Math.round(e.speedKmh) + ' km/j' : '-'}</b></div>
+                    ${e.halted ? `<div class="text-[10px] text-amber-600 font-bold leading-4">⛈ Ditahan ${esc(e.halted)} - menunggu cuaca membaik</div>` : ''}
                     <div class="text-[10px] text-gray-600 leading-4">Surat Jalan: <b>${esc(e.nomorSJ || '-')}</b></div>
+                    ${isKapal && typeof shipInfoHtml === 'function' ? shipInfoHtml(e.id) : ''}
                 </div>
             `;
         }
@@ -67,13 +74,41 @@
         function flyLoop() {
             const now = vNow();
             flying.forEach(t => {
-                const f = Math.min(1, (now - t.e.startAt) / t.e.dur);
+                // Kapal ditahan cuaca buruk: jam perjalanan kapal ini dibekukan (haltAt), lalu dilanjutkan dari titik yang sama
+                // saat cuaca membaik (waktu tertahan dijumlahkan ke t.stall) - posisi, sisa jarak & ETA tidak loncat.
+                if (t.e.vehicle === 'kapal') {
+                    const hold = seaHalted();
+                    const ic = () => t.marker.getElement() && t.marker.getElement().querySelector('.truck-ico');
+                    if (hold && t.haltAt == null) {
+                        t.haltAt = now; t.e.halted = seaStormLabel(); t.baseSpd = t.e.speedKmh; t.e.speedKmh = 0;
+                        t.marker.setTooltipContent(esc(`${t.remote ? t.e.owner + ' · ' : ''}Kapal · ${t.e.id} · ⛈ ditahan ${t.e.halted.toLowerCase()}`));
+                        if (ic()) ic().style.filter = 'grayscale(.7) brightness(.8)';
+                        if (!t.remote) addLog(`CUACA: Kapal ${t.e.id} berhenti di tengah laut karena ${t.e.halted.toLowerCase()}, menunggu cuaca membaik sebelum melanjutkan pelayaran.`, 'warning', 'truck');
+                    } else if (!hold && t.haltAt != null) {
+                        t.stall = (t.stall || 0) + (now - t.haltAt); t.haltAt = null; t.e.halted = null; t.e.speedKmh = t.baseSpd;
+                        t.marker.setTooltipContent(esc(`${t.remote ? t.e.owner + ' · ' : ''}Kapal · ${t.e.id} · ${t.e.plat}`));
+                        if (ic()) ic().style.filter = '';
+                        if (!t.remote) addLog(`CUACA: Cuaca membaik, kapal ${t.e.id} melanjutkan pelayaran dari posisi terakhir.`, 'success', 'truck');
+                    }
+                    if (t.haltAt != null) return; // tertahan: posisi tidak berubah
+                }
+                const f = Math.min(1, (now - (t.stall || 0) - t.e.startAt) / t.e.dur);
                 if (t.e.vehicle === 'truck' && f < 1) t.e.speedKmh = liveSpeedKmh(t, now);
-                const { i, ll } = posAt(t.pts, t.cum, f * t.total);
+                const sd = (t.e.ease ? seaEase(f) : f) * t.total;
+                const { i, ll } = posAt(t.pts, t.cum, sd);
                 t.marker.setLatLng(ll);
                 const tf = t.marker.getElement() && t.marker.getElement().querySelector('.tf');
                 const dLon = t.pts[Math.min(i + 1, t.pts.length - 1)][1] - t.pts[i][1];
-                if (tf && Math.abs(dLon) > 1e-5) tf.style.transform = dLon < 0 ? 'scaleX(-1)' : '';
+                if (tf && t.e.ease) {
+                    // Haluan kapal: arah diambil sedikit ke depan lalu diperhalus (lerp) supaya tidak menyentak di belokan.
+                    const ah = posAt(t.pts, t.cum, Math.min(t.total, sd + 4)).ll, dx = (ah[1] - ll[1]) * Math.cos(ll[0] * Math.PI / 180), dy = ah[0] - ll[0];
+                    if (Math.abs(dx) + Math.abs(dy) > 1e-7) {
+                        if (Math.abs(dx) > 1e-5) t.flip = dx < 0;
+                        const tgt = Math.atan2(dy, Math.abs(dx)) * 180 / Math.PI;
+                        t.tilt = (t.tilt || 0) + (tgt - (t.tilt || 0)) * 0.08;
+                    }
+                    tf.style.transform = `rotate(${(t.flip ? 1 : -1) * (t.tilt || 0)}deg) ${t.flip ? 'scaleX(-1)' : ''}`;
+                } else if (tf && Math.abs(dLon) > 1e-5) tf.style.transform = dLon < 0 ? 'scaleX(-1)' : '';
                 if (now - t.lastTrail > 150 || f === 1) {
                     // trail (solid, terang) = jejak yang SUDAH dilalui truk, dari titik berangkat sampai posisi sekarang.
                     t.trail.setLatLngs(t.pts.slice(0, i + 1).concat([ll]));
@@ -97,12 +132,13 @@
                         // MAUPUN saat sudah kembali ke depot asal. Otomatis dibersihkan sendiri saat truk ini
                         // ditugaskan berangkat lagi (lihat launchTruck).
                         if (parkedMarkers.has(t.e.id)) map.removeLayer(parkedMarkers.get(t.e.id));
-                        const finalLL = t.pts[t.pts.length - 1];
+                        const finalLL = (t.e.vehicle === 'kapal' && typeof shipParkLL === 'function' && shipParkLL(t.e.id)) || t.pts[t.pts.length - 1];
                         const parked = L.marker(finalLL, {
                             icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div class="truck-ico ${t.isBoat ? 'boat' : ''}" style="background:${t.color};opacity:.6;width:26px;height:26px"><span class="tf"><i class="fa-solid fa-${t.isBoat ? 'ship' : 'truck'}"></i></span></div>` }),
                             zIndexOffset: 300
                         }).addTo(map);
-                        parked.bindTooltip(esc(`${t.e.id} · terparkir/bongkar muatan`), { direction: 'top', offset: [0, -14], className: 'truck-tip' });
+                        parked.bindTooltip(esc(`${t.e.id} · ${t.e.vehicle === 'kapal' && typeof shipStateLabel === 'function' ? shipStateLabel(t.e.id) : 'terparkir/bongkar muatan'}`), { direction: 'top', offset: [0, -14], className: 'truck-tip' });
+                        if (t.e.vehicle === 'kapal') parked.bindPopup(() => truckInfoPopupHtml(t.e), { className: 'truck-info-popup', closeButton: true, maxWidth: 220 });
                         parkedMarkers.set(t.e.id, parked);
                     }
                 }, 4000);
@@ -123,7 +159,7 @@
                 const t = launchTruck(e, false);
                 if (!t) { resolve(); return; }
                 if (fit) map.fitBounds(t.line.getBounds(), { padding: [50, 50], maxZoom: 11 });
-                t.done = () => resolve();
+                t.done = () => resolve(t);
             });
         }
         // Satu ruas perjalanan darat, mengikuti SATU jalur nyata apa adanya dari OSRM (fitur pilihan Rute
@@ -151,11 +187,7 @@
         // Pelayaran langsung Kilang Pusat <-> Depo Cabang Pesisir (kapal tanker curah): garis lurus laut, TIDAK lewat
         // logika jalan darat/ferry pulau seperti journey() di bawah - kapal tanker niaga jalan sendiri lewat rute laut.
         async function shipLeg(from, to, meta, fit) {
-            const pts = [[from.lat, from.lon], [to.lat, to.lon]];
-            const total = distKm(from, to);
-            const dur = (total / AVG_SHIP_SPEED_KMH) * (3600000 / GAME_SPEED);
-            await runVehicleLeg(pts, dur, { ...meta, vehicle: 'kapal', speedKmh: AVG_SHIP_SPEED_KMH }, fit);
-            return { km: total, dur };
+            return await shipVoyage(from, to, meta, fit); // lihat 07a-rute-laut.js
         }
         // Satu perjalanan lengkap dari titik A ke titik B, otomatis menyisipkan penyeberangan ferry bila beda pulau.
         // Alur: [darat ke pelabuhan] -> antre masuk kapal -> [penyeberangan] -> kapal sandar & antre turun -> [darat ke tujuan].
@@ -186,6 +218,39 @@
             addLog(`LANJUT PERJALANAN: ${meta.id} melanjutkan jalan darat dari ${arrPort.name} menuju ${to.nama} (±${Math.round(l3.km)} km).`, 'info', 'truck');
             return km;
         }
+        // ===== PULIHKAN PERJALANAN SETELAH REFRESH / MUAT SAVE =====
+        // 1) Selaraskan pesanan: inTransit tiap pesanan = total kapasitas truk yang MASIH benar-benar dalam perjalanan menurut save
+        //    (ini sekaligus membersihkan pesanan "nyangkut" dari save lama yang belum punya data perjalanan).
+        // 2) Jalankan lagi animasi tiap perjalanan dari fase terakhirnya (posisi persis di peta tidak disimpan: rute diulang dari depo).
+        //    Stok kilang TIDAK dipotong lagi karena sudah terpotong saat surat jalan ditandatangani.
+        function resumeTrips(list) {
+            const found = [];
+            (list || []).forEach(t => {
+                if (!t || t.ph === 'kembali') return;   // pendapatan sudah cair, truk tinggal pulang: cukup bebas di depot
+                const spbu = loadedSpbuList.find(x => x.kode === t.sp), truck = companyFleet.find(x => x.id === t.t),
+                      driver = companyCrew.find(x => x.id === t.dr), kernet = companyCrew.find(x => x.id === t.kn),
+                      origin = refineryData.find(x => x.id === t.o);
+                if (spbu && truck && driver && kernet && origin) found.push({ t, spbu, truck, driver, kernet, origin });
+            });
+            const expect = new Map();
+            found.forEach(f => { const fid = orderFuelIdFor(f.truck, f.t.jm); if (fid) { const k = f.spbu.kode + '|' + fid; expect.set(k, (expect.get(k) || 0) + f.truck.cap); } });
+            orders.forEach(o => {
+                const n = expect.get(o.kode + '|' + o.fuel) || 0;
+                o.inTransit = n;
+                if (!n && (o.tahap === 'muat' || o.tahap === 'berangkat' || o.tahap === 'tiba' || o.tahap === 'bongkar')) o.tahap = null;
+            });
+            renderOrders();
+            if (!found.length) return;
+            setTimeout(() => {
+                if (!currentAccount) return;
+                found.forEach(f => {
+                    if (busyIds.has(f.truck.id) || busyIds.has(f.driver.id) || busyIds.has(f.kernet.id)) return;
+                    animateDelivery({ spbu: f.spbu, truck: f.truck, driver: f.driver, kernet: f.kernet, origin: f.origin, jenisMuatan: f.t.jm, kapKey: f.t.kk || undefined,
+                                      hargaPerUnit: f.t.hp, nomorSJ: f.t.no, km: f.t.km || 0, silent: true, resume: f.t.ph });
+                });
+                addLog(`PEMULIHAN: ${found.length} perjalanan armada yang sedang berjalan sebelum game dimuat ulang dilanjutkan.`, 'info', 'truck');
+            }, 1500);
+        }
         async function animateDelivery(d) {
             const { spbu, truck, driver, kernet, origin: origin0 } = d;
             const ids = [truck.id, driver.id, kernet.id];
@@ -197,16 +262,29 @@
             const meta = { id: truck.id, plat: truck.plat, type: truck.type, owner: currentAccount ? currentAccount.company : 'Pemain',
                            depoNama: origin.nama, tujuanNama: spbu.nama, nomorSJ: d.nomorSJ };
             const fit = ownAnims === 1;
+            const rs = d.resume || null;   // fase saat save terakhir (hanya terisi kalau perjalanan ini dipulihkan setelah refresh)
+            const trip = { sp: spbu.kode, t: truck.id, dr: driver.id, kn: kernet.id, o: origin.id, jm: d.jenisMuatan, kk: d.kapKey || null, hp: d.hargaPerUnit, no: d.nomorSJ, km: d.km || 0, ph: rs || 'muat' };
+            activeTrips.set(truck.id, trip);
+            const endTrip = () => { if (activeTrips.get(truck.id) === trip) activeTrips.delete(truck.id); };
             try {
-                // FASE MUAT: kru memuat kargo di kilang/depo asal dulu (pasangan dari fase bongkar), baru truk berangkat.
-                // Stok kilang sudah dikurangi saat surat jalan ditandatangani; di sini hanya jeda waktu muat + status pesanan.
-                updateOrderTahap(spbu, truck, d.jenisMuatan, 'muat');
-                addLog(`MUAT: ${truck.id} [Supir: ${driver.name}] sedang dimuati ${d.jenisMuatan} (${truck.cap} ${truck.type === 'LPG' ? 'Ton' : 'KL'}) di ${origin.nama} (±${LOAD_SECONDS} detik)...`, 'info', 'truck');
-                notify(`${truck.id} sedang memuat ${d.jenisMuatan} di ${origin.nama}...`, 'info');
-                await pausableDelay(LOAD_SECONDS * 1000);
-                updateOrderTahap(spbu, truck, d.jenisMuatan, 'berangkat');
-                addLog(`BERANGKAT: ${truck.id} [Supir: ${driver.name}] selesai muat & berangkat membawa ${d.jenisMuatan} ke ${spbu.nama}.`, 'info', 'truck');
-                d.km = await journey(origin, spbu, meta, fit);
+                if (rs === 'tiba' || rs === 'bongkar') {
+                    // Sudah sampai di SPBU saat save terakhir: tidak perlu jalan lagi, langsung lanjut bongkar.
+                    d.km = d.km || 0;
+                    addLog(`PEMULIHAN: ${truck.id} [Supir: ${driver.name}] dilanjutkan dari ${spbu.nama} setelah game dimuat ulang.`, 'info', 'truck');
+                } else {
+                    if (!rs || rs === 'muat') {
+                        // FASE MUAT: kru memuat kargo di kilang/depo asal dulu (pasangan dari fase bongkar), baru truk berangkat.
+                        // Stok kilang sudah dikurangi saat surat jalan ditandatangani; di sini hanya jeda waktu muat + status pesanan.
+                        updateOrderTahap(spbu, truck, d.jenisMuatan, 'muat');
+                        addLog(`${rs ? 'PEMULIHAN - ' : ''}MUAT: ${truck.id} [Supir: ${driver.name}] sedang dimuati ${d.jenisMuatan} (${truck.cap} ${truck.type === 'LPG' ? 'Ton' : 'KL'}) di ${origin.nama} (±${LOAD_SECONDS} detik)...`, 'info', 'truck');
+                        notify(`${truck.id} sedang memuat ${d.jenisMuatan} di ${origin.nama}...`, 'info');
+                        await pausableDelay(LOAD_SECONDS * 1000);
+                    }
+                    updateOrderTahap(spbu, truck, d.jenisMuatan, 'berangkat');
+                    addLog(`${rs ? 'PEMULIHAN - ' : ''}BERANGKAT: ${truck.id} [Supir: ${driver.name}] ${rs ? 'melanjutkan perjalanan dari ' + origin.nama + ' membawa' : 'selesai muat & berangkat membawa'} ${d.jenisMuatan} ke ${spbu.nama}.`, 'info', 'truck');
+                    d.km = await journey(origin, spbu, meta, fit);
+                }
+                trip.km = d.km;
                 updateOrderTahap(spbu, truck, d.jenisMuatan, 'tiba');
                 addLog(`TIBA: ${truck.id} [Supir: ${driver.name}] sampai di ${spbu.nama}. Kru bersiap bongkar muatan (±${UNLOAD_SECONDS} detik)...`, 'info', 'truck');
                 notify(`${truck.id} tiba di ${spbu.nama}, sedang bongkar muatan...`, 'info');
@@ -214,6 +292,7 @@
                 updateOrderTahap(spbu, truck, d.jenisMuatan, 'bongkar');
                 await pausableDelay(UNLOAD_SECONDS * 1000);
                 {
+                    trip.ph = 'kembali';   // ditandai SEBELUM pendapatan cair (satu langkah sinkron) supaya save tidak pernah membayar dua kali
                     completeUnloading(d);
                     // Animasi truk/kapal berjalan balik ke depot asal setelah bongkar muatan tuntas (lewat ferry lagi bila perlu).
                     // PENTING: truk/supir/kernet baru dibebaskan (busyIds) SETELAH benar-benar tiba di depot di bawah ini,
@@ -223,11 +302,11 @@
                         await journey(spbu, origin, meta, false);
                         addLog(`TIBA DI DEPOT: ${truck.id} [Supir: ${driver.name}] kembali ke ${origin.nama} setelah selesai bongkar muatan.`, 'info', 'truck');
                     } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi keuangan yang sudah cair */ }
-                    ids.forEach(x => busyIds.delete(x));
+                    ids.forEach(x => busyIds.delete(x)); endTrip();
                     populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard(); renderOrders();
                 }
             } catch (err) {
-                ids.forEach(x => busyIds.delete(x));
+                ids.forEach(x => busyIds.delete(x)); endTrip();
                 populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard(); renderOrders();
                 ownAnims = Math.max(0, ownAnims - 1);
             }
@@ -245,29 +324,39 @@
             const meta = { id: truck.id, plat: truck.plat, type: truck.type, owner: currentAccount ? currentAccount.company : 'Pemain',
                            depoNama: origin.nama, tujuanNama: target.nama, nomorSJ: d.nomorSJ };
             const fit = ownAnims === 1;
+            let arrived = false;
             try {
-                const leg = await shipLeg(origin, target, meta, fit);
+                // Tahap 3+4: standby -> [antre] -> muat -> lepas sandar -> berlayar -> [antre labuh] -> sandar -> bongkar -> lepas sandar
+                await shipDepart(truck, origin);
+                const rt = seaRoute(origin, target);
+                if (rt) addLog(`BERLAYAR: Kapal ${truck.id} [Nahkoda: ${driver.name}] dari ${origin.nama} menuju ${target.nama} (±${Math.round(rt.km)} km laut &middot; estimasi ${fmtJam(rt.km / shipSpeedKmh(truck))} pelayaran).`, 'info', 'truck');
+                const leg = await shipSail(truck, origin, target, meta, fit);
                 d.km = leg.km;
-                addLog(`BERLAYAR: Kapal ${truck.id} [Nahkoda: ${driver.name}] dari ${origin.nama} menuju ${target.nama} (±${Math.round(leg.km)} km laut &middot; estimasi ${fmtJam(leg.dur * GAME_SPEED / 3600000)} pelayaran).`, 'info', 'truck');
-                addLog(`SANDAR: Kapal ${truck.id} tiba &amp; sandar di ${target.nama}, kru bongkar muatan curah (±${UNLOAD_SECONDS_KAPAL} detik)...`, 'info', 'truck');
-                notify(`${truck.id} sandar di ${target.nama}, sedang bongkar muatan curah...`, 'info');
+                arrived = true;
                 ownAnims = Math.max(0, ownAnims - 1);
-                await pausableDelay(UNLOAD_SECONDS_KAPAL * 1000);
-                {
-                    completeKapalTransfer(d);
-                    // PENTING: sama seperti truk darat - busyIds baru dilepas SETELAH kapal benar-benar sandar
-                    // kembali di depot asal, supaya kapal tidak bisa dipakai lagi selagi masih berlayar pulang.
-                    try {
-                        await shipLeg(target, origin, meta, false);
-                        addLog(`TIBA DI DEPOT: Kapal ${truck.id} [Nahkoda: ${driver.name}] kembali berlabuh di ${origin.nama} setelah selesai bongkar muatan.`, 'info', 'truck');
-                    } catch (e) { /* animasi balik gagal dimuat, tidak mempengaruhi stok yang sudah masuk */ }
-                    ids.forEach(x => busyIds.delete(x));
-                    populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
-                }
-            } catch (err) {
+                await shipCallAt(truck, target, UNLOAD_SECONDS_KAPAL, () => completeKapalTransfer(d), {
+                    onBerthed: () => {
+                        addLog(`SANDAR: Kapal ${truck.id} sandar di ${target.nama}, kru bongkar muatan curah (±${UNLOAD_SECONDS_KAPAL} detik)...`, 'info', 'truck');
+                        notify(`${truck.id} sandar di ${target.nama}, sedang bongkar muatan curah...`, 'info');
+                    }
+                });
+                // PENTING: sama seperti truk darat - busyIds baru dilepas SETELAH kapal benar-benar sandar
+                // kembali di depot asal, supaya kapal tidak bisa dipakai lagi selagi masih berlayar pulang.
+                try {
+                    await shipSail(truck, target, origin, meta, false);
+                    await shipReturnHome(truck, origin);
+                    addLog(`TIBA DI DEPOT: Kapal ${truck.id} [Nahkoda: ${driver.name}] kembali berlabuh di ${origin.nama} setelah selesai bongkar muatan. BBM ${fmtN(truck.fuelL)} L, mesin ${shipCond(truck)}%.`, 'info', 'truck');
+                } catch (e) { /* pelayaran pulang gagal, tidak mempengaruhi stok yang sudah masuk */ shipAbort(truck); }
                 ids.forEach(x => busyIds.delete(x));
                 populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
-                ownAnims = Math.max(0, ownAnims - 1);
+            } catch (err) {
+                // Pelayaran gagal sebelum muatan turun: lepas reservasi & kembalikan muatan ke Tuban (sebelumnya hilang begitu saja).
+                shipAbort(truck);
+                releaseIncoming(d);
+                if (!d.credited && d.refund) { d.refund(); renderRefineries(); addLog(`PELAYARAN GAGAL: Kapal ${truck.id} tidak bisa berlayar ke ${target.nama}. Muatan dikembalikan ke Kilang Tuban.`, 'warning'); }
+                ids.forEach(x => busyIds.delete(x));
+                populateTruckDropdowns(); populateCrewDropdowns(); renderDriversDashboard(); renderFleetDashboard();
+                if (!arrived) ownAnims = Math.max(0, ownAnims - 1);
             }
         }
 
@@ -277,6 +366,7 @@
             const ids = [truck.id, driver.id, kernet.id];
             const muat = d.amount != null ? d.amount : truck.cap;
             const info = creditKlgDelivery(target, muat, d.neededType);
+            d.credited = true; releaseIncoming(d); // muatan sudah masuk tangki: lepas reservasi ruang
             const result = settleCrewResult(driver, kernet);
             if (result.fine) {
                 companyCash -= result.fine; totalExpense += result.fine;

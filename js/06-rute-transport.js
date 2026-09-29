@@ -161,6 +161,7 @@
         // Perbarui fase perjalanan ('muat'|'berangkat'|'tiba'|'bongkar') pada pesanan SPBU terkait sebuah pengiriman,
         // kalau pesanannya masih ada & masih terbuka. Dipanggil dari animateDelivery saat truk tiba & mulai bongkar.
         function updateOrderTahap(spbu, truck, jenisMuatan, tahap) {
+            const tr = activeTrips.get(truck.id); if (tr) tr.ph = tahap; // ikut disimpan supaya perjalanan bisa dipulihkan setelah refresh
             truckFase.set(truck.id, tahap); // dipakai bar status armada & penanda unit di tab Pesanan SPBU
             const fuelId = orderFuelIdFor(truck, jenisMuatan);
             const o = fuelId ? orders.find(x => x.kode === spbu.kode && x.fuel === fuelId && x.status === 'open') : null;
@@ -206,11 +207,14 @@
             animateDelivery(d);
             renderOrders();
             addLog(`SURAT JALAN ${nomorSJ}: Armada ${truck.id} [Supir: ${driver.name}] DITANDATANGANI. Kru mulai memuat ${jenisMuatan} untuk ${spbu.nama} (±${LOAD_SECONDS} detik) sebelum berangkat.`, 'info', 'truck');
-            showModal('Proses Muat Dimulai', `Surat Jalan ${nomorSJ} telah ditandatangani. Kru memuat ${jenisMuatan} ke truk ${truck.id} (±${LOAD_SECONDS} detik), lalu truk berangkat ke ${spbu.nama}.\nPendapatan akan cair otomatis setelah truk tiba di tujuan dan kru selesai bongkar muatan (±${UNLOAD_SECONDS} detik setelah tiba).`, 'fa-truck-ramp-box', 'blue');
+            if (!d.silent) showModal('Proses Muat Dimulai', `Surat Jalan ${nomorSJ} telah ditandatangani. Kru memuat ${jenisMuatan} ke truk ${truck.id} (±${LOAD_SECONDS} detik), lalu truk berangkat ke ${spbu.nama}.\nPendapatan akan cair otomatis setelah truk tiba di tujuan dan kru selesai bongkar muatan (±${UNLOAD_SECONDS} detik setelah tiba).`, 'fa-truck-ramp-box', 'blue');
         }
 
         // DISPATCH LPG
         function dispatchLPGToSpbu() {
+            // Semua pilihan ditentukan otomatis (lihat planDispatchAuto). Hitung ulang saat tombol ditekan supaya data selalu segar.
+            const plan = refreshDispatchAuto('LPG');
+            if (!plan.ok) return showModal('Belum Bisa Dispatch', plan.reason + (plan.tip ? ' ' + plan.tip : ''), 'fa-circle-info', 'amber');
             const kodeSpbu = document.getElementById('lpg-spbu-select').value;
             const truckId = document.getElementById('lpg-truck-select').value;
             const driverId = document.getElementById('lpg-driver-select').value;
@@ -237,6 +241,7 @@
             const origin = pickOrigin('LPG', spbu, truck.cap, truck, 'lpg_tabung');
             if (!origin) return showModal('Stok LPG Tabung Kurang', `Tidak ada kilang/depo aktif dengan stok LPG Tabung cukup untuk ${truck.cap} Ton. Konversi LPG Curah jadi LPG Tabung di tab Kilang (tombol Konversi), atau transfer stok LPG ke depo.`, 'fa-fire-flame-simple', 'red');
 
+            notifyAsalBeda(truck, origin, lpgType);
             const d = { spbu, truck, driver, kernet, origin, jenisMuatan: lpgType, kapKey: 'lpg_tabung', hargaPerUnit: ECO.jualTon };
             openSuratJalanModal({ mode: 'LPG', tujuanNama: spbu.nama, tujuanKode: spbu.kode, jenisMuatan: lpgType, volumeText: `${truck.cap} Ton`, truck, driver, kernet,
                 execute: (no) => {
@@ -244,6 +249,9 @@
                     const sl = origin.kap && origin.kap.lpg_tabung;
                     if (!sl || sl.cur < truck.cap) return showModal('Stok LPG Tabung Kurang', `Stok LPG Tabung ${origin.nama} tidak cukup untuk ${truck.cap} Ton.`, 'fa-triangle-exclamation', 'red');
                     settleTruckDelivery(no, d);
+                    // Setelah truk berangkat, kembali ke daftar Pesanan SPBU (pesanan yang baru dikirim pindah ke "Dalam perjalanan").
+                    dispatchFocus.LPG = null;
+                    switchTab('tab-orders');
                 } });
         }
 
@@ -403,27 +411,12 @@
             return 12742 * Math.asin(Math.sqrt(h));
         }
 
-        // ===== DETEKSI AKSES PELABUHAN (OTOMATIS DARI LAT/LON) =====
-        // Titik acuan kota-kota pesisir besar se-Indonesia. Kilang/Depo dianggap "punya akses laut" (coastal)
-        // kalau jaraknya ke titik acuan terdekat di bawah COASTAL_THRESHOLD_KM - dipakai buat nentuin apakah
-        // sebuah cabang bisa dilayani kapal tanker, atau cuma bisa lewat darat pakai truk.
-        const COASTAL_ANCHORS = [
-            { name: 'Tuban', lat: -6.8979, lon: 112.0649 },
-            { name: 'Jakarta/Tanjung Priok', lat: -6.10, lon: 106.88 }, { name: 'Semarang', lat: -6.95, lon: 110.43 },
-            { name: 'Surabaya', lat: -7.20, lon: 112.75 }, { name: 'Banyuwangi', lat: -8.22, lon: 114.37 },
-            { name: 'Denpasar/Bali', lat: -8.55, lon: 115.22 }, { name: 'Makassar', lat: -5.13, lon: 119.43 },
-            { name: 'Balikpapan', lat: -1.27, lon: 116.83 }, { name: 'Banjarmasin', lat: -3.32, lon: 114.59 },
-            { name: 'Pontianak', lat: -0.02, lon: 109.34 }, { name: 'Tarakan', lat: 3.30, lon: 117.63 },
-            { name: 'Bitung', lat: 1.45, lon: 125.18 }, { name: 'Donggala', lat: -0.68, lon: 119.75 },
-            { name: 'Mamuju', lat: -2.68, lon: 118.89 }, { name: 'Belawan/Medan', lat: 3.78, lon: 98.68 },
-            { name: 'Palembang', lat: -2.99, lon: 104.76 }, { name: 'Padang', lat: -0.95, lon: 100.35 },
-            { name: 'Dumai', lat: 1.68, lon: 101.45 }, { name: 'Jayapura', lat: -2.53, lon: 140.72 },
-            { name: 'Ambon', lat: -3.70, lon: 128.18 }, { name: 'Kupang', lat: -10.17, lon: 123.61 }
-        ];
-        const COASTAL_THRESHOLD_KM = 40;
+        // ===== AKSES PELABUHAN: SATU SUMBER KEBENARAN = field `berth` =====
+        // Tiap Kilang/Depo/Anjungan punya field `berth` = id node dermaga di SEA_NODES (07a-rute-laut.js),
+        // atau null kalau tidak punya dermaga (hanya bisa dilayani jalur darat). Tidak ada lagi deteksi
+        // otomatis lewat jarak ke kota pesisir atau pencocokan nama - dua cara itu pernah saling bertentangan.
         function isCoastal(entity) {
-            if (!entity || entity.lat == null || entity.lon == null) return false;
-            return COASTAL_ANCHORS.some(a => distKm(entity, a) <= COASTAL_THRESHOLD_KM);
+            return !!(entity && entity.berth);
         }
 
         // ===== PENYEBERANGAN FERRY ANTAR PULAU =====
@@ -500,13 +493,24 @@
             // karena BBL mentah & BBM jadi per-jenis adalah dua pool stok yang berbeda.
             const cukupBBM = k => !kapKey ? k.stok_current >= stokNeed(k, cap) : !!(k.kap && k.kap[kapKey] && k.kap[kapKey].cur >= cap);
             const ok = refineryData.filter(k => k.is_unlocked && (k.tipe.includes('Pusat') || k.tipe.includes(type)) && (!cap || (type === 'BBM' ? cukupBBM(k) : (type === 'LPG' && kapKey) ? !!(k.kap && k.kap[kapKey] && k.kap[kapKey].cur >= cap) : true)));
-            // Utamakan kilang/depo yang jadi "wilayah" (radius terdekat) SPBU ini UNTUK JENIS PRODUK INI -
-            // lihat recomputeWilayah(). Dipisah per jenis (BBM/LPG) karena depo cabang bisa cuma khusus salah satunya.
+            // URUTAN PRIORITAS ASAL BERANGKAT:
+            //  1) Depo PANGKALAN truk itu sendiri (truck.depotId) - unit yang sudah ada di depo/cabang berangkat dari sana,
+            //     BUKAN dari kilang wilayah SPBU (dulu wilayah didahulukan, sehingga truk cabang malah berangkat dari Tuban).
+            //  2) Kalau depo pangkalan tidak memenuhi syarat (stok jenis produk kurang / tidak melayani jenis ini),
+            //     baru pakai depo wilayah SPBU untuk jenis produk ini (lihat recomputeWilayah()).
+            //  3) Terakhir, depo terdekat yang memenuhi syarat.
+            if (truck && truck.depotId) { const home = ok.find(k => k.id === truck.depotId); if (home) return home; }
             const wilayahId = type === 'LPG' ? spbu.wilayahLpgId : spbu.wilayahBbmId;
             if (wilayahId) { const near = ok.find(k => k.id === wilayahId); if (near) return near; }
-            // Kalau depo wilayah tidak memenuhi syarat (mis. stok kurang), baru coba depo pangkalan (home base) truk itu sendiri.
-            if (truck && truck.depotId) { const home = ok.find(k => k.id === truck.depotId); if (home) return home; }
             return ok.reduce((best, k) => (!best || distKm(k, spbu) < distKm(best, spbu)) ? k : best, null);
+        }
+
+        // Beri tahu pemain kalau truk TIDAK berangkat dari depo pangkalannya (mis. stok produk di depo itu kurang).
+        function notifyAsalBeda(truck, origin, jenis) {
+            if (!truck || !origin || !truck.depotId || truck.depotId === origin.id) return;
+            const home = refineryData.find(k => k.id === truck.depotId);
+            const msg = `${truck.id} berpangkalan di ${home ? home.nama : '-'}, tapi stok ${jenis} di sana kurang, jadi muatan diambil dari ${origin.nama}.`;
+            addLog('ASAL BERANGKAT: ' + msg, 'warning', 'truck'); notify(msg, 'warn');
         }
 
         // Cadangan bila layanan rute tidak terjangkau: jalur berkelok perkiraan (bukan garis lurus)

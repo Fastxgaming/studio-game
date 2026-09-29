@@ -142,7 +142,8 @@
                     <div class="flex justify-between items-center border-b border-gray-800 pb-2">
                         <div>
                             <span class="text-[10px] font-mono bg-blue-900/40 text-blue-400 px-1.5 py-0.5 rounded border border-blue-800">${trk.id}</span>
-                            <h4 class="font-bold text-gray-200 text-xs inline-block ml-1.5">${trk.name}</h4>
+                            <h4 class="font-bold text-gray-200 text-xs inline-block ml-1.5">${esc(trk.name)}</h4>
+                            ${trk.julukan ? `<div class="text-[11px] text-amber-300 font-semibold mt-1"><i class="fa-solid fa-signature mr-1 text-amber-400/70"></i>"${esc(trk.julukan)}"</div>` : ''}
                         </div>
                         <span class="font-mono font-bold text-amber-400 text-xs bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded">${trk.plat}</span>
                     </div>
@@ -155,7 +156,8 @@
                                 <span class="text-gray-400"><i class="fa-solid fa-gauge-high mr-1 text-gray-500"></i>Kondisi Mesin: <b class="${banCls(trk.banPct)} font-mono">${trk.banPct}%</b></span>
                             </div>
                             <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mt-1"><div class="${banBar(trk.banPct)} h-full" style="width:${trk.banPct}%"></div></div>
-                            <div class="text-[9px] text-gray-500 mt-0.5">Kapal tidak pakai ban - ini kondisi mesin &amp; lambung, diservis otomatis begitu sandar di depot kalau sudah menipis.</div>
+                            <div class="text-[9px] text-gray-500 mt-0.5">Kapal tidak pakai ban - ini kondisi mesin &amp; lambung, diservis otomatis begitu sandar di depot kalau sudah &le;${SHIP_SERVICE_AT}% (${formatRupiah(shipServiceCost(trk))}).</div>
+                            ${shipStatusBlock(trk)}
                             ` : `
                             <div class="flex justify-between items-center">
                                 <span class="text-gray-400"><i class="fa-solid fa-road mr-1 text-gray-500"></i>Odometer: <b class="text-gray-200 font-mono">${trk.odometer.toLocaleString('id-ID')} km</b></span>
@@ -190,12 +192,24 @@
                         </div>
                     </div>
 
+                    <div class="flex gap-1.5 text-[10px]">
+                        <input id="julukan-${trk.id}" type="text" maxlength="24" value="${esc(trk.julukan || '')}" placeholder="Julukan unit (opsional)" class="min-w-0 flex-1 bg-gray-950 border border-gray-700 rounded px-2 py-1 text-gray-200 font-sans">
+                        <button onclick="simpanJulukan('${trk.id}')" class="shrink-0 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded px-2.5 py-1 font-sans">Simpan</button>
+                    </div>
+
                     <div class="pt-1 border-t border-gray-800">
                         ${busyIds.has(trk.id)
                             ? `<button disabled class="w-full bg-gray-800/60 text-gray-500 font-semibold py-1.5 rounded-lg text-[11px] cursor-not-allowed"><i class="fa-solid fa-truck-fast mr-1.5"></i>Sedang Bertugas &mdash; Tidak Bisa Dijual</button>`
                             : `<button onclick="openSellModal('${trk.id}')" class="w-full bg-orange-600/90 hover:bg-orange-600 text-white font-semibold py-1.5 rounded-lg text-[11px] transition"><i class="fa-solid fa-right-left mr-1.5"></i>Jual (Bursa P2P / Instan ke Server)</button>`}
                     </div>
                 </div>`;
+        }
+
+        function simpanJulukan(truckId) {
+            const t = companyFleet.find(x => x.id === truckId), inp = document.getElementById('julukan-' + truckId); if (!t || !inp) return;
+            t.julukan = cleanJulukan(inp.value);
+            addLog(t.julukan ? `JULUKAN: ${t.id} [${t.plat}] kini dijuluki "${t.julukan}".` : `JULUKAN: julukan ${t.id} [${t.plat}] dihapus.`, 'info');
+            populateTruckDropdowns(); renderFleetDashboard(); saveGame();
         }
 
         const FLEET_CATS = [
@@ -640,8 +654,162 @@
             return `Sisa pesanan ${spbu.nama} tinggal ${sisa} ${unit}, dan armada ${better.id} [${better.name}] berkapasitas ${better.cap} ${unit} sedang tidak bertugas - pas buat melunasi sekali jalan. Gunakan ${better.id} dulu sebelum memakai ${truck.id} [${truck.cap} ${unit}] buat kirim bertahap.`;
         }
 
+        // ===== DISPATCH OTOMATIS (BBM & LPG) =====
+        // Pemain tidak lagi memilih wilayah/SPBU/armada/supir/kernet/jenis muatan secara manual. Sistem memilih sendiri:
+        //  - PESANAN : pesanan terbuka (BBM atau LPG, sesuai tab) yang paling mendesak (stok SPBU paling tipis) dan benar-benar bisa
+        //              dikirim sekarang. Kalau pemain menekan "Kirim" dari tab Pesanan SPBU, pesanan itu yang dicoba duluan (dispatchFocus).
+        //  - WILAYAH : otomatis = Kilang/Depo wilayah SPBU tujuan (wilayahBbmNama / wilayahLpgNama).
+        //  - JENIS   : BBM ikut yang dipesan SPBU; LPG memakai LPG Tabung (sesuai stok depo yang dipakai pickOrigin).
+        //  - ARMADA  : truk (BBM/LPG) idle, dokumen sah, lolos aturan kunci pesanan & ukuran (truckSizeBlock), stok depo cukup.
+        //              Prioritas kapasitas PAS dengan sisa pesanan, lalu kapasitas terbesar, lalu asal depo terdekat.
+        //  - SUPIR / KERNET : yang sedang bebas dengan reputasi tertinggi (pelanggaran paling sedikit sebagai pemecah seri).
+        // Hasilnya ditulis ke select tersembunyi #delivery-* / #lpg-* supaya dispatchToSpbu()/dispatchLPGToSpbu() & updateRouteEstimate()
+        // tetap memakai jalur yang sama.
+        const dispatchFocus = { BBM: null, LPG: null };
+        const dispatchAutoLastKey = { BBM: '', LPG: '' };
+        const DISPATCH_AUTO = {
+            BBM: { pre: 'delivery', unit: 'KL', fuelOf: o => o.fuel !== 'lpg', ids: ['delivery-region-filter', 'delivery-spbu-select', 'delivery-truck-select', 'delivery-driver-select', 'delivery-kernet-select', 'delivery-fuel-type'] },
+            LPG: { pre: 'lpg', unit: 'Ton', fuelOf: o => o.fuel === 'lpg', ids: ['lpg-spbu-select', 'lpg-truck-select', 'lpg-driver-select', 'lpg-kernet-select', 'lpg-type-select'] }
+        };
+        function planDispatchAuto(kind) {
+            const cfg = DISPATCH_AUTO[kind], unit = cfg.unit;
+            const openOrders = orders.filter(o => cfg.fuelOf(o) && isOrderDispatchable(o)
+                && (() => { const sp = loadedSpbuList.find(x => x.kode === o.kode); return sp && isOp(sp) && (kind !== 'LPG' || sp.has_lpg); })());
+            if (dispatchFocus[kind] && !openOrders.some(o => o.id === dispatchFocus[kind])) dispatchFocus[kind] = null;
+            if (!openOrders.length) return { ok: false, reason: `Belum ada pesanan ${kind} terbuka dari SPBU.`, tip: 'Sistem akan otomatis menyusun pengiriman begitu ada SPBU yang memesan.' };
+
+            const stokLive = o => { const sp = loadedSpbuList.find(x => x.kode === o.kode); return sp && sp.stok ? sp.stok[o.fuel] : 0; };
+            const queue = openOrders.slice().sort((a, b) => stokLive(a) - stokLive(b));
+            if (dispatchFocus[kind]) { const i = queue.findIndex(o => o.id === dispatchFocus[kind]); if (i > 0) queue.unshift(queue.splice(i, 1)[0]); }
+
+            const rep = c => (c.reputation || 0) * 1000 - (c.violations || 0);
+            const bestCrew = role => companyCrew.filter(c => c.role === role && !busyIds.has(c.id)).sort((a, b) => rep(b) - rep(a))[0] || null;
+            const driver = bestCrew('Supir'), kernet = bestCrew('Kernet');
+            if (!driver || !kernet) {
+                const kurang = [!driver ? 'Supir' : '', !kernet ? 'Kernet' : ''].filter(Boolean).join(' & ');
+                return { ok: false, reason: `Tidak ada ${kurang} yang sedang bebas.`, tip: 'Tunggu kru yang bertugas kembali, atau rekrut di tab SDM.', pending: queue.length };
+            }
+
+            const idleTrucks = companyFleet.filter(t => t.type === kind && t.kelas !== 'kapal' && !busyIds.has(t.id) && !docExpired(t));
+            for (const o of queue) {
+                const spbu = loadedSpbuList.find(x => x.kode === o.kode);
+                const kapKey = kind === 'LPG' ? 'lpg_tabung' : FUEL_KAP_KEY[o.fuel];
+                const sisa = Math.round((o.kl - o.terkirim - (o.inTransit || 0)) * 10) / 10;
+                const cands = idleTrucks.map(t => ({ t, origin: (orderLockBlock(spbu, o.fuel, t) || truckSizeBlock(spbu, o.fuel, t, kind)) ? null : pickOrigin(kind, spbu, t.cap, t, kapKey) }))
+                    .filter(c => c.origin);
+                if (!cands.length) continue;
+                cands.sort((a, b) => ((b.t.cap === sisa) - (a.t.cap === sisa)) || (b.t.cap - a.t.cap) || (distKm(a.origin, spbu) - distKm(b.origin, spbu)));
+                const { t: truck, origin } = cands[0];
+                return { ok: true, kind, order: o, spbu, truck, driver, kernet, origin, fuelId: o.fuel, fuelLabel: kind === 'LPG' ? 'LPG Tabung' : fuelLabel(o.fuel), sisa, unit, pending: queue.length,
+                    focusMiss: dispatchFocus[kind] && dispatchFocus[kind] !== o.id ? orders.find(x => x.id === dispatchFocus[kind]) : null };
+            }
+            // Ada pesanan tapi belum satupun yang bisa dikirim: jelaskan alasan pesanan paling mendesak.
+            const u = orderUnitStatus(queue[0]);
+            return { ok: false, reason: `Pesanan ${queue[0].nama} belum bisa dikirim: ${u.txt}.`, tip: u.tip || '', pending: queue.length };
+        }
+
+        function deliverySelectForce(id, value, text) {
+            const el = document.getElementById(id); if (!el) return;
+            if (value != null && value !== '' && !el.querySelector(`option[value="${String(value).replace(/"/g, '\\"')}"]`)) el.appendChild(new Option(text || value, value));
+            el.value = value == null ? '' : value;
+        }
+        function renderDispatchAutoPlan(kind, plan) {
+            const cfg = DISPATCH_AUTO[kind];
+            const box = document.getElementById(cfg.pre + '-auto-plan'); if (!box) return;
+            const btn = document.getElementById(cfg.pre + '-dispatch-btn');
+            if (btn) btn.disabled = !plan.ok;
+            if (!plan.ok) {
+                box.innerHTML = `<div class="py-2.5 flex items-start gap-2 text-amber-300"><i class="fa-solid fa-hourglass-half mt-0.5"></i><div><div class="font-semibold">${esc(plan.reason)}</div>${plan.tip ? `<div class="text-[10px] text-gray-500 mt-0.5">${esc(plan.tip)}</div>` : ''}</div></div>`;
+                return;
+            }
+            const { spbu, truck, driver, kernet, origin, sisa, unit } = plan;
+            const stars = c => '\u2605'.repeat(repToStars(c.reputation));
+            const row = (ic, col, label, val, sub) => `<div class="flex items-start justify-between gap-3 py-1.5 border-b border-gray-800/70 last:border-0"><span class="text-gray-500 shrink-0 whitespace-nowrap"><i class="fa-solid ${ic} ${col} w-4 text-center mr-1"></i>${label}</span><span class="text-right min-w-0"><span class="text-gray-100 font-semibold break-words">${val}</span>${sub ? `<span class="block text-[10px] text-gray-500">${sub}</span>` : ''}</span></div>`;
+            const wNama = kind === 'LPG' ? spbu.wilayahLpgNama : spbu.wilayahBbmNama, wJarak = kind === 'LPG' ? spbu.wilayahLpgJarak : spbu.wilayahBbmJarak;
+            const jarak = wJarak != null ? ` &middot; &plusmn;${wJarak} km` : '';
+            box.innerHTML =
+                row('fa-map-location-dot', 'text-sky-400', 'Wilayah', esc(wNama || '-'), `Kilang/Depo terdekat${jarak}`) +
+                row('fa-gas-pump', 'text-emerald-400', 'Tujuan SPBU', `[${esc(spbu.kode)}] ${esc(spbu.nama)}`, `Pesanan tersisa ${sisa} ${unit}`) +
+                row(kind === 'LPG' ? 'fa-fire-flame-simple' : 'fa-droplet', 'text-amber-400', kind === 'LPG' ? 'Jenis Muatan' : 'Jenis BBM', esc(plan.fuelLabel), `Muatan ${truck.cap} ${unit} &middot; asal ${esc(origin.nama)}`) +
+                row('fa-truck', 'text-blue-400', 'Armada', `${esc(truck.id)} [${esc(truck.plat)}]`, esc(truck.name)) +
+                row('fa-id-card', 'text-blue-400', 'Supir', esc(driver.name), `${stars(driver)} Rep ${Math.round(driver.reputation)} &middot; Viol ${driver.violations}`) +
+                row('fa-user-gear', 'text-amber-400', 'Kernet', esc(kernet.name), `${stars(kernet)} Rep ${Math.round(kernet.reputation)} &middot; Viol ${kernet.violations}`) +
+                (plan.pending > 1 ? `<div class="py-1.5 text-[10px] text-gray-500"><i class="fa-solid fa-list-ol mr-1"></i>${plan.pending - 1} pesanan ${kind} lain menunggu giliran.</div>` : '') +
+                (plan.focusMiss ? `<div class="py-1.5 text-[10px] text-amber-400"><i class="fa-solid fa-circle-info mr-1"></i>Pesanan ${esc(plan.focusMiss.nama)} belum bisa dikirim sekarang, jadi sistem memilih pesanan lain yang siap.</div>` : '');
+        }
+        // Susun ulang rencana dispatch otomatis lalu sinkronkan ke select tersembunyi + estimasi rute. Aman dipanggil berulang.
+        function refreshDispatchAuto(kind) {
+            const cfg = DISPATCH_AUTO[kind], pre = cfg.pre;
+            if (!document.getElementById(pre + '-auto-plan')) return { ok: false, reason: 'Belum siap.' };
+            let plan;
+            try { plan = planDispatchAuto(kind); } catch (e) { console.error('planDispatchAuto', e); plan = { ok: false, reason: 'Gagal menyusun rencana otomatis.', tip: String(e && e.message || e) }; }
+            const snap = () => cfg.ids.map(i => (document.getElementById(i) || {}).value).join('|');
+            const before = snap();
+            if (kind === 'BBM') deliverySelectForce('delivery-region-filter', 'ALL');
+            if (plan.ok) {
+                deliverySelectForce(pre + '-spbu-select', plan.spbu.kode, `[${plan.spbu.kode}] ${plan.spbu.nama}`);
+                deliverySelectForce(pre + '-truck-select', plan.truck.id, `${plan.truck.id} [${plan.truck.plat}] - ${plan.truck.name}`);
+                deliverySelectForce(pre + '-driver-select', plan.driver.id, plan.driver.name);
+                deliverySelectForce(pre + '-kernet-select', plan.kernet.id, plan.kernet.name);
+                if (kind === 'BBM') deliverySelectForce('delivery-fuel-type', plan.fuelLabel);
+                else deliverySelectForce('lpg-type-select', 'Tabung 3kg'); // label muatan saja; stok yang dipakai tetap LPG Tabung (lpg_tabung)
+            } else {
+                ['-spbu-select', '-truck-select', '-driver-select', '-kernet-select'].forEach(x => deliverySelectForce(pre + x, ''));
+            }
+            renderDispatchAutoPlan(kind, plan);
+            const key = plan.ok ? [plan.spbu.kode, plan.truck.id, plan.fuelId].join('|') : 'none';
+            if (snap() !== before || key !== dispatchAutoLastKey[kind]) {
+                dispatchAutoLastKey[kind] = key;
+                if (!plan.ok) {
+                    routeEstimateSeq++; // buang hasil estimasi async lama supaya tidak menimpa pesan kosong ini
+                    const box = document.getElementById(pre + '-route-estimate');
+                    if (box) box.innerHTML = 'Menunggu rencana pengiriman otomatis.';
+                } else updateRouteEstimate(pre);
+            }
+            return plan;
+        }
+        // Dipanggil dari semua tempat yang me-refresh dropdown/pesanan: perbarui rencana BBM dan LPG sekaligus.
+        function refreshDeliveryAuto() { refreshDispatchAuto('LPG'); return refreshDispatchAuto('BBM'); }
+
+        // ===== DISPATCHER OTOMATIS (Pass Dasar ke atas) =====
+        // Memakai rencana yang sama dengan tombol Kirim (planDispatchAuto), tapi berangkat langsung tanpa modal Surat Jalan.
+        // Jalan berulang sampai tidak ada lagi pasangan pesanan+truk idle+kru bebas (jadi sebanyak truk yang idle).
+        // Nomor Surat Jalan tetap diterbitkan & dicatat di log. Tidak jalan saat tab tidak aktif (jam game juga dijeda).
+        let autoDispatchOn = true, autoDispatchBusy = false;
+        function autoDispatchRun(kind) {
+            let n = 0;
+            for (let guard = 0; guard < 200; guard++) {
+                let plan; try { plan = planDispatchAuto(kind); } catch (e) { console.error('autoDispatch', e); break; }
+                if (!plan.ok) break;
+                const { spbu, truck, driver, kernet, origin } = plan, lpg = kind === 'LPG';
+                const d = { spbu, truck, driver, kernet, origin, jenisMuatan: lpg ? 'Tabung 3kg' : plan.fuelLabel, kapKey: lpg ? 'lpg_tabung' : FUEL_KAP_KEY[plan.fuelId], hargaPerUnit: lpg ? ECO.jualTon : ECO.jualKl, silent: true };
+                const no = generateNomorSuratJalan(kind);
+                notifyAsalBeda(truck, origin, d.jenisMuatan);
+                settleTruckDelivery(no, d); n++;
+                addLog(`DISPATCHER OTOMATIS: ${no} - ${truck.id} [${driver.name}] membawa ${plan.fuelLabel} ke ${spbu.nama}.`, 'info', 'truck');
+                if (!busyIds.has(truck.id)) break; // pengaman: kalau truk tidak jadi berangkat, jangan berputar terus
+            }
+            return n;
+        }
+        function tickAutoDispatch() {
+            renderAutoDispatchBar();
+            if (!autoDispatchOn || !passHas('dispatch') || autoDispatchBusy || document.hidden) return;
+            autoDispatchBusy = true;
+            try { autoDispatchRun('LPG'); autoDispatchRun('BBM'); } finally { autoDispatchBusy = false; }
+        }
+        function toggleAutoDispatch() { autoDispatchOn = !autoDispatchOn; renderAutoDispatchBar(); addLog(`DISPATCHER OTOMATIS ${autoDispatchOn ? 'DINYALAKAN' : 'DIMATIKAN'}.`, 'info'); }
+        function renderAutoDispatchBar() {
+            const bar = document.getElementById('auto-dispatch-bar'); if (!bar) return;
+            const has = passHas('dispatch');
+            bar.innerHTML = `<div class="flex items-center gap-2 min-w-0"><i class="fa-solid fa-robot ${has && autoDispatchOn ? 'text-emerald-400' : 'text-gray-500'}"></i><div class="min-w-0"><div class="text-[11px] font-bold text-gray-200">Dispatcher Otomatis</div><div class="text-[10px] text-gray-500">${has ? (autoDispatchOn ? 'Aktif: truk idle otomatis mengambil pesanan SPBU.' : 'Dimatikan: kirim manual lewat tombol Kirim.') : 'Butuh Pass Dasar atau lebih tinggi.'}</div></div></div>`
+                + (has ? `<button onclick="toggleAutoDispatch()" class="shrink-0 text-[10px] font-bold px-3 py-1.5 rounded-lg ${autoDispatchOn ? 'bg-emerald-700 hover:bg-emerald-600' : 'bg-gray-700 hover:bg-gray-600'} text-white">${autoDispatchOn ? 'ON' : 'OFF'}</button>` : '');
+        }
+
         // DISPATCH BBM - Tahap 1: validasi pilihan lalu buka Surat Jalan untuk ditandatangani
         function dispatchToSpbu() {
+            // Semua pilihan ditentukan otomatis (lihat planDispatchAuto). Hitung ulang saat tombol ditekan supaya data selalu segar.
+            const plan = refreshDispatchAuto('BBM');
+            if (!plan.ok) return showModal('Belum Bisa Dispatch', plan.reason + (plan.tip ? ' ' + plan.tip : ''), 'fa-circle-info', 'amber');
             const kodeSpbu = document.getElementById('delivery-spbu-select').value;
             const truckId = document.getElementById('delivery-truck-select').value;
             const driverId = document.getElementById('delivery-driver-select').value;
@@ -669,8 +837,14 @@
             const origin = pickOrigin('BBM', spbu, truck.cap, truck, kapKey);
             if (!origin) return showModal('Stok Kilang Kurang', `Tidak ada kilang/depo aktif dengan stok ${fuelType} (jadi) cukup untuk ${truck.cap} KL. Olah dulu BBL mentah jadi ${fuelType} di tab Kilang (tombol Konversi), atau transfer stok ${fuelType} ke depo.`, 'fa-gas-pump', 'red');
 
+            notifyAsalBeda(truck, origin, fuelType);
             const d = { spbu, truck, driver, kernet, origin, jenisMuatan: fuelType, kapKey, hargaPerUnit: ECO.jualKl };
             openSuratJalanModal({ mode: 'BBM', tujuanNama: spbu.nama, tujuanKode: spbu.kode, jenisMuatan: fuelType, volumeText: `${truck.cap} KL`, truck, driver, kernet,
-                execute: (no) => settleTruckDelivery(no, d) });
+                execute: (no) => {
+                    settleTruckDelivery(no, d);
+                    // Setelah truk berangkat, kembali ke daftar Pesanan SPBU (pesanan yang baru dikirim pindah ke "Dalam perjalanan").
+                    dispatchFocus.BBM = null;
+                    switchTab('tab-orders');
+                } });
         }
 
