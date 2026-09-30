@@ -46,6 +46,15 @@
         saveCloud: (uid, data, ts) => setDoc(doc(db, 'saves', uid), { data, ts }),
         async loadSave(uid) { const s = await getDoc(doc(db, 'saves', uid)); return s.exists() ? s.data() : null; },
         deleteSave: uid => deleteDoc(doc(db, 'saves', uid)),
+        // Buku besar pajak (anti-curang): taxledger/{uid}/lines/{sid}. Rules hanya membolehkan angka NAIK, jadi taxSync
+        // membaca dulu lalu menulis nilai maksimum (klien yang angkanya lebih rendah tidak ditolak, hanya dinaikkan).
+        async taxLoad(uid, sid) { const s = await getDoc(doc(db, 'taxledger', uid, 'lines', sid)); return s.exists() ? s.data() : null; },
+        async taxSync(uid, sid, v) {
+            const ref = doc(db, 'taxledger', uid, 'lines', sid);
+            let old = null; try { const s = await getDoc(ref); old = s.exists() ? s.data() : null; } catch (e) {}
+            const m = k => Math.max(Number(v[k]) || 0, old ? (Number(old[k]) || 0) : 0);
+            return setDoc(ref, { billed: m('billed'), fine: m('fine'), paid: m('paid'), income: m('income'), expense: m('expense'), gt: m('gt'), upd: serverTimestamp() });
+        },
         // Login WAJIB email terverifikasi (Firestore Rules juga menolak akses tanpa email_verified).
         // Kalau belum terverifikasi: kirim ulang link verifikasi, keluar, lalu lempar error 'app/email-not-verified'.
         async login(email, pw) {
@@ -155,7 +164,16 @@
         reauth: pw => reauthenticateWithCredential(auth.currentUser, EmailAuthProvider.credential(auth.currentUser.email, pw)),
         async deleteAccount() {
             const u = auth.currentUser;
-            try { await deleteDoc(doc(db, 'saves', u.uid)); await deleteDoc(doc(db, 'leaderboard', u.uid)); await deleteDoc(doc(db, 'users', u.uid)); } catch (e) { console.warn('Firestore:', e); }
+            const uid = u.uid, step = async (nama, fn) => { try { await fn(); } catch (e) { console.warn('Hapus akun - ' + nama + ' gagal:', e); } };
+            let kode = ''; await step('baca profil', async () => { const s = await getDoc(doc(db, 'users', uid)); kode = s.exists() ? (s.data().code || '') : ''; });
+            // Iklan Bursa yang masih terbuka ikut dibatalkan (kalau dibiarkan, pembeli bisa "membeli" dari penjual yang sudah tidak ada).
+            await step('iklan bursa', async () => { const sn = await getDocs(query(collection(db, 'bursa'), where('sellerUid', '==', uid), where('status', '==', 'open'))); await Promise.all(sn.docs.map(d => deleteDoc(d.ref))); });
+            await step('save cloud', () => deleteDoc(doc(db, 'saves', uid)));
+            await step('leaderboard', () => deleteDoc(doc(db, 'leaderboard', uid)));
+            if (kode) await step('kode perusahaan', () => deleteDoc(doc(db, 'companyCodes', kode)));   // kode dibebaskan lagi
+            // URUTAN PENTING: profil users/{uid} dihapus DULU, karena rules taxledger baru mengizinkan hapus setelah profil tidak ada.
+            await step('profil', () => deleteDoc(doc(db, 'users', uid)));
+            await step('buku besar pajak', async () => { const sn = await getDocs(collection(db, 'taxledger', uid, 'lines')); await Promise.all(sn.docs.map(d => deleteDoc(d.ref))); });
             await deleteUser(u);
         }
     };

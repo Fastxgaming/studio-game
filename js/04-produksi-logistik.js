@@ -72,6 +72,42 @@
         // Filter tujuan transfer di tab Kirim BBL/LPG Curah - diisi oleh openTransferKapal() (06-rute-transport.js)
         // sesuai tombol nav mana yang dipencet, supaya dropdown tujuan cuma nampilin depo yang jenisnya cocok.
         let transferFuelFilter = 'ALL';
+        // ===== BUKA / TUTUP PESANAN per Kilang/Depo =====
+        // kilang.tutup = true -> SPBU di wilayah depo ini TIDAK akan membuat pesanan baru (pesanan yang sudah terlanjur
+        // masuk tetap bisa dikirim). Status ikut tersimpan di save.
+        const depoTutup = id => { const k = id && refineryData.find(x => x.id === id); return !!(k && k.tutup); };
+        function toggleDepoBuka(kilangId) {
+            const k = refineryData.find(x => x.id === kilangId);
+            if (!k || !k.is_unlocked) return;
+            k.tutup = !k.tutup;
+            addLog(k.tutup
+                ? `DEPO DITUTUP: ${k.nama} ditutup untuk pesanan. SPBU di wilayahnya tidak akan memesan sampai dibuka lagi.`
+                : `DEPO DIBUKA: ${k.nama} kembali menerima pesanan dari SPBU di wilayahnya.`, k.tutup ? 'warning' : 'success');
+            if (k.tutup) batalkanPesananDepo(k);
+            renderRefineries();
+        }
+        // Saat depo ditutup, pesanan terbuka di wilayahnya yang BELUM mulai dikerjakan (belum ada truk/muatan/pengiriman)
+        // ikut dihentikan. Pesanan yang sudah berjalan dibiarkan selesai supaya armada di jalan tidak terlantar.
+        function batalkanPesananDepo(k) {
+            let n = 0;
+            orders.slice().forEach(o => {
+                if (o.terkirim > 0 || o.inTransit > 0 || o.tahap || o.lockedTruckId) return;
+                const sp = loadedSpbuList.find(x => x.kode === o.kode), f = FUELS.find(x => x.id === o.fuel);
+                if (!sp || !f) return;
+                if ((f.lpg ? sp.wilayahLpgId : sp.wilayahBbmId) !== k.id) return;
+                if (typeof ensureStok === 'function') { ensureStok(sp); sp.stok[o.fuel] = f.cap; }
+                closeOrder(o, 'Batal'); n++;
+            });
+            if (n) { addLog(`${n} pesanan belum berjalan di wilayah ${k.nama} dihentikan karena depo ditutup.`, 'warning'); if (typeof renderOrders === 'function') renderOrders(); }
+        }
+        function depoBukaHtml(kilang) {
+            const t = !!kilang.tutup;
+            return `<div class="flex items-center justify-between text-[10px] pt-1 border-t border-gray-800">
+                <span class="text-gray-400"><i class="fa-solid ${t ? 'fa-store-slash text-red-400' : 'fa-store text-emerald-400'} mr-1"></i>Pesanan wilayah: <b class="${t ? 'text-red-400' : 'text-emerald-400'}">${t ? 'TUTUP' : 'BUKA'}</b></span>
+                <button onclick="toggleDepoBuka('${kilang.id}')" class="${t ? 'bg-emerald-700 hover:bg-emerald-600' : 'bg-red-700 hover:bg-red-600'} text-white px-2 py-0.5 rounded font-bold">${t ? 'Buka' : 'Tutup'}</button>
+            </div>`;
+        }
+
         function renderRefineries() {
             kilangMarkers.forEach(km => map.removeLayer(km));
             kilangMarkers = [];
@@ -120,6 +156,7 @@
                         </div>
                         ${supplyReqBadge(kilang)}
                         ${mekanikBlock}
+                        ${depoBukaHtml(kilang)}
                         ${kilang.id === 'KILANG-01' ? fuelBuyHtml(kilang) : ''}
                         ${kilang.id === 'KILANG-01' ? lpgCurahBuyHtml(kilang) : ''}
                         ${renderKapPanel(kilang)}
@@ -233,6 +270,7 @@
         // ===== PINDAH DEPOT PANGKALAN ARMADA =====
         const DEPOT_MOVE_FEE = 3500000;
         function pindahDepot(truckId) {
+            if (pphBlokir()) return;
             const t = companyFleet.find(x => x.id === truckId); if (!t) return;
             const sel = document.getElementById('depot-sel-' + truckId); if (!sel || !sel.value) return;
             const target = refineryData.find(k => k.id === sel.value);
@@ -252,12 +290,14 @@
 
         // ===== BELI BAHAN BAKAR KILANG UTAMA =====
         // Harga beli BBL mentah (diturunkan dari 1.100.000). Batas bawah: biaya pokok anjungan ±Rp 256.000/Bbl (opex mingguan ÷ produksi), jadi harga beli harus tetap di atas itu.
-        const BBL_PRICE = 900000; let bbmWarned = false, bbmSpent = 0;
+        // Harga dasar (rata-rata) Rp 430.000/Bbl = Rp 2,7 jt/KL (60% harga jual Rp 4,5 jt/KL). Harga BELI sebenarnya DINAMIS: bblPrice() / lpgCurahPrice() di 04a-pasar-harga.js (indeks pasar x harga dasar).
+        let bbmWarned = false, bbmSpent = 0;
         // Batas atas kapasitas tangki (upgrade tidak bisa lewat ini): BBL mentah & LPG Curah sama-sama 10 Juta.
         const KAP_UPGRADE_CAPS = { lpg_curah: 10000000 };
         const BBL_KAP_MAX = 10000000, BBL_KAP_STEP = 200000, BBL_KAP_BASE_COST = 1500e6;
         const bblUpgradeCost = kilang => Math.round(BBL_KAP_BASE_COST * Math.pow(1.32, kilang.stokUpgradeLevel || 0));
         function upgradeBblTangki(kilangId) {
+            if (pphBlokir()) return;
             const kilang = refineryData.find(k => k.id === kilangId);
             if (!kilang || !kilang.is_unlocked) return;
             if (kilang.stok_max >= BBL_KAP_MAX) return showModal('Kapasitas Maksimum', `Tangki BBL mentah ${kilang.nama} sudah mencapai batas maksimum ${BBL_KAP_MAX.toLocaleString('id-ID')} Bbl.`, 'fa-circle-info', 'blue');
@@ -277,14 +317,14 @@
             const b = (n, l) => `<button onclick="buyFuel(${n})" class="bg-teal-700 hover:bg-teal-600 text-white rounded px-2 py-1 font-bold">${l}</button>`;
             return `<div class="pt-1.5 border-t border-gray-800 space-y-1.5">
                 ${pct <= 25 ? '<div class="text-[10px] text-red-300 bg-red-500/10 border border-red-500/30 rounded px-2 py-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Stok bahan bakar menipis! Segera beli pasokan.</div>' : ''}
-                <div class="text-[10px] text-gray-200"><i class="fa-solid fa-gas-pump text-amber-400 mr-1"></i>Beli bahan bakar mentah &middot; ${formatRupiah(BBL_PRICE)}/Bbl</div>
+                ${marketPanelHtml('bbl')}
                 <div class="flex flex-wrap gap-1 text-[10px]">${b(10000, '+10.000 Bbl')}${b(50000, '+50.000 Bbl')}${b(100000, '+100.000 Bbl')}${b(500000, '+500.000 Bbl')}${b(1000000, '+1 Juta Bbl')}${b(0, 'Isi Penuh')}
                     ${atMax ? '' : `<button onclick="upgradeBblTangki('${kilang.id}')" class="bg-emerald-700 hover:bg-emerald-600 text-white rounded px-2 py-1 font-bold"><i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Tangki (${formatRupiah(bblUpgradeCost(kilang))})</button>`}
                 </div>
                 ${supplyBadge(kilang.id, 'bbl')}
                 <div class="text-[9px] text-gray-500"><i class="fa-solid fa-circle-info mr-1"></i>Stok mentah ini diolah jadi Pertalite, Pertamax, dst lewat tombol Konversi di panel Kapasitas Depo di bawah - tidak jalan sendiri.${atMax ? ' Kapasitas tangki sudah maksimum (10 Juta Bbl).' : ' Kapasitas tangki bisa di-upgrade sampai maksimum 10 Juta Bbl.'}</div></div>`;
         }
-        function buyFuel(n) { supplyOrderFlow(refineryData[0].id, 'bbl', n, 'Bahan Bakar', 'Bbl', BBL_PRICE, true); }
+        function buyFuel(n) { supplyOrderFlow(refineryData[0].id, 'bbl', n, 'Bahan Bakar', 'Bbl', bblPrice(), true); }
 
         // ===== LPG CURAH: diperlakukan sama seperti bahan mentah (Bbl) - beli manual, bukan diolah otomatis dari crude =====
         function lpgCurahBuyHtml(kilang) {
@@ -304,7 +344,7 @@
                     <div id="lpgcurah-bar-${kilang.id}" class="bg-orange-500 h-full transition-all duration-500" style="width: ${pct}%"></div>
                 </div>
                 ${pct <= 25 ? '<div class="text-[10px] text-red-300 bg-red-500/10 border border-red-500/30 rounded px-2 py-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Stok LPG Curah menipis! Segera beli pasokan.</div>' : ''}
-                <div class="text-[10px] text-gray-200"><i class="fa-solid fa-fire-flame-simple text-orange-400 mr-1"></i>Beli LPG Curah &middot; ${formatRupiah(meta.buyPrice)}/Ton</div>
+                ${marketPanelHtml('lpg')}
                 <div class="flex flex-wrap gap-1 text-[10px]">${b(200, '+200 Ton')}${b(1000, '+1.000 Ton')}${b(2000, '+2.000 Ton')}${b(0, 'Isi Penuh')}
                     ${atMax ? '' : `<button onclick="upgradeKapasitas('${kilang.id}','lpg_curah')" class="bg-emerald-700 hover:bg-emerald-600 text-white rounded px-2 py-1 font-bold"><i class="fa-solid fa-arrow-up-right-dots"></i> Upgrade Tangki (${formatRupiah(upCost)})</button>`}
                 </div>
@@ -312,7 +352,7 @@
                 <div class="text-[9px] text-gray-500"><i class="fa-solid fa-circle-info mr-1"></i>Bahan baku LPG Tabung - konversi di panel Kapasitas Depo di bawah.${atMax ? ' Kapasitas tangki sudah maksimum (10 Juta Ton).' : ' Kapasitas tangki bisa di-upgrade sampai maksimum 10 Juta Ton.'}</div>
             </div>`;
         }
-        function buyLpgCurah(kilangId, n) { const k = refineryData.find(x => x.id === kilangId) || refineryData[0]; if (!k || !k.kap || !k.kap.lpg_curah) return; supplyOrderFlow(k.id, 'lpg_curah', n, 'LPG Curah', 'Ton', PRODUCT_META.lpg_curah.buyPrice, true); }
+        function buyLpgCurah(kilangId, n) { const k = refineryData.find(x => x.id === kilangId) || refineryData[0]; if (!k || !k.kap || !k.kap.lpg_curah) return; supplyOrderFlow(k.id, 'lpg_curah', n, 'LPG Curah', 'Ton', lpgCurahPrice(), true); }
 
         // ===== TANDA TANGAN DIGITAL: konfirmasi transaksi (dipakai isi ulang kilang, dll) =====
         let signCtx = null, signDrawing = false, signHasStroke = false, signPendingAction = null;
@@ -363,6 +403,7 @@
         }
 
         function buyRefinery(kilangId) {
+            if (pphBlokir()) return;
             const kilang = refineryData.find(k => k.id === kilangId);
             if (!kilang) return;
 
@@ -443,7 +484,7 @@
                 supplyOrder(kid, key, qty, cost, label, unit, false);
                 showModal('Pesanan Dibuat', `${qty.toLocaleString('id-ID')} ${unit} ${label} dalam perjalanan. Stok bertambah setelah ±${Math.round(supplyDelay(kid) / 60000)} menit.`, 'fa-truck-fast', 'blue');
             };
-            if (needSign) openSignature(`Konfirmasi pemesanan ${qty.toLocaleString('id-ID')} ${unit} ${label} seharga ${formatRupiah(cost)}. Barang tiba setelah ±${Math.round(supplyDelay(kid) / 60000)} menit. Tanda tangani untuk menyetujui.`, go); else go();
+            if (needSign) openSignature(`Konfirmasi pemesanan ${qty.toLocaleString('id-ID')} ${unit} ${label} seharga ${formatRupiah(cost)} (${formatRupiah(supplyPrice(kid, price))}/${unit}).${marketBuyNote(key)} Barang tiba setelah ±${Math.round(supplyDelay(kid) / 60000)} menit. Tanda tangani untuk menyetujui.`, go); else go();
         }
         // Status pasokan anjungan untuk tangki ini: 'ok' = ada anjungan sejenis dengan pipa sehat yang mengalir ke Tuban (anjungan jadi sumber utama),
         // 'down' = ada anjungan tapi pipa belum ada/bocor/berhenti, 'none' = tidak ada anjungan. Hanya Tuban (refineryData[0]) yang dipasok anjungan.
@@ -460,11 +501,8 @@
             const T = [];
             refineryData.forEach((k, i) => {
                 if (!k.is_unlocked) return;
-                if (i === 0 || String(k.tipe).includes('BBM')) T.push([k.id, 'bbl', 'Bahan Bakar', 'Bbl', BBL_PRICE]);
-                if (i === 0) {
-                    Object.keys(k.kap || {}).forEach(key => { const m = PRODUCT_META[key]; if (m && m.buyPrice && !m.refineRate && key !== 'lpg_curah') T.push([k.id, key, m.label, m.unit, m.buyPrice]); });
-                }
-                if (k.kap && k.kap.lpg_curah) T.push([k.id, 'lpg_curah', 'LPG Curah', 'Ton', PRODUCT_META.lpg_curah.buyPrice]);
+                if (i === 0 || String(k.tipe).includes('BBM')) T.push([k.id, 'bbl', 'Bahan Bakar', 'Bbl', bblPrice()]);
+                if (k.kap && k.kap.lpg_curah) T.push([k.id, 'lpg_curah', 'LPG Curah', 'Ton', lpgCurahPrice()]);
             });
             T.forEach(([kid, key, label, unit, price]) => {
                 const sl = supplySlot(kid, key); if (!sl || !sl.max) return;
@@ -498,6 +536,7 @@
         function kapUpgradeCost(meta, level) { return Math.round(meta.baseCost * Math.pow(1.32, level || 0)); }
 
         function upgradeKapasitas(kilangId, key) {
+            if (pphBlokir()) return;
             const kilang = refineryData.find(k => k.id === kilangId);
             if (!kilang || !kilang.is_unlocked || !kilang.kap || !kilang.kap[key]) return;
             const meta = PRODUCT_META[key], slot = kilang.kap[key];
@@ -520,45 +559,54 @@
             renderRefineries();
         }
 
-        function isiUlangProduk(kilangId, key, amount) {
-            const kilang = refineryData.find(k => k.id === kilangId);
-            if (!kilang || kilang.id !== 'KILANG-01' || !kilang.kap || !kilang.kap[key]) return;
-            const meta = PRODUCT_META[key]; if (!meta.buyPrice) return;
-            supplyOrderFlow(kilang.id, key, amount, meta.label, meta.unit, meta.buyPrice, false);
-        }
-
-        // Lama proses olah (ms), makin besar jumlah yang dikonversi makin lama animasinya berjalan (dibatasi min/max biar tetap enak dimainkan).
+        // Lama proses olah dalam JAM GAME: 3 jam (jumlah kecil) sampai 4 jam (jumlah >= 1 langkah konversi / isi penuh).
+        // Dihitung dari jam game (gameNow), jadi ikut berhenti saat game dijeda / tab tidak aktif, dan 3-4 jam game
+        // = 30-40 menit nyata (GAME_SPEED). Mengembalikan milidetik WAKTU GAME.
+        const REFINE_MIN_JAM = 3, REFINE_MAX_JAM = 4;
         function refineDurationMs(amount, scale) {
             const s = scale || amount || 1;
-            return Math.min(6000, Math.max(1200, Math.round((amount / s) * 1800)));
+            const frac = Math.min(1, Math.max(0, amount / s));
+            return Math.round((REFINE_MIN_JAM + (REFINE_MAX_JAM - REFINE_MIN_JAM) * frac) * 3600000);
         }
+        const refineJamLabel = ms => (Math.round(ms / 360000) / 10).toString().replace('.', ',') + ' jam game';
 
-        // Bug fix: sebelumnya slot.cur "diam" total sepanjang durasi olah lalu melompat penuh sekaligus di
-        // akhir (satu-satunya setTimeout), jadi terlihat seperti instan begitu badge "Diolah" hilang - padahal
-        // updateKilangLiveBars() sudah dibuat khusus untuk update progress bar live tapi belum pernah dipanggil
-        // di mana pun. Helper ini menaikkan slot.cur SEDIKIT DEMI SEDIKIT tiap tick mengikuti waktu berjalan
-        // (bukan lompat di akhir), lalu memanggil onDone() persis saat animasinya selesai (durasi sama seperti
-        // sebelumnya, cuma sekarang benar-benar terlihat progresnya, bukan cuma badge statis lalu tiba-tiba penuh).
-        function animateRefineFill(kilang, slot, addAmount, durasiMs, onDone) {
-            const startCur = slot.cur, target = Math.min(slot.max, Math.round((startCur + addAmount) * 100) / 100);
-            let t0 = performance.now(), lastT = t0;
-            const TICK_MS = 150;
-            const iv = setInterval(() => {
-                const nowT = performance.now();
-                // Selama jeda manual, geser titik awal supaya progres pengolahan ikut berhenti.
-                if (gamePaused) { t0 += nowT - lastT; lastT = nowT; return; }
-                lastT = nowT;
-                const frac = Math.min(1, (nowT - t0) / durasiMs);
-                slot.cur = Math.round((startCur + (target - startCur) * frac) * 100) / 100;
-                updateKilangLiveBars(kilang);
-                if (frac >= 1) {
-                    clearInterval(iv);
-                    slot.cur = target;
-                    onDone();
-                }
-            }, TICK_MS);
-            return iv;
+        // Proses olah = "job" yang disimpan di slot (slot.job) berdasarkan jam game: { gs: mulai, ge: selesai, from, to, kind, bbl, amount }.
+        // Satu ticker global menaikkan slot.cur SEDIKIT DEMI SEDIKIT sesuai waktu game yang berjalan (animasi stok jalan
+        // selama diolah), lalu menyelesaikannya. Karena job ikut tersimpan di save (kap), proses tetap lanjut setelah refresh.
+        function startRefineJob(kilang, slot, addAmount, durGameMs, info) {
+            const gs = gameNow();
+            slot.refining = true;
+            slot.job = Object.assign({ gs, ge: gs + durGameMs, from: slot.cur, to: Math.min(slot.max, Math.round((slot.cur + addAmount) * 100) / 100) }, info || {});
         }
+        function finishRefineJob(kilang, key, slot) {
+            const j = slot.job, meta = PRODUCT_META[key];
+            slot.cur = j.to; slot.refining = false; delete slot.job;
+            if (j.kind === 'lpg') {
+                addLog(`KONVERSI SELESAI: ${(j.amount || 0).toLocaleString('id-ID')} Ton LPG Tabung siap distribusi di ${kilang.nama}.`, 'success');
+                notify(`Konversi selesai: ${(j.bbl || 0).toLocaleString('id-ID')} Ton LPG Curah menjadi ${(j.amount || 0).toLocaleString('id-ID')} Ton LPG Tabung di ${kilang.nama}. (Susut 8%)`, 'success');
+            } else {
+                addLog(`KONVERSI SELESAI: ${(j.amount || 0).toLocaleString('id-ID')} ${meta.unit} ${meta.label} siap di ${kilang.nama}.`, 'success');
+                notify(`Konversi selesai: ${(j.bbl || 0).toLocaleString('id-ID')} Bbl mentah menjadi ${(j.amount || 0).toLocaleString('id-ID')} ${meta.unit} ${meta.label} di ${kilang.nama}.`, 'success');
+            }
+        }
+        function tickRefineJobs() {
+            if (!currentAccount || isSuspended()) return;
+            const now = gameNow();
+            refineryData.forEach(kilang => {
+                if (!kilang.kap) return;
+                let changed = false, done = false;
+                Object.keys(kilang.kap).forEach(key => {
+                    const slot = kilang.kap[key];
+                    if (!slot.refining) return;
+                    if (!slot.job) { slot.refining = false; done = true; return; } // save lama: status "diolah" tanpa job -> bebaskan
+                    const j = slot.job, frac = Math.min(1, Math.max(0, (now - j.gs) / (j.ge - j.gs)));
+                    if (frac >= 1) { finishRefineJob(kilang, key, slot); done = true; }
+                    else { slot.cur = Math.round((j.from + (j.to - j.from) * frac) * 100) / 100; changed = true; }
+                });
+                if (done) renderRefineries(); else if (changed) updateKilangLiveBars(kilang);
+            });
+        }
+        setInterval(tickRefineJobs, 500);
 
         function convertLpgCurah(kilangId) {
             const kilang = refineryData.find(k => k.id === kilangId);
@@ -575,19 +623,22 @@
             const durasi = refineDurationMs(amount, 1500);
             // Bahan mentah LPG Curah langsung terpakai begitu proses dimulai; hasil LPG Tabung baru masuk tangki setelah durasi olah selesai.
             curah.cur = Math.round((curah.cur - amount) * 100) / 100;
-            tabung.refining = true;
-            addLog(`KONVERSI LPG: ${kilang.nama} mulai mengolah ${amount.toLocaleString('id-ID')} Ton LPG Curah menjadi LPG Tabung (&plusmn;${Math.round(durasi / 1000)} detik).`, 'info');
+            addLog(`KONVERSI LPG: ${kilang.nama} mulai mengolah ${amount.toLocaleString('id-ID')} Ton LPG Curah menjadi LPG Tabung (&plusmn;${refineJamLabel(durasi)}).`, 'info');
+            startRefineJob(kilang, tabung, hasil, durasi, { kind: 'lpg', bbl: amount, amount: hasil });
             renderRefineries();
-            animateRefineFill(kilang, tabung, hasil, durasi, () => {
-                tabung.refining = false;
-                addLog(`KONVERSI SELESAI: ${hasil.toLocaleString('id-ID')} Ton LPG Tabung siap distribusi di ${kilang.nama}.`, 'success');
-                showModal('Konversi Selesai', `${amount.toLocaleString('id-ID')} Ton LPG Curah berhasil diolah menjadi ${hasil.toLocaleString('id-ID')} Ton LPG Tabung di ${kilang.nama}. (Susut proses pengisian tabung 8%)`, 'fa-fire-flame-simple', 'blue');
-                renderRefineries();
-            });
         }
 
         // ===== KONVERSI BBL -> BBM: manual lewat tombol, prosesnya berjalan sesuai durasi (tidak instan, tidak otomatis lagi) =====
         // n = jumlah produk (KL) yang mau dihasilkan sekali klik; n=0/kosong artinya "isi penuh sebisa mungkin".
+        // Biaya olah (BBL -> BBM) & transfer darat Tuban -> depo: Rp per Bbl mentah yang dipakai (ECO.biayaOlahBbl / ECO.biayaTransferDaratBbl).
+        // Dibayar di muka saat proses dimulai. Mengembalikan false (tanpa memotong kas) kalau kas tidak cukup.
+        function chargeBiayaBbl(bbl, tarif, desc) {
+            const biaya = Math.round(bbl * tarif);
+            if (companyCash < biaya) return false;
+            companyCash -= biaya; totalExpense += biaya;
+            addFinanceLog(desc, -biaya);
+            return biaya;
+        }
         function convertBblKeProduk(kilangId, key, n) {
             const kilang = refineryData.find(k => k.id === kilangId);
             if (!kilang || !kilang.kap || !kilang.kap[key]) return;
@@ -603,17 +654,13 @@
             }
             const bblUsed = Math.round(amount * meta.refineRatio * 100) / 100;
             const durasi = refineDurationMs(amount, BBL_CONVERT_STEP[key]);
+            const biayaOlah = chargeBiayaBbl(bblUsed, ECO.biayaOlahBbl, `Biaya Olah ${bblUsed.toLocaleString('id-ID')} Bbl -> ${meta.label} - ${kilang.nama}`);
+            if (biayaOlah === false) return showModal('Kas Tidak Cukup', `Biaya olah ${bblUsed.toLocaleString('id-ID')} Bbl adalah ${formatRupiah(Math.round(bblUsed * ECO.biayaOlahBbl))} (${formatRupiah(ECO.biayaOlahBbl)}/Bbl). Kurangi jumlah atau tambah kas.`, 'fa-triangle-exclamation', 'red');
             // BBL mentah langsung terpakai/terkunci begitu proses dimulai; hasil BBM baru masuk tangki setelah durasi olah selesai.
             kilang.stok_current = Math.max(0, Math.round((kilang.stok_current - bblUsed) * 100) / 100);
-            slot.refining = true;
-            addLog(`KONVERSI BBL: ${kilang.nama} mulai mengolah ${bblUsed.toLocaleString('id-ID')} Bbl mentah menjadi ${meta.label} (&plusmn;${Math.round(durasi / 1000)} detik).`, 'info');
+            addLog(`KONVERSI BBL: ${kilang.nama} mulai mengolah ${bblUsed.toLocaleString('id-ID')} Bbl mentah menjadi ${meta.label} (&plusmn;${refineJamLabel(durasi)}).`, 'info');
+            startRefineJob(kilang, slot, amount, durasi, { kind: 'bbm', bbl: bblUsed, amount });
             renderRefineries();
-            animateRefineFill(kilang, slot, amount, durasi, () => {
-                slot.refining = false;
-                addLog(`KONVERSI SELESAI: ${amount.toLocaleString('id-ID')} ${meta.unit} ${meta.label} siap di ${kilang.nama}.`, 'success');
-                showModal('Konversi Selesai', `${bblUsed.toLocaleString('id-ID')} Bbl BBL mentah berhasil diolah menjadi ${amount.toLocaleString('id-ID')} ${meta.unit} ${meta.label} di ${kilang.nama}.`, meta.icon, 'blue');
-                renderRefineries();
-            });
         }
 
         // ===== KONVERSI BBL -> SEMUA JENIS BBM SEKALIGUS (1 tombol) =====
@@ -630,7 +677,7 @@
                 return meta && meta.refineRatio && key !== 'lpg_curah' && key !== 'lpg_tabung' && slot && !slot.refining;
             });
             if (!keys.length) return;
-            const started = [];
+            const started = []; let kasKurang = false;
             for (const key of keys) {
                 if (kilang.stok_current <= 0) break; // BBL mentah habis, hentikan - jenis berikutnya tidak kebagian
                 const meta = PRODUCT_META[key], slot = kilang.kap[key];
@@ -641,19 +688,15 @@
                 if (amount <= 0) continue;
                 const bblUsed = Math.round(amount * meta.refineRatio * 100) / 100;
                 const durasi = refineDurationMs(amount, BBL_CONVERT_STEP[key]);
+                if (chargeBiayaBbl(bblUsed, ECO.biayaOlahBbl, `Biaya Olah ${bblUsed.toLocaleString('id-ID')} Bbl -> ${meta.label} - ${kilang.nama}`) === false) { kasKurang = true; continue; } // kas tak cukup untuk jenis ini, lewati
                 kilang.stok_current = Math.max(0, Math.round((kilang.stok_current - bblUsed) * 100) / 100);
-                slot.refining = true;
                 started.push({ key, meta, amount, bblUsed });
-                addLog(`KONVERSI BBL: ${kilang.nama} mulai mengolah ${bblUsed.toLocaleString('id-ID')} Bbl mentah menjadi ${meta.label} (&plusmn;${Math.round(durasi / 1000)} detik) - bagian dari konversi massal semua jenis.`, 'info');
-                animateRefineFill(kilang, slot, amount, durasi, () => {
-                    slot.refining = false;
-                    addLog(`KONVERSI SELESAI: ${amount.toLocaleString('id-ID')} ${meta.unit} ${meta.label} siap di ${kilang.nama}.`, 'success');
-                    renderRefineries();
-                });
+                addLog(`KONVERSI BBL: ${kilang.nama} mulai mengolah ${bblUsed.toLocaleString('id-ID')} Bbl mentah menjadi ${meta.label} (&plusmn;${refineJamLabel(durasi)}) - bagian dari konversi massal semua jenis.`, 'info');
+                startRefineJob(kilang, slot, amount, durasi, { kind: 'bbm', bbl: bblUsed, amount });
             }
             renderRefineries();
             if (!started.length) {
-                showModal('Tidak Bisa Konversi', kilang.stok_current <= 0 ? `Stok BBL mentah di ${kilang.nama} kosong.` : `Semua tangki BBM di ${kilang.nama} sudah penuh.`, 'fa-circle-exclamation', 'amber');
+                showModal('Tidak Bisa Konversi', kasKurang ? `Kas tidak cukup untuk biaya olah (${formatRupiah(ECO.biayaOlahBbl)}/Bbl).` : kilang.stok_current <= 0 ? `Stok BBL mentah di ${kilang.nama} kosong.` : `Semua tangki BBM di ${kilang.nama} sudah penuh.`, 'fa-circle-exclamation', 'amber');
                 return;
             }
             const ringkasan = started.map(s => `${s.amount.toLocaleString('id-ID')} ${s.meta.unit} ${s.meta.label}`).join(', ');
@@ -700,9 +743,6 @@
                 const isBbmRefine = meta.refineRatio && key !== 'lpg_curah' && key !== 'lpg_tabung';
                 // Badge "Diolah" dipakai untuk animasi selama proses konversi berjalan (BBL->BBM maupun LPG Curah->Tabung).
                 const showsRefineBadge = isBbmRefine || key === 'lpg_tabung';
-                const restockBtn = (isPusat && meta.buyPrice && !meta.refineRate)
-                    ? `<button onclick="isiUlangProduk('${kilang.id}','${key}',${meta.step})" class="text-[9px] bg-gray-800 hover:bg-gray-700 text-gray-200 rounded px-1.5 py-0.5 font-semibold"><i class="fa-solid fa-plus"></i> Isi ${meta.step.toLocaleString('id-ID')} ${meta.unit}</button>`
-                    : '';
                 const refineBadge = showsRefineBadge
                     ? `<span id="kap-refine-${kilang.id}-${key}" class="${slot.refining ? '' : 'hidden'} text-[8px] text-amber-300 font-semibold shrink-0 ml-1"><i class="fa-solid fa-industry fa-fade mr-0.5"></i>Diolah</span>`
                     : '';
@@ -730,7 +770,6 @@
                     ${refineInfo}
                     ${convertBblRow}
                     <div class="flex gap-1 flex-wrap">
-                        ${restockBtn}
                         ${upgradeBtn}
                     </div>
                 </div>`;
@@ -957,7 +996,7 @@
                 if (panelDesc) panelDesc.textContent = 'Khusus mengirim pasokan LPG curah dari Kilang Pusat ke Depo Cabang LPG yang punya akses pelabuhan, memakai Kapal Tanker LPG (beli di tab Dealer). Tujuan berdermaga wajib dilayani kapal; jalur darat hanya untuk depo tanpa dermaga.';
             } else {
                 if (panelTitle) panelTitle.innerHTML = '<i class="fa-solid fa-truck-ramp-box mr-2"></i> Kirim BBL ke Depo/Cabang';
-                if (panelDesc) panelDesc.textContent = 'Khusus mengirim pasokan BBL (bahan bakar mentah) dari Kilang Pusat ke Kilang/Depo Cabang BBM yang punya akses pelabuhan, memakai Kapal Tanker BBM (beli di tab Dealer). Tujuan berdermaga wajib dilayani kapal; jalur darat hanya untuk depo tanpa dermaga.';
+                if (panelDesc) panelDesc.textContent = 'Khusus mengirim pasokan BBL (bahan bakar mentah) dari Kilang Pusat ke Kilang/Depo Cabang BBM yang punya akses pelabuhan, memakai Kapal Tanker BBM (beli di tab Dealer). Tujuan berdermaga wajib dilayani kapal; depo tanpa dermaga dilayani konvoi Truk Tangki BBL (Hino / Fuso / Isuzu Giga / UD Quester, beli di tab Dealer).';
             }
         }
 
@@ -987,9 +1026,10 @@
                 if (!info.target) hint.textContent = '';
                 else if (info.coastal && !ships.length) hint.textContent = `${info.target.nama} berakses pelabuhan (Pesisir), tapi Anda belum punya Kapal Tanker ${info.neededType} - beli dulu di tab Dealer. Depo berdermaga tidak bisa dipasok lewat darat.`;
                 else if (info.coastal) hint.textContent = `${info.target.nama} berakses pelabuhan - kirim otomatis pakai Kapal Tanker ${info.neededType}, durasi pelayaran mengikuti jarak laut sesungguhnya.`;
-                else hint.textContent = `${info.target.nama} tidak berakses pelabuhan (Darat) - hanya bisa ditransfer lewat jalur darat.`;
+                else hint.textContent = `${info.target.nama} tidak berakses pelabuhan (Darat) - hanya bisa ditransfer lewat jalur darat${info.neededType === 'BBM' ? ' memakai konvoi truk tangki BBL (Hino / Fuso / Isuzu Giga / UD Quester, beli di Dealer)' : ''}.`;
             }
             if (hint && info.target) { const inc = incomingOf(info.target, info.neededType); if (inc > 0) hint.textContent += ` Sedang berlayar ke sana: ${fmtN(inc)} ${info.neededType === 'LPG' ? 'Ton' : 'Bbl'}.`; }
+            renderLandFleetInfo(info);
             if (useKapal) populateTransferCrew();
         }
 
@@ -1012,7 +1052,91 @@
             [nSel, aSel].forEach((el, i) => { if (prev[i] && el.querySelector(`option[value="${prev[i]}"]`)) el.value = prev[i]; else if (el.options.length) el.selectedIndex = 0; });
         }
 
+        // ===== TRANSFER BBL DARAT: KONVOI TRUK TANGKI ANTAR DEPO (khusus tujuan tanpa dermaga) =====
+        // Muatan konvoi = jumlah kapasitas truk 'depo' yang berpangkalan di Kilang Tuban dan sedang bebas (kapasitas truk depo langsung dalam Bbl).
+        // Unit dipilih dari yang terbesar sampai muatan tercukupi. Konvoi dipimpin 1 Supir + 1 Kernet (kru terbaik yang sedang bebas).
+        const bblOfTruck = t => Math.floor(t.cap);
+        const convoyOff = new Set();   // id truk yang dicentang OFF pemain (default semua unit bebas ikut konvoi)
+        const depoTruckReason = (t, origin) => (t.depotId || 'KILANG-01') !== origin.id ? 'berpangkalan di depo lain' : busyIds.has(t.id) ? 'sedang bertugas' : docExpired(t) ? 'dokumen kedaluwarsa' : '';
+        function depoConvoyPool(origin) {
+            return companyFleet.filter(t => isDepoTruck(t) && t.type === 'BBM' && !depoTruckReason(t, origin)).sort((a, b) => b.cap - a.cap);
+        }
+        const depoConvoySelected = origin => depoConvoyPool(origin).filter(t => !convoyOff.has(t.id));
+        function toggleConvoyUnit(id, on) { if (on) convoyOff.delete(id); else convoyOff.add(id); try { renderLandFleetInfo(transferModeInfo()); } catch (e) {} }
+        function convoyCrewOptions(role) {
+            const rep = c => (c.reputation || 0) * 1000 - (c.violations || 0);
+            return companyCrew.filter(c => c.role === role && !busyIds.has(c.id)).sort((a, b) => rep(b) - rep(a));
+        }
+        function executeLandBblConvoy(info, amount) {
+            const { pusat, target } = info;
+            const pool = depoConvoyPool(pusat), sel = depoConvoySelected(pusat);
+            if (!pool.length) return showModal('Butuh Truk Tangki BBL', `${target.nama} tidak berdermaga, jadi dipasok lewat konvoi truk tangki BBL. Beli unit (Hino, Fuso, Isuzu Giga, atau UD Quester) di tab Dealer > Truk BBL Antar Depo dengan pangkalan ${pusat.nama}, lalu kirim lagi. Unit yang sedang jalan / dokumennya kedaluwarsa tidak dihitung.`, 'fa-truck-ramp-box', 'amber');
+            if (!sel.length) return showModal('Pilih Unit Truk', 'Centang minimal satu unit Truk Tangki BBL untuk ikut konvoi.', 'fa-circle-exclamation', 'red');
+            const driver = companyCrew.find(c => c.id === (document.getElementById('transfer-convoy-driver') || {}).value);
+            const kernet = companyCrew.find(c => c.id === (document.getElementById('transfer-convoy-kernet') || {}).value);
+            if (!driver || !kernet) return showModal('Kru Tidak Tersedia', `Konvoi butuh 1 Supir & 1 Kernet yang sedang bebas${!driver ? ' (Supir kosong)' : ''}${!kernet ? ' (Kernet kosong)' : ''}. Tunggu kru kembali atau rekrut di tab SDM.`, 'fa-user-slash', 'red');
+            if (busyCheck(sel[0], driver, kernet)) return;
+            const totalCap = sel.reduce((a, t) => a + bblOfTruck(t), 0);
+            const tk = depoTank(target, 'BBM'), roomFisik = Math.floor(tk.max - tk.cur), roomTujuan = roomFisik - incomingOf(target, 'BBM');
+            if (roomTujuan < 1) return roomFisik >= 1
+                ? showModal('Pasokan Sudah Mencukupi', `Pasokan yang sudah dalam perjalanan akan mengisi tangki ${target.nama} sampai penuh. Tunggu kiriman itu tiba.`, 'fa-truck-ramp-box', 'blue')
+                : showModal('Tangki Depo Penuh', `Tangki ${target.nama} sudah penuh, tidak ada ruang untuk muatan baru.`, 'fa-circle-info', 'blue');
+            const muat = Math.floor(Math.min(amount, totalCap, pusat.stok_current, roomTujuan));
+            if (muat < 1) return showModal('Stok Kurang', 'Stok BBL mentah Kilang Tuban tidak mencukupi!', 'fa-triangle-exclamation', 'red');
+            // Hanya unit yang benar-benar dibutuhkan yang berangkat (terbesar dulu); unit tercentang lain tetap standby.
+            const pick = []; let sum = 0; for (const t of sel) { if (sum >= muat) break; pick.push(t); sum += bblOfTruck(t); }
+            const biayaDarat = Math.round(muat * ECO.biayaTransferDaratBbl);
+            if (companyCash < biayaDarat) return showModal('Kas Tidak Cukup', `Biaya konvoi darat ${fmtN(muat)} Bbl adalah ${formatRupiah(biayaDarat)} (${formatRupiah(ECO.biayaTransferDaratBbl)}/Bbl).`, 'fa-triangle-exclamation', 'red');
+            const lead = pick[0];
+            const d = { spbu: target, truck: lead, convoy: pick, driver, kernet, origin: pusat, amount: muat, neededType: 'BBM' };
+            openSuratJalanModal({ mode: 'KLG', tujuanNama: target.nama, tujuanKode: target.id, jenisMuatan: 'BBL Mentah (dari Kilang Pusat Tuban, konvoi darat)',
+                volumeText: `${fmtN(muat)} Bbl · ${pick.length} unit truk tangki (kapasitas ${fmtN(sum)} Bbl) · biaya darat ${formatRupiah(biayaDarat)}${muat < amount ? ' · dibatasi kapasitas unit terpilih/stok/ruang tujuan' : ''}`,
+                truck: lead, driver, kernet, labels: { truk: `Pemimpin Konvoi (${pick.length} unit)`, plat: 'No. Polisi Pemimpin Konvoi', driver: 'Supir Pemimpin Konvoi', kernet: 'Kernet Pendamping' },
+                execute: (nomorSJ) => {
+                    if (pick.some(t => busyIds.has(t.id)) || busyIds.has(driver.id) || busyIds.has(kernet.id)) return showModal('Kondisi Berubah', 'Ada unit/kru konvoi yang sudah bertugas saat Surat Jalan ditandatangani. Ulangi pengiriman.', 'fa-circle-info', 'amber');
+                    if (pusat.stok_current < muat) return showModal('Stok Kurang', 'Stok BBL mentah Kilang Tuban tidak mencukupi!', 'fa-triangle-exclamation', 'red');
+                    { const t2 = depoTank(target, 'BBM'); if (muat > Math.floor(t2.max - t2.cur - incomingOf(target, 'BBM'))) return showModal('Kondisi Berubah', 'Ruang tangki tujuan berubah karena ada kiriman lain. Ulangi pengiriman.', 'fa-circle-info', 'amber'); }
+                    if (chargeBiayaBbl(muat, ECO.biayaTransferDaratBbl, `Biaya Konvoi Darat ${fmtN(muat)} Bbl ke ${target.nama} (${pick.length} truk)`) === false) return showModal('Kas Tidak Cukup', `Biaya konvoi darat ${formatRupiah(biayaDarat)} tidak tertutup kas.`, 'fa-triangle-exclamation', 'red');
+                    addIncoming(target, 'BBM', muat); d.incReserved = true;
+                    d.refund = () => { pusat.stok_current = Math.min(pusat.stok_max, pusat.stok_current + muat); };
+                    pusat.stok_current -= muat;
+                    d.nomorSJ = nomorSJ;
+                    renderRefineries();
+                    const inp = document.getElementById('transfer-amount-input'); if (inp) inp.value = '';
+                    animateDepoConvoy(d);
+                    addLog(`SURAT JALAN ${nomorSJ}: KONVOI ${pick.length} truk tangki BBL [Pemimpin: ${lead.id}, Supir: ${driver.name}] DITANDATANGANI & BERANGKAT membawa ${fmtN(muat)} Bbl dari ${pusat.nama} ke ${target.nama}.`, 'purple');
+                    showModal('Konvoi Berangkat', `Surat Jalan ${nomorSJ} ditandatangani. ${pick.length} unit truk tangki berangkat membawa ${fmtN(muat)} Bbl ke ${target.nama}. Stok depo bertambah setelah konvoi tiba & selesai bongkar; unit dan kru baru bebas setelah kembali ke ${pusat.nama}.`, 'fa-truck-ramp-box', 'blue');
+                } });
+        }
+        // Panel pilih unit di menu Kirim BBL (depo tanpa dermaga): daftar truk tangki BBL + kru + ringkasan muatan.
+        function renderLandFleetInfo(info) {
+            const wrap = document.getElementById('transfer-convoy-wrap'); if (!wrap) return;
+            const show = !!(info.target && !info.coastal && info.neededType === 'BBM');
+            wrap.classList.toggle('hidden', !show);
+            if (!show) return;
+            const all = companyFleet.filter(t => isDepoTruck(t) && t.type === 'BBM').sort((a, b) => b.cap - a.cap);
+            const list = document.getElementById('transfer-convoy-list');
+            list.innerHTML = all.length ? all.map(t => {
+                const why = depoTruckReason(t, info.pusat), on = !why && !convoyOff.has(t.id);
+                return `<label class="flex items-center gap-2 text-[11px] rounded px-2 py-1 border ${why ? 'bg-gray-950/50 border-gray-800 text-gray-600' : 'bg-gray-950 border-gray-800 text-gray-200 cursor-pointer'}">
+                    <input type="checkbox" ${on ? 'checked' : ''} ${why ? 'disabled' : ''} onchange="toggleConvoyUnit('${t.id}', this.checked)" class="accent-teal-500">
+                    <span class="min-w-0 flex-1 truncate">${t.id} <span class="font-mono text-amber-400/80">[${t.plat}]</span>${unitJulukan(t)} &middot; ${t.name}</span>
+                    <span class="shrink-0 font-mono text-[10px] ${why ? 'text-gray-600' : 'text-teal-300'}">${why ? why : fmtN(bblOfTruck(t)) + ' Bbl'}</span></label>`;
+            }).join('') : '<div class="text-[10px] text-amber-200">Belum punya Truk Tangki BBL. Beli di tab Dealer &gt; Truk BBL Antar Depo (Hino / Fuso / Isuzu Giga / UD Quester).</div>';
+            [['transfer-convoy-driver', 'Supir'], ['transfer-convoy-kernet', 'Kernet']].forEach(([id, role]) => {
+                const el = document.getElementById(id); if (!el) return;
+                const prev = el.value; el.innerHTML = '';
+                convoyCrewOptions(role).forEach(c => { const o = document.createElement('option'); o.value = c.id; o.innerText = `${c.name} (${'★'.repeat(repToStars(c.reputation))} Rep ${Math.round(c.reputation)} - Viol: ${c.violations})`; el.appendChild(o); });
+                if (prev && el.querySelector(`option[value="${prev}"]`)) el.value = prev; else if (el.options.length) el.selectedIndex = 0;
+            });
+            const sel = depoConvoySelected(info.pusat), cap = sel.reduce((a, t) => a + bblOfTruck(t), 0);
+            document.getElementById('transfer-land-fleet').innerHTML = sel.length
+                ? `<i class="fa-solid fa-circle-check mr-1"></i>${sel.length} unit terpilih &middot; muatan maks sekali jalan ${fmtN(cap)} Bbl. Hanya unit yang dibutuhkan yang berangkat.`
+                : '<i class="fa-solid fa-triangle-exclamation mr-1 text-amber-300"></i><span class="text-amber-200">Belum ada unit yang siap/terpilih di ' + info.pusat.nama + '.</span>';
+        }
+
         function executeTransferStock() {
+            if (pphBlokir()) return;
             const info = transferModeInfo();
             if (!info.target) return showModal('Peringatan', 'Pilih depo tujuan terlebih dahulu!', 'fa-circle-exclamation', 'red');
 
@@ -1073,14 +1197,22 @@
             // ===== RUTE DARAT: transfer instan (truk konvoi, diabstraksikan) untuk depo tanpa akses pelabuhan =====
             const amount = parseInt(document.getElementById('transfer-amount-input').value);
             if (isNaN(amount) || amount <= 0) return showModal('Peringatan', 'Masukkan jumlah transfer yang valid!', 'fa-circle-exclamation', 'red');
+            // BBL ke depo tanpa dermaga: WAJIB konvoi truk tangki BBL (Hino / Fuso / Isuzu Giga / UD Quester dari Dealer). LPG curah darat tetap lewat jalur lama.
+            if (neededType === 'BBM') return executeLandBblConvoy(info, amount);
             const bblUse = target.unit === 'KL' ? Math.ceil(amount * ECO.bblPerKl) : amount;
             if (pusat.stok_current < bblUse) return showModal('Stok Kurang', `Stok Kilang Tuban tidak mencukupi!`, 'fa-triangle-exclamation', 'red');
             { const tk = depoTank(target, neededType), ruang = Math.floor(tk.max - tk.cur); if (amount > ruang) return showModal('Melebihi Kapasitas', `Ruang tangki ${target.nama} tinggal ${fmtN(ruang)} ${unitMuat}. Kurangi jumlah kiriman.`, 'fa-circle-info', 'amber'); }
+            const biayaDarat = Math.round(bblUse * ECO.biayaTransferDaratBbl);
+            if (companyCash < biayaDarat) return showModal('Kas Tidak Cukup', `Biaya transfer darat ${bblUse.toLocaleString('id-ID')} Bbl adalah ${formatRupiah(biayaDarat)} (${formatRupiah(ECO.biayaTransferDaratBbl)}/Bbl).`, 'fa-triangle-exclamation', 'red');
 
-            openSuratJalanModal({ mode: 'KLG', tujuanNama: target.nama, tujuanKode: target.id, jenisMuatan: `${neededType} (dari Kilang Pusat Tuban, jalur darat)`, volumeText: `${amount.toLocaleString()} ${unitMuat}`,
+            openSuratJalanModal({ mode: 'KLG', tujuanNama: target.nama, tujuanKode: target.id, jenisMuatan: `${neededType} (dari Kilang Pusat Tuban, jalur darat)`, volumeText: `${amount.toLocaleString()} ${unitMuat} - biaya darat ${formatRupiah(biayaDarat)}`,
                 execute: (nomorSJ) => {
                     if (pusat.stok_current < bblUse) {
                         showModal('Stok Kurang', 'Stok Kilang Tuban tidak mencukupi!', 'fa-triangle-exclamation', 'red');
+                        return;
+                    }
+                    if (chargeBiayaBbl(bblUse, ECO.biayaTransferDaratBbl, `Biaya Transfer Darat ${bblUse.toLocaleString('id-ID')} Bbl ke ${target.nama}`) === false) {
+                        showModal('Kas Tidak Cukup', `Biaya transfer darat ${formatRupiah(biayaDarat)} tidak tertutup kas.`, 'fa-triangle-exclamation', 'red');
                         return;
                     }
                     pusat.stok_current -= bblUse;
@@ -1197,7 +1329,7 @@
 
             companyFleet.forEach(trk => {
                 if (busyIds.has(trk.id)) return; // sedang bertugas, sembunyikan dari pilihan
-                if (trk.kelas === 'kapal') return; // kapal cuma buat transfer Kilang<->Depo, bukan ke SPBU
+                if (!isSpbuTruck(trk)) return; // kapal & truk antar-depo bukan buat SPBU; kapal cuma buat transfer Kilang<->Depo, bukan ke SPBU
                 const opt = document.createElement('option');
                 opt.value = trk.id;
                 opt.innerText = `${trk.id} [${trk.plat}]${unitJulukan(trk)} - ${trk.name}`;

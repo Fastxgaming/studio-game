@@ -71,7 +71,27 @@
             r.state = next; r.since = vNow();
             if (info) Object.assign(r, info);
             shipRefreshMarker(ship.id);
+            shipStageSync(ship, next, r);
             shipUiSoon();
+        }
+        // Lencana kecil di bawah ikon kapal (tanpa perlu ikon ditekan): ANTRE LABUH / MEMUAT / LEPAS SANDAR / SANDAR /
+        // BONGKAR / SERVIS + hitung mundur. Berlayar & standby = tanpa lencana. Mesin lencananya ada di 07-animasi-kapal.js.
+        function shipStageSync(ship, st, r) {
+            if (typeof setTruckStage !== 'function') return;
+            const M = {
+                queue:      { txt: 'ANTRE LABUH', kind: 'antre' },
+                loading:    { txt: 'MEMUAT', kind: 'muat', sec: SHIP_LOAD_SEC },
+                unberthing: { txt: 'LEPAS SANDAR', kind: 'lepas', sec: SHIP_UNBERTH_SEC },
+                berthing:   { txt: 'SANDAR', kind: 'sandar', sec: SHIP_BERTH_SEC },
+                unloading:  { txt: 'BONGKAR', kind: 'bongkar', sec: r.sec || UNLOAD_SECONDS_KAPAL },
+                servis:     { txt: 'SERVIS', kind: 'servis', sec: SHIP_SERVICE_SEC }
+            };
+            const m = M[st];
+            if (!m) { clearTruckStage(ship.id); return; }
+            let ll = shipParkLL(ship.id) || r.ll;
+            if (!ll) { const h = stageHostMarker(ship.id); if (h) { const p = h.getLatLng(); ll = [p.lat, p.lng]; } }
+            if (!ll) return;
+            setTruckStage(ship.id, m.txt, m.kind, m.sec == null ? null : m.sec, ll, '#06b6d4', true);
         }
         const shipStateLabel = id => { const r = shipRtOf(id); return SHIP_ST[r.state].label + (r.at ? ' · ' + r.at : ''); };
         // Kapal dianggap "selesai misi" (dipanggil di catch/finally): lepas semua slot & antrean, kembali standby.
@@ -79,6 +99,7 @@
             berthPurge(ship.id);
             const r = shipRtOf(ship.id);
             if (r.state !== 'standby') { r.state = 'standby'; r.since = vNow(); r.node = null; r.at = null; }
+            if (typeof clearTruckStage === 'function') clearTruckStage(ship.id);
             shipRefreshMarker(ship.id); shipUiSoon();
         }
 
@@ -181,7 +202,7 @@
             const cost = shipServiceCost(ship), before = shipCond(ship);
             companyCash -= cost; totalExpense += cost;
             addFinanceLog(`Servis mesin & lambung ${ship.id} (kondisi ${before}%)`, -cost);
-            shipSetState(ship, 'servis', { at: ent.nama });
+            shipSetState(ship, 'servis', { at: ent.nama, ll: (ent.lat != null && ent.lon != null) ? [ent.lat, ent.lon] : null });
             addLog(`SERVIS MESIN: ${ship.id} masuk servis di ${ent.nama} (kondisi mesin ${before}%, ${formatRupiah(cost)}, ±${SHIP_SERVICE_SEC} detik).`, 'warning', 'truck');
             notify(`${ship.id} menjalani servis mesin di ${ent.nama}.`, 'warn');
             updateCashDisplay();
@@ -232,7 +253,7 @@
             try {
                 if (hooks && hooks.onBerthed) hooks.onBerthed(wait);
                 await pausableDelay(SHIP_BERTH_SEC * 1000);
-                shipSetState(ship, 'unloading', { at: ent.nama, node });
+                shipSetState(ship, 'unloading', { at: ent.nama, node, sec: unloadSec });
                 await pausableDelay(unloadSec * 1000);
                 onUnloaded();
                 shipSetState(ship, 'unberthing', { at: ent.nama, node });
