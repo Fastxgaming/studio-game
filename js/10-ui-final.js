@@ -249,8 +249,8 @@
                 </div>`; }).join('') : '';
         }
 
-        // ===== JAM GAME: 1 menit game = 10 detik nyata (1 jam game = 10 menit nyata, 1 hari game = 4 jam nyata, 1 minggu game = 28 jam nyata) =====
-        const GAME_START = new Date(2026, 8, 25, 6, 0, 0).getTime(), GAME_SPEED = 60 / 10; // GAME_SPEED=60/10 -> 1 menit in-game = 10 detik nyata (1 jam game = 10 menit nyata, 1 hari game = 4 jam nyata). Pesanan pertama TIDAK lagi menunggu jeda awal: muncul begitu pemain membeli armada (lihat spawnOrderForNewTruck).
+        // ===== JAM GAME: 1 menit game = 5 detik nyata (1 jam game = 5 menit nyata, 1 hari game = 2 jam nyata, 1 minggu game = 14 jam nyata) =====
+        const GAME_START = new Date(2026, 8, 25, 6, 0, 0).getTime(), GAME_SPEED = 60 / 5; // GAME_SPEED=60/5 -> 1 menit in-game = 5 detik nyata (1 jam game = 5 menit nyata, 1 hari game = 2 jam nyata). Pesanan pertama TIDAK lagi menunggu jeda awal: muncul begitu pemain membeli armada (lihat spawnOrderForNewTruck).
         let gameElapsed = 0;
         const gameNow = () => GAME_START + gameElapsed * GAME_SPEED;
         const fmtTime = ms => new Date(ms).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }).replace('.', ':');
@@ -346,7 +346,7 @@
         const ORDER_OPEN = { BBM: { min: 5, reserve: 2, max: 20 }, LPG: { min: 3, reserve: 1, max: 10 } };
         const ORDER_BATCH = 3; // jumlah pesanan yang boleh muncul sekaligus tiap giliran (ubah di sini kalau mau lebih banyak/sedikit)
         const ORDER_GAP_MIN_GAME = 5, ORDER_GAP_BASE_GAME = 30; // menit GAME: jeda terpendek (banyak truk idle) & jeda dasar (0 truk idle)
-        const ORDER_TTL_DAYS = 7; // durasi pesanan terbuka sebelum batal (hari GAME). 1 hari game = 4 jam nyata -> 7 hari = 28 jam nyata (berhenti saat logout)
+        const ORDER_TTL_DAYS = 7; // durasi pesanan terbuka sebelum batal (hari GAME). 1 hari game = 2 jam nyata -> 7 hari = 14 jam nyata (berhenti saat logout)
         const ORDER_TTL = ORDER_TTL_DAYS * 24 * 3600000 / GAME_SPEED;
         // Pesanan baru muncul BERTAHAP satu per satu (bukan langsung penuh sekaligus), jedanya lihat orderGapMs().
         const ORDER_STOK_RATIO = 0.9; // stok SPBU saat memesan = 90% dari kapasitas tangki, sekaligus ambang SPBU mulai memesan (dinaikkan dari 80% supaya pesanan datang lebih cepat, terutama untuk pemain baru dengan sedikit SPBU aktif)

@@ -10,7 +10,7 @@
         // Hitungan waktu memakai gameNow() (jam game), BUKAN Date.now(), jadi produksi ikut berhenti saat game dijeda /
         // tab tersembunyi / pemain offline - tidak perlu logika jeda tambahan.
 
-        // Kapasitas tangki anjungan 10 juta (Bbl / Ton). Produksi/hari diset supaya tangki kosong -> penuh dalam ±3-4 HARI GAME (1 hari game = 4 jam nyata).
+        // Kapasitas tangki anjungan 10 juta (Bbl / Ton). Produksi/hari diset supaya tangki kosong -> penuh dalam ±3-4 HARI GAME (1 hari game = 2 jam nyata).
         // Upgrade menaikkan rate & cap dengan persentase yang sama, jadi waktu penuh tetap. Aliran pipa ke Tuban dibatasi ruang tangki Tuban (stok_max).
         const HULU_SITES = {
             alpha: { nama: 'Anjungan Madura Alpha', berth: 'AN_alpha', fuel: 'oil', unit: 'Bbl', jenis: 'minyak mentah', shipType: 'BBM', icon: 'fa-oil-well', tone: 'teal',
@@ -636,7 +636,7 @@
                 body = `<div class="grid grid-cols-2 gap-2 text-[10px] mb-3">${chip('Biaya Bangun', formatRupiah(c.buildCost), 'text-amber-400')}${chip('Waktu Bangun', c.buildHours + ' jam game', 'text-sky-400')}
                         ${chip('Produksi', fmtN(c.rate) + ' ' + c.unit + '/hari', 'text-emerald-400')}${chip('Operasional', formatRupiah(c.opexWeek) + '/minggu', 'text-red-400')}</div>
                     <button onclick="huluBuild('${k}')" class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-2.5 rounded-xl text-xs transition"><i class="fa-solid fa-hammer mr-1.5"></i>Bangun Anjungan</button>
-                    <div class="text-[9px] text-gray-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i>1 hari game = 4 jam nyata, 1 minggu game = ±28 jam nyata (operasional ditagih tiap minggu game). ${c.fuel === 'gas' ? `Gas diangkut kapal Tanker LPG dan masuk sebagai LPG Curah Tuban (harga pasar kini ${formatRupiah(lpgCurahPrice())}/Ton, HPP anjungan ${formatRupiah(c.hpp)}/Ton = hemat ${Math.round((1 - c.hpp / lpgCurahPrice()) * 100)}%).` : `Biaya pokok minyak sendiri (HPP ${formatRupiah(c.hpp)}/Bbl) jauh di bawah harga pasar kini (${formatRupiah(bblPrice())}/Bbl, hemat ${Math.round((1 - c.hpp / bblPrice()) * 100)}%), tapi modalnya besar dan butuh kapal tanker.`}</div>`;
+                    <div class="text-[9px] text-gray-500 mt-2"><i class="fa-solid fa-circle-info mr-1"></i>1 hari game = 2 jam nyata, 1 minggu game = ±14 jam nyata (operasional ditagih tiap minggu game). ${c.fuel === 'gas' ? `Gas diangkut kapal Tanker LPG dan masuk sebagai LPG Curah Tuban (harga pasar kini ${formatRupiah(lpgCurahPrice())}/Ton, HPP anjungan ${formatRupiah(c.hpp)}/Ton = hemat ${Math.round((1 - c.hpp / lpgCurahPrice()) * 100)}%).` : `Biaya pokok minyak sendiri (HPP ${formatRupiah(c.hpp)}/Bbl) jauh di bawah harga pasar kini (${formatRupiah(bblPrice())}/Bbl, hemat ${Math.round((1 - c.hpp / bblPrice()) * 100)}%), tapi modalnya besar dan butuh kapal tanker.`}</div>`;
             } else if (!s.ready) {
                 body = `<div class="text-[11px] text-gray-300 mb-1.5">Pembangunan berlangsung...</div><div id="hulu-build-bar">${huluBar(0, 'bg-amber-500')}</div><div id="hulu-build-left" class="text-[10px] text-gray-400 mt-1.5"></div>`;
             } else {

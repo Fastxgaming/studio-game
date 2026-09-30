@@ -12,7 +12,7 @@
         const MARKET_CFG = {
             bbl: { base: 430000,  min: 0.72, max: 1.55, seed: 11, perMul: 1.00, phase: [0, 0, 3.142], round: 500,   label: 'BBL Mentah', unit: 'Bbl' },
             lpg: { base: 2900000, min: 0.78, max: 1.45, seed: 29, perMul: 1.17, phase: [3.665, 3.665, 1.571], round: 5000,  label: 'LPG Curah',  unit: 'Ton' },
-            swing: [[30, 0.07], [110, 0.12], [340, 0.09]],   // [periode dalam JAM game, amplitudo]. 1 hari game = 24 jam = 4 jam nyata
+            swing: [[30, 0.07], [110, 0.12], [340, 0.09]],   // [periode dalam JAM game, amplitudo]. 1 hari game = 24 jam = 2 jam nyata
             noise: 0.025,                                     // getaran acak halus per jam game
             eventEpochH: 96, eventChance: 0.50,               // tiap 4 hari game, peluang 50% ada berita pasar (berlangsung 1-3 hari game)
             eventMag: [0.14, 0.32], eventUpBias: 0.55         // besar dampak berita; 55% berita bikin harga naik
