@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Game | Migas Manager ID dan Dealer Manager ID</title>
+<meta name="description" content="Studio Game membuat game simulasi manajemen bisnis dari Indonesia: Migas Manager ID (distribusi BBM & LPG) dan Dealer Manager ID (bisnis dealer kendaraan, Open Beta).">
+<meta name="robots" content="index, follow">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Studio Game | Migas Manager ID dan Dealer Manager ID">
+<meta property="og:description" content="Dua game simulasi bisnis buatan Indonesia. Bangun jaringan distribusi energi atau dealer kendaraan dari nol.">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#0a1530">
+<!-- Tempel meta verifikasi Google Search Console di bawah baris ini -->
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script src="js/boot.js"></script>
+</head>
+<body>
+<div class="prog" id="prog" aria-hidden="true"></div>
+
+<!-- INTRO: lompatan hyperspace (js/intro.js) -->
+<div class="intro" id="intro" aria-hidden="true">
+  <canvas id="warp"></canvas>
+  <div class="hud">
+    <div class="ring"><svg viewBox="0 0 120 120"><circle class="r0" cx="60" cy="60" r="54"/><circle class="r1" id="ring" cx="60" cy="60" r="54"/></svg><div class="pn"><span id="pct">0</span><small>%</small></div></div>
+    <div class="ttl" id="ttl" data-final="Studio Game">Studio Game</div>
+  </div>
+  <ul class="log" id="log"></ul>
+  <i class="br tl"></i><i class="br tr"></i><i class="br bl"></i><i class="br bb"></i>
+  <div class="flash" id="flash"></div>
+  <button class="skip" id="skip" type="button">Lewati</button>
+</div>
+
+<header>
+  <div class="wrap hd">
+    <a class="brand" href="#atas" aria-label="Studio Game, ke atas"><img src="assets/favicon.svg" alt=""><span>Studio Game</span></a>
+    <nav aria-label="Menu utama"><a href="#game">Game</a><a href="#studio">Tentang</a><a href="#komunitas">Komunitas</a></nav>
+  </div>
+</header>
+
+<main>
+<!-- HERO -->
+<section class="hero" id="atas">
+  <div class="globe-wrap"><canvas id="globe" aria-hidden="true"></canvas></div>
+  <div class="wrap">
+    <h1 data-split>Game manajemen bisnis buatan Indonesia.</h1>
+    <p class="lead" data-in style="--d:1.2s">Kami membuat game simulasi yang bisa langsung dimainkan di browser. Sekarang ada dua: Migas Manager ID dan Dealer Manager ID.</p>
+    <div class="cta" data-in style="--d:1.35s">
+      <a class="btn btn-o" href="https://dealer-manager-id.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Dealer Manager (OBT)</a>
+      <a class="btn btn-a" href="https://migas-manager-indonesia.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Migas Manager ID</a>
+      <a class="btn btn-g" href="#game">Baca penjelasan game</a>
+    </div>
+    <div class="status" data-in style="--d:1.5s">
+      <span><i></i>Migas Manager ID v2.3.8 sudah rilis</span>
+      <span class="o"><i></i>Dealer Manager ID sedang Open Beta</span>
+    </div>
+  </div>
+</section>
+
+<!-- GAME -->
+<section id="game">
+  <div class="wrap">
+    <div class="sec-h"><h2 data-scramble>Dua game, dua dunia bisnis</h2><p>Dua-duanya game simulasi: kamu mulai dari usaha kecil, mengambil keputusan, mengatur uang, lalu membesarkannya.</p></div>
+
+    <!-- MIGAS -->
+    <article class="game migas" id="migas">
+      <div class="gh"><h3 data-scramble>Migas Manager ID</h3><span class="tag">Nusantara Edition v2.3.8</span></div>
+      <p class="tagline">Bangun kerajaan distribusi BBM dan LPG dari Kilang Tuban sampai pelosok Nusantara.</p>
+      <div class="cols">
+        <div class="what">
+          <h4>Apa itu Migas Manager ID?</h4>
+          <p>Migas Manager ID adalah game simulasi bisnis distribusi BBM dan LPG di Indonesia. Kamu memimpin perusahaan energi dari nol: membeli truk tangki dan kapal tanker, merekrut kru, mengolah minyak mentah di kilang, lalu mengirim produknya ke SPBU mitra.</p>
+          <p>Semua berjalan real-time di peta 34 provinsi, dan kamu bersaing dengan pemain lain di papan peringkat.</p>
+          <ul class="facts">
+            <li><b>34</b>provinsi di peta</li>
+            <li><b>Rp 650 juta</b>modal awal</li>
+            <li><b>5</b>peran kru</li>
+          </ul>
+        </div>
+        <div>
+          <div class="sj" data-tilt role="img" aria-label="Contoh tampilan Surat Jalan digital">
+            <div class="sj-h"><b>Surat Jalan</b><span>contoh tampilan</span></div>
+            <dl><dt>Asal</dt><dd>Kilang Tuban</dd><dt>Tujuan</dt><dd>SPBU mitra, Surabaya</dd><dt>Muatan</dt><dd>Pertalite 16 KL</dd><dt>Armada</dt><dd>Tangki Menengah 16 KL</dd></dl>
+            <div class="stamp">Siap berangkat</div>
+            <div class="sj-f"><span>Tanda tangan supir</span><svg viewBox="0 0 92 28" fill="none" stroke="#0a1530" stroke-width="2" stroke-linecap="round"><path d="M4 20c8-18 10 6 18-6s6 10 14 2 8 6 16-4 8 6 16 0"/></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="evt">
+        <div>
+          <span class="new">Event berjalan</span>
+          <h4>Sumpah Pemuda: 28 untuk 28</h4>
+          <p class="when">22 sampai 31 Oktober 2026</p>
+        </div>
+        <div>
+          <p>Setiap pesanan SPBU yang selesai tepat waktu memberi 1 poin, dan yang selesai cepat memberi 2 poin. Kumpulkan 28 poin untuk lencana Pemuda Penggerak, 280 poin untuk Pemuda Tangguh.</p>
+          <p>Poin ditukar di toko event sampai 2 November 2026 pukul 23.59 WIB: uang tunai, tambahan stok BBL dan LPG Curah, atau empat truk Limited khusus event.</p>
+        </div>
+      </div>
+
+      <h4 class="sub">Yang bisa kamu kelola</h4>
+      <ul class="feat feat-grid">
+        <li><b>Peta hidup.</b> Setiap SPBU dilayani kilang atau depo terdekat yang jenis produknya cocok, dalam radius layanan yang realistis.</li>
+        <li><b>Garasi armada.</b> Tiap truk punya kartu dengan plat, indikator ban dan solar, serta odometer. Truk baru punya masa adaptasi sebelum risikonya normal.</li>
+        <li><b>Servis dan suku cadang.</b> Servis berkala per truk dengan pilihan kualitas, plus toko suku cadang per merek tempat kamu menawar dengan kata-katamu sendiri.</li>
+        <li><b>Isi solar di jalan.</b> Truk mampir ke SPBU searah rute saat solar menipis, lalu isi penuh di SPBU tujuan sebelum pulang.</li>
+        <li><b>Cuaca, berita, insiden.</b> Banjir, longsor, pohon tumbang, kecelakaan, sampai kebakaran memengaruhi jalur dan armadamu. Netizen ikut berkomentar dan memengaruhi reputasi.</li>
+        <li><b>Kontrak dan PSO.</b> Kuota per kabupaten, harga subsidi, audit acak, dan kontrak yang bisa ditawar. Pembeli yang puas menawarkan perpanjangan.</li>
+        <li><b>Kemitraan SPBU.</b> Telat bayar tagihan, izin mitra diblokir otomatis. Ekspansi harus sebanding dengan arus kas.</li>
+        <li><b>Tender Blok Migas.</b> Ikut lelang blok melawan pesaing AI dan pemain lain, survei seismik, lalu bor eksplorasi.</li>
+        <li><b>Bursa P2P dan Limited Edition.</b> Jual-beli truk antar pemain, termasuk unit Limited dan Gift Edition dengan batas harga.</li>
+        <li><b>Peringkat dan Kartu Pengusaha.</b> Adu cash di papan peringkat, lalu unduh kartu pengusahamu sebagai gambar untuk dibagikan.</li>
+      </ul>
+
+      <ol class="steps">
+        <li><b>Daftar perusahaan</b>Pilih nama dan kode 3-4 huruf untuk Surat Jalan.</li>
+        <li><b>Beli armada</b>Truk tangki atau kapal tanker sesuai bujet.</li>
+        <li><b>Rekrut kru</b>Supir, kernet, mekanik, nahkoda, dan ABK.</li>
+        <li><b>Kirim dan berkembang</b>Layani SPBU mitra, lalu buka depo cabang.</li>
+      </ol>
+      <div class="acts">
+        <a class="btn btn-a" href="https://migas-manager-indonesia.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Migas Manager ID</a>
+        <a class="btn btn-g" href="#komunitas">Gabung komunitas</a>
+      </div>
+      <p class="note">Bisa dipasang seperti aplikasi dan tetap terbuka saat offline. Game independen yang terinspirasi dari industri distribusi migas di Indonesia, tidak berafiliasi dengan perusahaan migas mana pun.</p>
+    </article>
+
+    <!-- DEALER -->
+    <article class="game dealer" id="dealer">
+      <div class="gh"><h3 data-scramble>Dealer Manager ID</h3><span class="tag">Open Beta Tester</span></div>
+      <p class="tagline">Dari showroom seken pinggir jalan sampai jadi raja otomotif.</p>
+      <div class="cols one">
+        <div class="what">
+          <h4>Apa itu Dealer Manager ID?</h4>
+          <p>Dealer Manager ID adalah game simulasi bisnis dealer kendaraan di Indonesia. Kamu mulai dari showroom seken kecil di pinggir jalan dengan modal terbatas: berburu motor bekas di balai lelang, menjualnya dengan untung, lalu menjaga reputasi supaya pembeli dan mitra percaya.</p>
+          <p>Saat butuh modal, kamu bisa mengambil pinjaman bank. Makin besar reputasi dan kasmu, makin besar pula dealermu: dari mobil baru dan seken, impor resmi, pabrik, sampai IPO.</p>
+        </div>
+      </div>
+
+      <h4 class="sub" data-scramble>Enam tingkat dealer yang harus kamu daki</h4>
+      <p class="tiers-p">Naik tingkat butuh reputasi dan modal. Tiap tingkat membuka jenis bisnis yang baru.</p>
+      <ol class="tiers" id="tiers">
+        <li style="--i:0"><span class="tn">Tier 0</span><div class="tt"><h4>Showroom seken pinggir jalan</h4><p>Balai lelang motor bekas dan bengkel mikro.</p></div><span class="rep">Titik awal</span></li>
+        <li style="--i:1"><span class="tn">Tier 1</span><div class="tt"><h4>Dealer independen kota</h4><p>Mobil seken dan baru, motor baru, partner leasing pihak ketiga.</p></div><span class="rep">Reputasi 100</span></li>
+        <li style="--i:2"><span class="tn">Tier 2</span><div class="tt"><h4>APM resmi regional</h4><p>Impor CBU resmi, klub komunitas, paket modifikasi.</p></div><span class="rep">Reputasi 300</span></li>
+        <li style="--i:3"><span class="tn">Tier 3</span><div class="tt"><h4>Konglomerasi nasional 3S</h4><p>Pabrik CKD, tender B2B korporat, jaringan SPKLU nasional.</p></div><span class="rep">Reputasi 500</span></li>
+        <li style="--i:4"><span class="tn">Tier 4</span><div class="tt"><h4>Apex Tycoon dan IPO</h4><p>IPO di BEI, captive finance, lobi politik.</p></div><span class="rep">Reputasi 700</span></li>
+        <li style="--i:5"><span class="tn">Tier 5</span><div class="tt"><h4>Singularity Cosmic Emperor</h4><p>Sindikat AGI, lab AI otonom, diler koloni Mars dan Bulan.</p></div><span class="rep">Reputasi 900</span></li>
+      </ol>
+
+      <ul class="feat feat-grid">
+        <li><b>Reputasi menentukan langkahmu.</b> Naik lewat penjualan yang beres, turun kalau kamu ceroboh.</li>
+        <li><b>Perbankan.</b> Pinjaman untuk mempercepat usaha, dengan bunga dan tenor yang harus kamu hitung sendiri.</li>
+        <li><b>Peta interaktif.</b> Bisnismu hidup di peta, lengkap dengan rute pengiriman.</li>
+        <li><b>Kejadian tak terduga.</b> Nominalnya ikut membesar seiring tingkat dealermu, jadi tantangannya tetap terasa.</li>
+      </ul>
+      <p class="note">Game ini masih dalam Open Beta Test. Data dan keseimbangan permainan masih bisa berubah, dan masukan dari pemain sangat membantu. Nama merek dan model di dalam game adalah plesetan atau rekaan, dan tidak berafiliasi dengan produsen mana pun.</p>
+      <div class="acts">
+        <a class="btn btn-o" href="https://dealer-manager-id.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Dealer Manager (OBT)</a>
+        <a class="btn btn-g" href="#komunitas">Gabung komunitas</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- STUDIO -->
+<section id="studio">
+  <div class="wrap about">
+    <div>
+      <div class="sec-h" style="margin-bottom:22px"><h2 data-scramble>Tentang Studio Game</h2></div>
+      <p>Studio Game membuat game simulasi manajemen dengan tema bisnis yang dekat dengan kehidupan di Indonesia, dari BBM dan SPBU sampai dealer motor dan mobil.</p>
+      <p>Kami ingin game yang mudah dibuka, bisa dimainkan siapa saja, dan tetap punya sistem yang dalam untuk pemain yang suka menghitung.</p>
+    </div>
+    <ul class="team">
+      <li><span class="av">R</span><div><b>Mas Rizki</b><span>Ide dan konsep game</span></div></li>
+      <li><span class="av">A</span><div><b>Mas Alif</b><span>Desain visual</span></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- KOMUNITAS -->
+<section id="komunitas">
+  <div class="wrap">
+    <div class="join">
+      <div><h2 data-scramble>Ikut kabar terbaru dan ngobrol bareng pemain lain</h2><p>Dapatkan info pembaruan, laporkan bug, dan bagikan strategimu di komunitas masing-masing game.</p></div>
+      <div class="groups">
+        <div>
+          <h3>Migas Manager ID</h3>
+          <div class="links">
+            <a class="btn" href="https://whatsapp.com/channel/0029VbE1V8wG3R3bnWo3ZL3j" target="_blank" rel="noopener">Saluran WhatsApp</a>
+            <a class="btn alt" href="https://chat.whatsapp.com/KvbYrKxBQNbHQgX6y3VCq2" target="_blank" rel="noopener">Grup WhatsApp</a>
+          </div>
+        </div>
+        <div>
+          <h3>Dealer Manager ID</h3>
+          <div class="links">
+            <a class="btn" href="https://whatsapp.com/channel/0029VbDg3RZDuMRpUMfETJ3n" target="_blank" rel="noopener">Saluran WhatsApp</a>
+            <a class="btn alt" href="https://chat.whatsapp.com/GW7TSMX9NjLFWlQjxTvbIt" target="_blank" rel="noopener">Grup WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer><div class="wrap">
+  <div><strong>&copy; <span id="yr">2026</span> Studio Game</strong></div>
+  <div>Game independen untuk hiburan. Nama merek, perusahaan, dan model di dalam game adalah plesetan atau rekaan, dan tidak berafiliasi dengan produsen, merek, maupun perusahaan mana pun.</div>
+</div></footer>
+
+<script src="js/fx.js"></script>
+<script src="js/intro.js"></script>
+<script src="js/globe.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
