@@ -1,5 +1,5 @@
 /* GLOBE 3D di hero: bola titik dengan gugusan Nusantara yang menyala, busur jaringan antar kota,
-   cincin orbit + satelit, dan dua simpul berlabel (Migas & Dealer). Digambar di <canvas> 2D dengan
+   dan dua simpul berlabel (Migas & Dealer). Digambar di <canvas> 2D dengan
    proyeksi perspektif buatan sendiri (tanpa pustaka), mengikuti kursor, berhenti saat tak terlihat. */
 (function () {
   var SG = window.SG = window.SG || {};
@@ -45,10 +45,6 @@
   [-60, -30, 0, 30, 60].forEach(function (la) { var p = []; for (var lo = 0; lo <= 360; lo += 6) p.push(ll(la, lo)); line(p); });
   for (var m = 0; m < 360; m += 30) { var q = []; for (var la2 = -90; la2 <= 90; la2 += 6) q.push(ll(la2, m)); line(q); }
 
-  /* cincin orbit miring */
-  var orbit = [], OT = 64;
-  for (var o = 0; o <= OT; o++) { var t = o / OT * TAU; orbit.push([Math.cos(t) * 1.3, 0, Math.sin(t) * 1.3]); }
-
   /* state */
   var mx = 0, my = 0, sx = 0, sy = 0, running = false, visible = true, raf = 0, t0 = performance.now(), lastT = 0;
   addEventListener('pointermove', function (e) { mx = e.clientX / innerWidth * 2 - 1; my = e.clientY / innerHeight * 2 - 1; }, { passive: true });
@@ -72,8 +68,8 @@
   function draw(now) {
     var t = (now - t0) / 1000;
     sx += (mx - sx) * .05; sy += (my - sy) * .05;
-    yaw = -113 * D2R + Math.sin(t * .22) * .3 + sx * .26;
-    tilt = .02 - sy * .16 + Math.sin(t * .17) * .03;
+    yaw = -113 * D2R + Math.sin(t * .12) * .16 + sx * .12;
+    tilt = .02 - sy * .08 + Math.sin(t * .1) * .015;
     cyw = Math.cos(yaw); syw = Math.sin(yaw); ctl = Math.cos(tilt); stl = Math.sin(tilt);
     ctx.clearRect(0, 0, W, H);
 
@@ -82,9 +78,6 @@
     g.addColorStop(0, 'rgba(76,201,240,.20)'); g.addColorStop(.5, 'rgba(76,201,240,.05)'); g.addColorStop(1, 'rgba(76,201,240,0)');
     ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, R * 1.5, 0, TAU); ctx.fill();
 
-    /* orbit bagian belakang */
-    var tk = t * .35;
-    drawOrbit(false);
 
     /* badan bola */
     g = ctx.createRadialGradient(cx - R * .3, cy - R * .35, R * .1, cx, cy, R * 1.02);
@@ -110,7 +103,7 @@
     }
     /* Nusantara menyala */
     for (i = 0; i < isl.length; i++) {
-      var pi = rot(isl[i], tmp); if (pi[2] < 0) continue; var qi = proj(pi), tw = .65 + .35 * Math.sin(t * 2 + i);
+      var pi = rot(isl[i], tmp); if (pi[2] < 0) continue; var qi = proj(pi), tw = .85;
       ctx.fillStyle = 'rgba(' + (i % 5 === 0 ? OR : AQ) + ',' + (pi[2] * .85 * tw).toFixed(2) + ')'; ctx.fillRect(qi[0] - 1, qi[1] - 1, 2.2, 2.2);
     }
 
@@ -126,26 +119,17 @@
       var col = nodes[arcs[i][0]].big ? nodes[arcs[i][0]].c : (nodes[arcs[i][1]].big ? nodes[arcs[i][1]].c : AQ);
       ctx.lineWidth = 1.1;
       for (j = 1; j < pts.length; j++) { var zz = (pts[j][2] + pts[j - 1][2]) / 2; if (zz < -.02) continue; ctx.strokeStyle = 'rgba(' + col + ',' + (.14 + zz * .3).toFixed(2) + ')'; ctx.beginPath(); ctx.moveTo(pts[j - 1][0], pts[j - 1][1]); ctx.lineTo(pts[j][0], pts[j][1]); ctx.stroke(); }
-      var u = ((t * .22 + i * .173) % 1) * N, ui = Math.floor(u), pp = pts[Math.min(N, ui)];
-      if (pp[2] > 0) {
-        for (var tr = 1; tr <= 5; tr++) { var tp = pts[Math.max(0, ui - tr)]; if (tp[2] < 0) break; ctx.fillStyle = 'rgba(' + col + ',' + (.5 - tr * .09).toFixed(2) + ')'; ctx.beginPath(); ctx.arc(tp[0], tp[1], 2.4 - tr * .3, 0, TAU); ctx.fill(); }
-        ctx.fillStyle = 'rgba(255,255,255,.95)'; ctx.beginPath(); ctx.arc(pp[0], pp[1], 2.4, 0, TAU); ctx.fill();
-      }
     }
 
     /* simpul */
     var labels = [];
     for (i = 0; i < nodes.length; i++) {
       var nd = nodes[i], pn = rot(nd.v, tmp2); if (pn[2] < .02) continue; var qn = proj(pn), rad = nd.big ? 5 : 2.6;
-      var ph = (t * .8 + i * .37) % 1, a2 = (1 - ph) * .5 * Math.min(1, pn[2] * 2);
-      ctx.strokeStyle = 'rgba(' + nd.c + ',' + a2.toFixed(2) + ')'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(qn[0], qn[1], rad + ph * (nd.big ? 26 : 14), 0, TAU); ctx.stroke();
       var gg = ctx.createRadialGradient(qn[0], qn[1], 0, qn[0], qn[1], rad * 4); gg.addColorStop(0, 'rgba(' + nd.c + ',.55)'); gg.addColorStop(1, 'rgba(' + nd.c + ',0)');
       ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(qn[0], qn[1], rad * 4, 0, TAU); ctx.fill();
       ctx.fillStyle = 'rgb(' + nd.c + ')'; ctx.beginPath(); ctx.arc(qn[0], qn[1], rad, 0, TAU); ctx.fill();
       if (nd.big) labels.push([nd, qn, pn[2]]);
     }
-
-    drawOrbit(true);
 
     /* label simpul utama */
     var fs = Math.max(12, Math.min(16, R * .05));
@@ -159,17 +143,6 @@
       ctx.fillText(nd.label, ex + nd.dx * 7, ey - fs * .95);
     });
 
-    function drawOrbit(front) {
-      var ot = .5, co = Math.cos(ot), so2 = Math.sin(ot), prev2 = null, any = false;
-      for (var k = 0; k < orbit.length; k++) {
-        var v = orbit[k], x = v[0], y = v[1] * co - v[2] * so2, z = v[1] * so2 + v[2] * co, p2 = rot([x, y, z], [0, 0, 0]), q2 = proj(p2);
-        if (prev2 && ((p2[2] + prev2[2]) / 2 >= 0) === front) { ctx.strokeStyle = 'rgba(255,106,43,' + (front ? .38 : .18) + ')'; ctx.lineWidth = front ? 1.3 : 1; ctx.beginPath(); ctx.moveTo(prev2[0], prev2[1]); ctx.lineTo(q2[0], q2[1]); ctx.stroke(); }
-        prev2 = [q2[0], q2[1], p2[2]];
-      }
-      /* satelit */
-      var sa = tk * 1.0, sv = [Math.cos(sa) * 1.3, 0, Math.sin(sa) * 1.3], yy = sv[1] * co - sv[2] * so2, zz2 = sv[1] * so2 + sv[2] * co, ps = rot([sv[0], yy, zz2], [0, 0, 0]), qs = proj(ps);
-      if ((ps[2] >= 0) === front) { ctx.fillStyle = '#fff'; ctx.shadowColor = '#ff6a2b'; ctx.shadowBlur = 14; ctx.beginPath(); ctx.arc(qs[0], qs[1], 3.2, 0, TAU); ctx.fill(); ctx.shadowBlur = 0; }
-    }
   }
 
   function loop(now) {
