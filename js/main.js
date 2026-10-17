@@ -29,3 +29,10 @@
   function ready() { h.classList.remove('lock'); h.classList.add('ready'); }
   if (SG.intro) SG.intro(ready); else ready();   /* intro hanya ada di beranda */
 })();
+
+/* Header jadi lebih pekat saat halaman digulir. */
+(function () {
+  var hd = document.querySelector('header'); if (!hd) return;
+  function upd() { hd.classList.toggle('sc', scrollY > 24); }
+  addEventListener('scroll', upd, { passive: true }); upd();
+})();

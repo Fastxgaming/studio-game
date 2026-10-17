@@ -10,3 +10,11 @@
   if ((force || !seen) && !calm) h.classList.add('lock');
   if (calm) h.classList.add('calm');
 })();
+
+/* Rapikan URL: kalau halaman dibuka lewat .../index.html, tampilkan hanya .../ di bilah alamat. */
+(function () {
+  try {
+    var m = location.pathname.match(/^(.*\/)index\.html?$/i);
+    if (m && history.replaceState) history.replaceState(null, '', m[1] + location.search + location.hash);
+  } catch (e) {}
+})();

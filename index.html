@@ -3,16 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Studio Game | Migas Manager ID dan Dealer Manager ID</title>
-<meta name="description" content="Studio Game membuat game simulasi manajemen bisnis dari Indonesia: Migas Manager ID (distribusi BBM & LPG) dan Dealer Manager ID (bisnis dealer kendaraan, Open Beta).">
+<title>Studio Game | Game simulasi bisnis buatan Indonesia</title>
+<meta name="description" content="Studio Game membuat game simulasi manajemen bisnis dari Indonesia: Migas Manager ID (distribusi BBM & LPG), Dealer Manager ID (dealer kendaraan, Open Beta), dan Truck Manager Nusantara (logistik dan armada, segera hadir).">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Studio Game | Migas Manager ID dan Dealer Manager ID">
-<meta property="og:description" content="Dua game simulasi bisnis buatan Indonesia. Bangun jaringan distribusi energi atau dealer kendaraan dari nol.">
+<meta property="og:title" content="Studio Game | Game simulasi bisnis buatan Indonesia">
+<meta property="og:description" content="Game simulasi bisnis buatan Indonesia: distribusi energi, dealer kendaraan, dan logistik armada truk.">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0a1530">
 <!-- Tempel meta verifikasi Google Search Console di bawah baris ini -->
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
@@ -20,6 +21,7 @@
 <script src="js/boot.js"></script>
 </head>
 <body>
+<a class="skip-link" href="#game">Lompat ke daftar game</a>
 <div class="prog" id="prog" aria-hidden="true"></div>
 
 <!-- INTRO: kota 3D yang tumbuh (js/intro.js) -->
@@ -45,15 +47,16 @@
   <div class="globe-wrap"><canvas id="globe" aria-hidden="true"></canvas></div>
   <div class="wrap">
     <h1 data-in style="--d:.1s">Game manajemen bisnis buatan Indonesia.</h1>
-    <p class="lead" data-in style="--d:.3s">Kami membuat game simulasi yang bisa langsung dimainkan di browser. Sekarang ada dua: Migas Manager ID dan Dealer Manager ID.</p>
+    <p class="lead" data-in style="--d:.3s">Kami membuat game simulasi yang bisa langsung dimainkan di browser. Dua sudah bisa dimainkan, satu lagi sedang dibuat: Truck Manager Nusantara.</p>
     <div class="cta" data-in style="--d:.45s">
       <a class="btn btn-o" href="https://dealer-manager-id.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Dealer Manager (OBT)</a>
       <a class="btn btn-a" href="https://migas-manager-indonesia.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Migas Manager ID</a>
       <a class="btn btn-g" href="#game">Baca penjelasan game</a>
     </div>
     <div class="status" data-in style="--d:.6s">
-      <span><i></i>Migas Manager ID v2.3.8 sudah rilis</span>
+      <span><i></i>Migas Manager ID v2.4.5 sudah rilis</span>
       <span class="o"><i></i>Dealer Manager ID sedang Open Beta</span>
+      <span class="g"><i></i>Truck Manager Nusantara segera hadir</span>
     </div>
   </div>
 </section>
@@ -61,10 +64,10 @@
 <!-- GAME -->
 <section id="game">
   <div class="wrap">
-    <div class="sec-h"><h2 data-scramble>Dua game, dua dunia bisnis</h2><p>Dua-duanya game simulasi: kamu mulai dari usaha kecil, mengambil keputusan, mengatur uang, lalu membesarkannya. Pilih salah satu untuk baca penjelasan lengkapnya.</p></div>
+    <div class="sec-h"><h2 data-scramble>Tiga game, tiga dunia bisnis</h2><p>Semuanya game simulasi: kamu mulai dari usaha kecil, mengambil keputusan, mengatur uang, lalu membesarkannya. Pilih salah satu untuk baca penjelasan lengkapnya.</p></div>
     <div class="gcards">
       <article class="game gcard migas">
-        <div class="gh"><h3>Migas Manager ID</h3><span class="tag">v2.3.8</span></div>
+        <div class="gh"><h3>Migas Manager ID</h3><span class="tag">v2.4.5</span></div>
         <p class="tagline">Bangun kerajaan distribusi BBM dan LPG dari Kilang Tuban sampai pelosok Nusantara.</p>
         <p class="gdesc">Kelola truk tangki, kapal tanker, kru, dan SPBU mitra secara real-time di peta 34 provinsi.</p>
         <ul class="facts"><li><b>34</b>provinsi</li><li><b>Rp 650 jt</b>modal awal</li><li><b>5</b>peran kru</li></ul>
@@ -82,6 +85,19 @@
         <div class="acts">
           <a class="btn btn-g more" href="dealer/">Lihat detail<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
           <a class="btn btn-o btn-main" href="https://dealer-manager-id.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main (OBT)</a>
+        </div>
+      </article>
+      <article class="game gcard truck wide">
+        <div class="tlogo"><img src="assets/truck-logo.webp" width="320" height="320" alt="Logo Truck Manager Nusantara: truk dengan peta Indonesia di dalam lingkaran" loading="lazy" decoding="async"></div>
+        <div class="tbody">
+          <div class="gh"><h3>Truck Manager Nusantara</h3><span class="tag soon"><i></i>Coming soon</span></div>
+          <p class="tagline">Logistik dan armada truk dari ujung barat sampai ujung timur Indonesia.</p>
+          <p class="gdesc">Game ketiga dari Studio Game sedang dalam pembuatan. Kamu akan mengelola armada, rute, dan pengiriman barang antar pulau.</p>
+          <div class="road" role="img" aria-label="Sedang dalam pembuatan"><span>Sedang dibuat</span></div>
+          <div class="acts">
+            <a class="btn btn-gold more" href="truck/">Lihat detail<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <span class="btn btn-off btn-main" aria-disabled="true">Belum bisa dimainkan</span>
+          </div>
         </div>
       </article>
     </div>
@@ -121,6 +137,13 @@
           <div class="links">
             <a class="btn" href="https://whatsapp.com/channel/0029VbDg3RZDuMRpUMfETJ3n" target="_blank" rel="noopener">Saluran WhatsApp</a>
             <a class="btn alt" href="https://chat.whatsapp.com/GW7TSMX9NjLFWlQjxTvbIt" target="_blank" rel="noopener">Grup WhatsApp</a>
+          </div>
+        </div>
+        <div>
+          <h3>Truck Manager Nusantara <span class="mini">coming soon</span></h3>
+          <div class="links">
+            <a class="btn" href="https://whatsapp.com/channel/0029Vb9nWaJLY6dBSWtz0R0m" target="_blank" rel="noopener">Saluran WhatsApp</a>
+            <span class="btn alt off" aria-disabled="true" title="Link grup belum tersedia">Grup WhatsApp</span>
           </div>
         </div>
       </div>

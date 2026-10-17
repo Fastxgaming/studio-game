@@ -206,3 +206,70 @@ footer strong{color:var(--paper);font-weight:700}
  .js [data-in],.js .tiers li,.js [data-scramble]{transform:none;opacity:1}
  .js .globe-wrap{opacity:1;transform:none}
 }
+
+/* ===== v2.4: TRUCK MANAGER NUSANTARA, SKIP LINK, NAVIGASI ANTAR GAME ===== */
+:root{--gold:#d9b25a;--gold2:#f0d28a;--navy2:#123a63;--leaf:#4aa65a}
+.skip-link{position:fixed;left:16px;top:-60px;z-index:200;background:var(--paper);color:var(--ink);font-weight:700;padding:10px 18px;border-radius:99px;text-decoration:none;transition:top .2s}
+.skip-link:focus{top:calc(12px + env(safe-area-inset-top,0px))}
+header{transition:background .3s,border-color .3s}
+header.sc{background:rgba(8,17,40,.92);border-bottom-color:rgba(190,208,255,.22)}
+nav a[aria-current]{color:#fff;background:rgba(255,255,255,.09)}
+nav a.on{color:#fff}
+
+/* tema Truck: navy logo + emas */
+.truck{background:radial-gradient(520px 340px at 88% 10%,rgba(217,178,90,.20),transparent 70%),linear-gradient(155deg,#123a63 0%,#0e2548 56%,#0a1530 100%);border-color:rgba(217,178,90,.32)}
+.truck .tag{color:var(--gold2);border-color:rgba(217,178,90,.6);background:rgba(217,178,90,.1)}
+.tag.soon{display:inline-flex;align-items:center;gap:8px}
+.tag.soon i{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:blink 1.8s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+.btn-gold{background:var(--gold);color:#241a05}
+.btn-gold:hover{background:var(--gold2);box-shadow:0 12px 34px -10px rgba(217,178,90,.75)}
+.btn-off{border-color:var(--line);color:var(--mute);cursor:not-allowed;background:rgba(255,255,255,.03)}
+.btn-off:hover{transform:none}
+.status .g i{background:var(--gold)}
+
+/* kartu lebar di beranda */
+@media(min-width:900px){.gcard.wide{grid-column:1/-1;display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:clamp(28px,5vw,64px);align-items:center}}
+.tlogo{display:grid;place-items:center;justify-self:center;width:min(100%,300px)}
+.tlogo img{width:100%;height:auto;aspect-ratio:1;display:block;border-radius:50%;box-shadow:0 0 0 6px rgba(217,178,90,.14),0 30px 70px -26px rgba(0,0,0,.85)}
+@media(max-width:899px){.tlogo{width:min(70%,240px);margin-bottom:22px}}
+.tbody{display:flex;flex-direction:column;min-width:0}
+.gcard.wide .tagline{max-width:34ch}
+.gcard.wide .acts{margin-top:0;padding-top:26px}
+
+/* garis marka jalan: tanda "sedang dibuat" */
+.road{display:flex;align-items:center;gap:14px;margin-top:24px;font-size:14px;color:var(--gold2);font-weight:700}
+.road:after{content:"";flex:1;max-width:260px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,var(--gold) 0 18px,transparent 18px 32px);background-size:32px 100%;animation:drive 1.4s linear infinite;opacity:.85}
+@keyframes drive{to{background-position:32px 0}}
+
+/* halaman detail Truck */
+.thero{display:grid;gap:clamp(28px,5vw,64px);align-items:center;margin-top:clamp(18px,3vw,34px)}
+@media(min-width:900px){.thero{grid-template-columns:1.1fr .9fr}}
+.thero .tlogo{width:min(100%,400px);margin:0 auto}
+.thero .tlogo img{box-shadow:0 0 0 8px rgba(217,178,90,.14),0 40px 90px -30px #000}
+@media(max-width:899px){.thero .tlogo{order:-1;width:min(76%,300px);margin-bottom:0}}
+.soon-big{display:inline-flex;align-items:center;gap:12px;font:800 clamp(1.2rem,3vw,1.7rem) 'Bricolage Grotesque',sans-serif;color:var(--gold2);margin-top:22px}
+.soon-big i{width:11px;height:11px;border-radius:50%;background:var(--gold);animation:blink 1.8s ease-in-out infinite}
+.plan{counter-reset:none}
+.plan li b{color:var(--gold2)}
+.truck .note{color:#9fb0d3}
+
+/* ajakan ke game lain di halaman detail */
+.others{margin-top:clamp(40px,6vw,72px)}
+.others h2{font-size:clamp(1.4rem,3vw,2rem);font-weight:800;margin-bottom:18px}
+.olist{display:grid;gap:14px}
+@media(min-width:700px){.olist{grid-template-columns:1fr 1fr}}
+.olink{position:relative;display:flex;align-items:center;gap:16px;padding:16px 20px;border:1px solid var(--line);border-radius:20px;text-decoration:none;background:rgba(255,255,255,.025);transition:border-color .2s,background .2s}
+.olink:hover{border-color:rgba(190,208,255,.4);background:rgba(255,255,255,.05)}
+.olink img{width:44px;height:44px;border-radius:50%;flex:none}
+.olink .dot{width:44px;height:44px;border-radius:14px;flex:none}
+.olink b{display:block;font:700 1.08rem 'Bricolage Grotesque',sans-serif}
+.olink span{display:block;color:var(--mute);font-size:14px;line-height:1.4}
+.olink svg{margin-left:auto;width:20px;height:20px;flex:none;color:var(--mute);transition:transform .2s}
+.olink:hover svg{transform:translateX(4px)}
+.soon-note{margin-top:12px;font-size:13.5px}
+.gcard:focus-within{border-color:rgba(190,208,255,.4)}
+.gh .h3{font-size:clamp(2.1rem,5.4vw,4rem);font-weight:800;letter-spacing:-.035em;line-height:1.05}
+.mini{font:700 11.5px 'Figtree',sans-serif;border:1.5px solid currentColor;border-radius:99px;padding:2px 9px;margin-left:8px;vertical-align:middle;opacity:.75}
+.join .btn.off{opacity:.45;cursor:not-allowed}
+.join .btn.off:hover{background:transparent;transform:none}
