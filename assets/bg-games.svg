@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="360" viewBox="0 0 360 360"><g fill="none" stroke="#a9c4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".2">
+<g transform="translate(34 40) rotate(-12)"><path d="M6 10h36a12 12 0 0 1 11 16l-5 14a7 7 0 0 1-12 2l-3-5H15l-3 5a7 7 0 0 1-12-2L-5 26A12 12 0 0 1 6 10z"/><path d="M12 20v8M8 24h8"/><circle cx="36" cy="22" r="1.5"/><circle cx="42" cy="26" r="1.5"/></g>
+<g transform="translate(200 30) rotate(8)"><path d="M10 0h10v10h10v10H20v10H10V20H0V10h10z"/></g>
+<g transform="translate(290 110)"><path d="M0 0v28l24-14z"/></g>
+<g transform="translate(110 130) rotate(10)"><rect width="30" height="30" rx="7"/><circle cx="9" cy="9" r="1.8"/><circle cx="21" cy="9" r="1.8"/><circle cx="15" cy="15" r="1.8"/><circle cx="9" cy="21" r="1.8"/><circle cx="21" cy="21" r="1.8"/></g>
+<g transform="translate(240 200)"><path d="M14 26C-6 12 2-4 14 6c12-10 20 6 0 20z" transform="scale(1.1)"/></g>
+<g transform="translate(30 220)"><circle cx="16" cy="16" r="15"/><path d="M16 8v16M11 12h8a3 3 0 0 1 0 6h-6a3 3 0 0 0 0 6h8" transform="scale(.9) translate(2 0)"/></g>
+<g transform="translate(150 255) rotate(-8)"><path d="M16 0l5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1z"/></g>
+<g transform="translate(300 290)"><circle cx="8" cy="8" r="8"/><path d="M8 16v20M2 36h12"/></g>
+<g transform="translate(80 320)"><path d="M0 8h6V0h6v8h6M0 8v6h18V8"/></g>
+<path d="M330 30h14M337 23v14M200 330h12M206 324v12M20 150h10M25 145v10"/>
+</g></svg>

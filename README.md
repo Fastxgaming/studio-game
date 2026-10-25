@@ -1,6 +1,6 @@
 # Studio Game
 
-Situs resmi Studio Game: Migas Manager ID, Dealer Manager ID, dan Truck Manager Nusantara (coming soon).
+Situs resmi Studio Game: Migas Manager ID, Dealer Manager ID (main ditutup sementara), dan Truck Manager Nusantara (coming soon).
 
 Situs statis tanpa build. Setiap halaman berada di folder sendiri sehingga URL bersih:
 

@@ -3,7 +3,7 @@
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:76px;background:var(--ink)}
 html.lock{overflow:hidden}
-body{margin:0;background:var(--ink);color:var(--paper);font:16px/1.7 'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;overflow-x:hidden;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+body{margin:0;background:transparent;position:relative;color:var(--paper);font:16px/1.7 'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif;overflow-x:hidden;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
 h1,h2,h3,h4{font-family:'Bricolage Grotesque','Figtree',system-ui,sans-serif;margin:0;line-height:1.08;letter-spacing:-.02em}
 p{margin:0}
 a{color:inherit}
@@ -39,7 +39,6 @@ nav a:hover{color:#fff;background:rgba(255,255,255,.07)}
 /* ===== HERO ===== */
 .hero{position:relative;min-height:100svh;display:flex;align-items:center;padding:calc(62px + 36px) 0 56px;overflow:hidden}
 .hero:before{content:"";position:absolute;inset:0;background:radial-gradient(760px 480px at 78% 45%,rgba(76,201,240,.10),transparent 65%),radial-gradient(560px 380px at 8% 85%,rgba(255,106,43,.10),transparent 65%);pointer-events:none}
-.hero:after{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(130,170,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(130,170,255,.045) 1px,transparent 1px);background-size:56px 56px;-webkit-mask-image:radial-gradient(ellipse at 70% 50%,#000 10%,transparent 70%);mask-image:radial-gradient(ellipse at 70% 50%,#000 10%,transparent 70%);pointer-events:none}
 .globe-wrap{position:absolute;inset:0;pointer-events:none;z-index:1}
 .globe-wrap canvas{width:100%;height:100%;display:block}
 .js .globe-wrap{opacity:0;transition:opacity 1.4s ease}
@@ -78,7 +77,8 @@ section{padding:clamp(64px,10vw,120px) 0 0}
 .game>*{position:relative}
 .game:before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(520px circle at var(--mx,50%) var(--my,0%),rgba(255,255,255,.075),transparent 62%);opacity:0;transition:opacity .4s;pointer-events:none}
 .game:hover:before{opacity:1}
-.migas{background:linear-gradient(155deg,#0d3050 0%,#0c1c40 58%,#0a1530 100%)}
+.migas{background:url(../assets/art-migas.svg) right bottom/min(118%,880px) auto no-repeat,radial-gradient(420px 260px at 88% 8%,rgba(255,106,43,.16),transparent 70%),linear-gradient(155deg,#0d3050 0%,#0c1c40 58%,#0a1530 100%)}
+.migas:after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,rgba(10,21,48,.55),transparent 62%)}
 .dealer{background:linear-gradient(155deg,#3b2038 0%,#16214a 60%,#0a1530 100%)}
 .gh{display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px;margin-bottom:12px}
 .gh h3{font-size:clamp(2.1rem,5.4vw,4rem);font-weight:800;letter-spacing:-.035em}
@@ -273,3 +273,17 @@ nav a.on{color:#fff}
 .mini{font:700 11.5px 'Figtree',sans-serif;border:1.5px solid currentColor;border-radius:99px;padding:2px 9px;margin-left:8px;vertical-align:middle;opacity:.75}
 .join .btn.off{opacity:.45;cursor:not-allowed}
 .join .btn.off:hover{background:transparent;transform:none}
+
+/* ===== LATAR STUDIO GAME: pola ikon game melayang pelan + cahaya ===== */
+html{background:#0a1530}
+body:before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(900px 600px at 90% -5%,rgba(76,201,240,.10),transparent 60%),radial-gradient(700px 520px at -5% 55%,rgba(255,106,43,.09),transparent 60%),radial-gradient(800px 560px at 70% 108%,rgba(229,56,79,.07),transparent 60%),url(../assets/bg-games.svg);background-size:auto,auto,auto,360px 360px;animation:bgdrift 90s linear infinite}
+body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(180deg,rgba(10,21,48,0) 0%,rgba(10,21,48,.55) 100%)}
+@keyframes bgdrift{to{background-position:0 0,0 0,0 0,360px 360px}}
+@media(prefers-reduced-motion:reduce){body:before{animation:none}}
+.calm body:before{animation:none}
+
+/* ===== LOGO ===== */
+.brand img{width:38px;height:38px;border-radius:11px;box-shadow:0 6px 18px -6px rgba(255,106,43,.7)}
+.brand span{letter-spacing:-.02em}
+.brand span:after{content:"";}
+.brand em{font-style:normal;background:linear-gradient(90deg,#ffb347,#ff6a2b 55%,#e5384f);-webkit-background-clip:text;background-clip:text;color:transparent}
