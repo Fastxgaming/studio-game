@@ -299,14 +299,9 @@ body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;back
 .cd.sm{margin-top:18px;max-width:380px}
 .cd.sm .cd-g b{font-size:clamp(1.3rem,5vw,1.7rem)}
 .cd.sm .cd-g div{padding:10px 4px 8px}
-.cd-live{display:none;margin-top:22px;padding:16px 20px;border-radius:18px;border:1px solid rgba(61,220,151,.5);background:rgba(61,220,151,.1);max-width:460px}
+.cd-live{display:block;margin-top:22px;padding:16px 20px;border-radius:18px;border:1px solid rgba(61,220,151,.5);background:rgba(61,220,151,.1);max-width:460px}
 .cd-live b{display:block;font:800 1.25rem 'Bricolage Grotesque',sans-serif;color:#7ff0bd}
 .cd-live span{display:block;margin-top:2px;color:#cbd6ef;font-size:14.5px}
-.tmn-live .cd{display:none}
-.tmn-live .cd-live{display:block}
-.tmn-live [data-pre]{display:none!important}
-[data-live]{display:none!important}
-.tmn-live [data-live]{display:inline-flex!important}
 .status .live i{background:#3ddc97}
 .tag.live{color:#7ff0bd;border-color:rgba(61,220,151,.6);background:rgba(61,220,151,.1)}
 .fleet-grid{display:grid;gap:12px;margin-top:22px}
@@ -316,3 +311,8 @@ body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;back
 .truck .steps li{border-top-color:rgba(217,178,90,.55)}
 .truck .steps li:before{color:var(--gold)}
 .truck .facts b{color:var(--gold2)}
+[hidden]{display:none!important}
+.tmn-pending [data-show],.tmn-pending [data-tx]{visibility:hidden}
+.cd-note{margin-top:14px;max-width:460px;padding:11px 16px;border-radius:14px;border:1px solid rgba(76,201,240,.4);background:rgba(76,201,240,.08);color:#cfeffa;font-size:14.5px;line-height:1.5}
+.cd-live[data-show="dev"]{border-color:rgba(217,178,90,.5);background:rgba(217,178,90,.08)}
+.cd-live[data-show="dev"] b{color:var(--gold2)}

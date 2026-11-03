@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Truck Manager Nusantara | Rilis 3 November 2026 | Studio Game</title>
-<meta name="description" content="Truck Manager Nusantara: game simulasi ekspedisi dan armada truk Indonesia dari Studio Game. Rilis Selasa, 3 November 2026 pukul 20.30 WIB.">
+<title>Truck Manager Nusantara | Studio Game</title>
+<meta name="description" content="Truck Manager Nusantara: game simulasi ekspedisi dan armada truk Indonesia dari Studio Game. Cek jadwal rilis dan statusnya di sini.">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Truck Manager Nusantara | Rilis 3 November 2026 | Studio Game">
-<meta property="og:description" content="Kelola armada truk, rute, dan pengiriman dari Sumatera sampai Sulawesi. Rilis 3 November 2026 pukul 20.30 WIB.">
+<meta property="og:title" content="Truck Manager Nusantara | Studio Game">
+<meta property="og:description" content="Kelola armada truk, rute, dan pengiriman dari Sumatera sampai Sulawesi.">
 <meta property="og:image" content="../assets/truck-logo.webp">
 <meta name="twitter:card" content="summary">
 <meta name="theme-color" content="#0a1530">
@@ -19,6 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../css/style.css">
 <script src="../js/boot.js"></script>
+<script>document.documentElement.classList.add("tmn-pending");setTimeout(function(){document.documentElement.classList.remove("tmn-pending")},4000)</script>
 </head>
 <body>
 <div class="prog" id="prog" aria-hidden="true"></div>
@@ -39,10 +40,11 @@
         <div>
           <div class="gh"><h1 class="h3" data-scramble>Truck Manager Nusantara</h1></div>
           <p class="tagline">Logistik dan armada truk dari ujung barat sampai ujung timur Indonesia.</p>
-          <span class="soon-big" data-pre><i></i>Rilis 3 November 2026, 20.30 WIB</span>
-          <span class="soon-big" data-live><i></i>Sudah rilis, ayo main</span>
+          <span class="soon-big" data-show="wait"><i></i>Rilis&nbsp;<span data-tx="dateTime"></span></span>
+          <span class="soon-big" data-show="dev"><i></i>Sedang dalam pembuatan</span>
+          <span class="soon-big" data-show="live"><i></i>Sudah rilis, ayo main</span>
 
-          <div class="cd" data-countdown role="timer" aria-label="Hitung mundur rilis Truck Manager Nusantara">
+          <div class="cd" data-show="wait" data-countdown role="timer" aria-label="Hitung mundur rilis Truck Manager Nusantara">
             <span class="cd-l">Rilis dalam</span>
             <div class="cd-g">
               <div><b data-u="d">00</b><span>hari</span></div>
@@ -50,13 +52,15 @@
               <div><b data-u="m">00</b><span>menit</span></div>
               <div><b data-u="s">00</b><span>detik</span></div>
             </div>
-            <p class="cd-w">Selasa, 3 November 2026, pukul 20.30 WIB. Waktu mengikuti jam perangkatmu.</p>
+            <p class="cd-w"><span data-tx="dateLong"></span>. Waktu mengikuti jam perangkatmu.</p>
           </div>
-          <div class="cd-live" role="status"><b>Truck Manager Nusantara sudah dibuka</b><span>Daftarkan perusahaanmu, pilih depo pusat, dan kirim pesanan pertamamu.</span></div>
+          <div class="cd-live" data-show="dev"><b>Sedang dalam pembuatan</b><span>Truck Manager Nusantara masih disiapkan. Jadwal rilis akan diumumkan di sini dan di saluran WhatsApp.</span></div>
+          <div class="cd-live" data-show="live" role="status"><b>Truck Manager Nusantara sudah dibuka</b><span>Daftarkan perusahaanmu, pilih depo pusat, dan kirim pesanan pertamamu.</span></div>
+          <p class="cd-note" data-tx="note" data-hide-empty hidden></p>
 
           <div class="acts">
-            <a class="btn btn-gold" data-live href="https://truck-manajer-nusantara.web.app" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Truck Manager Nusantara</a>
-            <span class="btn btn-off" data-pre aria-disabled="true">Belum bisa dimainkan</span>
+            <a class="btn btn-gold" data-show="live" data-href="playUrl" href="https://truck-manajer-nusantara.web.app" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Truck Manager Nusantara</a>
+            <span class="btn btn-off" data-show="wait dev" aria-disabled="true">Belum bisa dimainkan</span>
             <a class="btn btn-g" href="https://whatsapp.com/channel/0029Vb9nWaJLY6dBSWtz0R0m" target="_blank" rel="noopener">Ikuti saluran WhatsApp</a>
             <a class="btn btn-g" href="https://chat.whatsapp.com/LTK849iTeHGIGVqGU6juSq" target="_blank" rel="noopener">Grup WhatsApp</a>
           </div>
@@ -150,6 +154,6 @@
 
 <script src="../js/fx.js"></script>
 <script src="../js/main.js"></script>
-<script src="../js/countdown.js"></script>
+<script src="../js/release.js"></script>
 </body>
 </html>

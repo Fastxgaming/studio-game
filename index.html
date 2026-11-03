@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Studio Game | Game simulasi bisnis buatan Indonesia</title>
-<meta name="description" content="Studio Game membuat game simulasi manajemen bisnis dari Indonesia: Migas Manager ID (distribusi BBM & LPG), Dealer Manager ID (dealer kendaraan, Open Beta), dan Truck Manager Nusantara (logistik dan armada, rilis 3 November 2026 pukul 20.30 WIB).">
+<meta name="description" content="Studio Game membuat game simulasi manajemen bisnis dari Indonesia: Migas Manager ID (distribusi BBM & LPG), Dealer Manager ID (dealer kendaraan, Open Beta), dan Truck Manager Nusantara (logistik dan armada).">
 <meta name="robots" content="index, follow">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Studio Game | Game simulasi bisnis buatan Indonesia">
@@ -19,6 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Figtree:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <script src="js/boot.js"></script>
+<script>document.documentElement.classList.add("tmn-pending");setTimeout(function(){document.documentElement.classList.remove("tmn-pending")},4000)</script>
 </head>
 <body>
 <a class="skip-link" href="#game">Lompat ke daftar game</a>
@@ -47,7 +48,7 @@
   <div class="globe-wrap"><canvas id="globe" aria-hidden="true"></canvas></div>
   <div class="wrap">
     <h1 data-in style="--d:.1s">Game manajemen bisnis buatan Indonesia.</h1>
-    <p class="lead" data-in style="--d:.3s">Kami membuat game simulasi yang bisa langsung dimainkan di browser. Migas Manager ID sudah bisa dimainkan dan diunduh sebagai APK, Dealer Manager ID sedang disiapkan, dan Truck Manager Nusantara segera rilis pada 3 November 2026 pukul 20.30 WIB.</p>
+    <p class="lead" data-in style="--d:.3s">Kami membuat game simulasi yang bisa langsung dimainkan di browser. Migas Manager ID sudah bisa dimainkan dan diunduh sebagai APK, Dealer Manager ID sedang disiapkan, dan Truck Manager Nusantara menyusul.</p>
     <div class="cta" data-in style="--d:.45s">
       <span class="btn btn-off" aria-disabled="true">Main Dealer Manager (segera dibuka)</span>
       <a class="btn btn-a" href="https://migas-manager-indonesia.web.app/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main Migas Manager ID</a>
@@ -57,8 +58,9 @@
     <div class="status" data-in style="--d:.6s">
       <span><i></i>Migas Manager ID v2.5.5 sudah rilis</span>
       <span class="o"><i></i>Dealer Manager ID: main ditutup sementara</span>
-      <span class="g" data-pre><i></i>Truck Manager Nusantara rilis 3 November 2026, 20.30 WIB</span>
-      <span class="live" data-live><i></i>Truck Manager Nusantara sudah rilis</span>
+      <span class="g" data-show="wait"><i></i>Truck Manager Nusantara rilis <span data-tx="dateTime"></span></span>
+      <span class="g" data-show="dev"><i></i>Truck Manager Nusantara sedang dalam pembuatan</span>
+      <span class="live" data-show="live"><i></i>Truck Manager Nusantara sudah rilis</span>
     </div>
   </div>
 </section>
@@ -93,12 +95,12 @@
       <article class="game gcard truck wide">
         <div class="tlogo"><img src="assets/truck-logo.webp" width="320" height="320" alt="Logo Truck Manager Nusantara: truk dengan peta Indonesia di dalam lingkaran" loading="lazy" decoding="async"></div>
         <div class="tbody">
-          <div class="gh"><h3>Truck Manager Nusantara</h3><span class="tag soon" data-pre><i></i>Rilis 3 Nov 2026</span><span class="tag live" data-live>Sudah rilis</span></div>
+          <div class="gh"><h3>Truck Manager Nusantara</h3><span class="tag soon" data-show="wait"><i></i>Rilis <span data-tx="dateShort"></span></span><span class="tag soon" data-show="dev"><i></i>Dalam pembuatan</span><span class="tag live" data-show="live">Sudah rilis</span></div>
           <p class="tagline">Logistik dan armada truk dari ujung barat sampai ujung timur Indonesia.</p>
           <p class="gdesc">Mulai dari satu pickup, bangun perusahaan ekspedisi dengan 116 varian truk, rute antar pulau, depo, kontrak klien, sampai naik dari CV ke PT dan IPO di bursa saham.</p>
           <ul class="facts"><li><b>Rp 300 jt</b>modal awal</li><li><b>117</b>kota dan pelabuhan</li><li><b>13</b>kota depo</li></ul>
-          <div class="cd sm" data-countdown role="timer" aria-label="Hitung mundur rilis Truck Manager Nusantara">
-            <span class="cd-l">Rilis 3 November 2026, 20.30 WIB</span>
+          <div class="cd sm" data-show="wait" data-countdown role="timer" aria-label="Hitung mundur rilis Truck Manager Nusantara">
+            <span class="cd-l">Rilis <span data-tx="dateTime"></span></span>
             <div class="cd-g">
               <div><b data-u="d">00</b><span>hari</span></div>
               <div><b data-u="h">00</b><span>jam</span></div>
@@ -108,8 +110,8 @@
           </div>
           <div class="acts">
             <a class="btn btn-gold more" href="truck/">Lihat detail<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-            <span class="btn btn-off btn-main" data-pre aria-disabled="true">Belum bisa dimainkan</span>
-            <a class="btn btn-gold btn-main" data-live href="https://truck-manajer-nusantara.web.app" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main sekarang</a>
+            <span class="btn btn-off btn-main" data-show="wait dev" aria-disabled="true">Belum bisa dimainkan</span>
+            <a class="btn btn-gold btn-main" data-show="live" data-href="playUrl" href="https://truck-manajer-nusantara.web.app" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Main sekarang</a>
           </div>
         </div>
       </article>
@@ -153,7 +155,7 @@
           </div>
         </div>
         <div>
-          <h3>Truck Manager Nusantara <span class="mini" data-pre>rilis 3 Nov</span></h3>
+          <h3>Truck Manager Nusantara <span class="mini" data-show="wait">rilis <span data-tx="dateShort"></span></span><span class="mini" data-show="dev">dalam pembuatan</span></h3>
           <div class="links">
             <a class="btn" href="https://whatsapp.com/channel/0029Vb9nWaJLY6dBSWtz0R0m" target="_blank" rel="noopener">Saluran WhatsApp</a>
             <a class="btn alt" href="https://chat.whatsapp.com/LTK849iTeHGIGVqGU6juSq" target="_blank" rel="noopener">Grup WhatsApp</a>
@@ -174,6 +176,6 @@
 <script src="js/intro.js"></script>
 <script src="js/globe.js"></script>
 <script src="js/main.js"></script>
-<script src="js/countdown.js"></script>
+<script src="js/release.js"></script>
 </body>
 </html>
