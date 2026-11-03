@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "updatedAt": "2026-11-03T13:54:01.590Z",
+  "updatedAt": "2026-11-03T14:02:25.955Z",
   "games": {
     "truck": {
       "name": "Truck Manager Nusantara",
       "status": "countdown",
-      "releaseAt": "2026-11-03T22:00:00+07:00",
+      "releaseAt": "2026-11-03T21:05:00+07:00",
       "playUrl": "https://truck-manajer-nusantara.web.app",
       "note": ""
     }
