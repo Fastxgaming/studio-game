@@ -287,3 +287,32 @@ body:after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;back
 .brand span{letter-spacing:-.02em}
 .brand span:after{content:"";}
 .brand em{font-style:normal;background:linear-gradient(90deg,#ffb347,#ff6a2b 55%,#e5384f);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ===== v2.5: HITUNG MUNDUR RILIS TRUCK MANAGER NUSANTARA ===== */
+.cd{margin-top:26px;max-width:460px}
+.cd-l{display:block;font:700 13.5px 'Figtree',sans-serif;color:var(--gold2);letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px}
+.cd-g{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.cd-g div{padding:14px 6px 10px;text-align:center;border-radius:16px;border:1px solid rgba(217,178,90,.38);background:rgba(10,21,48,.55)}
+.cd-g b{display:block;font:800 clamp(1.7rem,6vw,2.4rem)/1.05 'Bricolage Grotesque',sans-serif;color:var(--paper);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.cd-g span{display:block;margin-top:4px;font-size:12.5px;color:var(--mute)}
+.cd-w{margin-top:10px;font-size:13.5px;color:#9fb0d3}
+.cd.sm{margin-top:18px;max-width:380px}
+.cd.sm .cd-g b{font-size:clamp(1.3rem,5vw,1.7rem)}
+.cd.sm .cd-g div{padding:10px 4px 8px}
+.cd-live{display:none;margin-top:22px;padding:16px 20px;border-radius:18px;border:1px solid rgba(61,220,151,.5);background:rgba(61,220,151,.1);max-width:460px}
+.cd-live b{display:block;font:800 1.25rem 'Bricolage Grotesque',sans-serif;color:#7ff0bd}
+.cd-live span{display:block;margin-top:2px;color:#cbd6ef;font-size:14.5px}
+.tmn-live .cd{display:none}
+.tmn-live .cd-live{display:block}
+.tmn-live [data-pre]{display:none!important}
+[data-live]{display:none!important}
+.tmn-live [data-live]{display:inline-flex!important}
+.status .live i{background:#3ddc97}
+.tag.live{color:#7ff0bd;border-color:rgba(61,220,151,.6);background:rgba(61,220,151,.1)}
+.fleet-grid{display:grid;gap:12px;margin-top:22px}
+@media(min-width:700px){.fleet-grid{grid-template-columns:repeat(3,1fr)}}
+.fleet-grid li{list-style:none;padding:16px 18px;border-radius:16px;border:1px solid rgba(217,178,90,.28);background:rgba(217,178,90,.06);color:var(--mute);font-size:14.5px;line-height:1.5}
+.fleet-grid b{display:block;color:var(--gold2);font:700 1.05rem 'Bricolage Grotesque',sans-serif;margin-bottom:2px}
+.truck .steps li{border-top-color:rgba(217,178,90,.55)}
+.truck .steps li:before{color:var(--gold)}
+.truck .facts b{color:var(--gold2)}
